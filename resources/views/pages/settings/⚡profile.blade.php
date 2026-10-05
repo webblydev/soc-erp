@@ -2,7 +2,6 @@
 
 use App\Concerns\ProfileValidationRules;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Computed;
@@ -41,7 +40,7 @@ new #[Title('Profile settings')] class extends Component {
 
         $user->save();
 
-        Flux::toast(variant: 'success', text: __('Profile updated.'));
+        $this->dispatch('toast', type: 'success', description: __('Profile updated.'));
     }
 
     /**
@@ -79,42 +78,38 @@ new #[Title('Profile settings')] class extends Component {
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <flux:heading level="2" class="sr-only">{{ __('Profile settings') }}</flux:heading>
-
     <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
+            <x-ui.field>
+                <x-ui.field-label for="name">{{ __('Name') }}</x-ui.field-label>
+                <x-ui.input id="name" wire:model="name" type="text" required autofocus autocomplete="name" :aria-invalid="$errors->has('name') ? 'true' : null" />
+                <x-ui.field-error :messages="$errors->get('name')" />
+            </x-ui.field>
 
-            <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
+            <x-ui.field>
+                <x-ui.field-label for="email">{{ __('Email') }}</x-ui.field-label>
+                <x-ui.input id="email" wire:model="email" type="email" required autocomplete="email" :aria-invalid="$errors->has('email') ? 'true' : null" />
+                <x-ui.field-error :messages="$errors->get('email')" />
 
                 @if ($this->hasUnverifiedEmail)
-                    <div>
-                        <flux:text class="mt-4">
-                            {{ __('Your email address is unverified.') }}
+                    <x-ui.field-description>
+                        {{ __('Your email address is unverified.') }}
+                        <x-ui.link href="#" class="cursor-pointer" wire:click.prevent="resendVerificationNotification">
+                            {{ __('Click here to re-send the verification email.') }}
+                        </x-ui.link>
+                    </x-ui.field-description>
 
-                            <flux:link class="text-sm cursor-pointer" wire:click.prevent="resendVerificationNotification">
-                                {{ __('Click here to re-send the verification email.') }}
-                            </flux:link>
-                        </flux:text>
-
-                        @if (session('status') === 'verification-link-sent')
-                            <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
-                                {{ __('A new verification link has been sent to your email address.') }}
-                            </flux:text>
-                        @endif
-                    </div>
+                    @if (session('status') === 'verification-link-sent')
+                        <x-ui.field-description class="font-medium text-green-600">
+                            {{ __('A new verification link has been sent to your email address.') }}
+                        </x-ui.field-description>
+                    @endif
                 @endif
-            </div>
+            </x-ui.field>
 
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
-                        {{ __('Save') }}
-                    </flux:button>
-                </div>
-
-            </div>
+            <x-ui.button type="submit" data-test="update-profile-button">
+                {{ __('Save') }}
+            </x-ui.button>
         </form>
 
         @if ($this->showDeleteUser)
