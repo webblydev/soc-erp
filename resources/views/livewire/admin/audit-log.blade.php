@@ -98,7 +98,7 @@
         :description="$selected ? str_replace('_', ' ', $selected->event).' · '.($selected->user?->username ?? __('system')).' · '.$selected->created_at->format('d-M-Y H:i:s') : null">
         @if ($selected)
             @php($fields = collect(array_keys([...($selected->old_values ?? []), ...($selected->new_values ?? [])])))
-            @php($show = fn ($value) => is_scalar($value) || $value === null ? (string) ($value ?? '—') : json_encode($value, JSON_UNESCAPED_UNICODE))
+            @php($show = fn ($value) => is_bool($value) ? ($value ? 'true' : 'false') : (is_scalar($value) || $value === null ? (string) ($value ?? '—') : json_encode($value, JSON_UNESCAPED_UNICODE)))
             <div class="flex flex-col gap-3 pb-4">
                 @forelse ($fields as $field)
                     <div class="rounded-md border p-3 text-sm">
