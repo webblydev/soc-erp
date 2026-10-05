@@ -11,6 +11,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -20,8 +21,10 @@ use Livewire\Component;
 #[Title('Master data')]
 class MasterData extends Component
 {
+    #[Locked]
     public ?string $table = null;
 
+    #[Locked]
     public ?int $editingId = null;
 
     /** @var array<string, mixed> */
@@ -114,6 +117,7 @@ class MasterData extends Component
     public function render(): View
     {
         $registry = $this->registry();
+        $this->table === null || $this->authorizeTable('view');
         $visible = $registry->visibleTo($this->actor());
 
         return view('livewire.admin.master-data', [
