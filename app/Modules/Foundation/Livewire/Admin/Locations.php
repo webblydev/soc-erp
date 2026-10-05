@@ -19,6 +19,7 @@ use Livewire\Component;
 class Locations extends Component
 {
     /** @var list<int> */
+    #[Locked]
     public array $expanded = [];
 
     public string $search = '';
