@@ -2,6 +2,7 @@
 
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\Currency;
+use App\Modules\Foundation\Models\LocationLevel;
 
 /*
 | Registry of lookup tables edited through the generic Master Data screen (docs/01 §5.8).
@@ -33,5 +34,12 @@ return [
             'is_base' => ['type' => 'bool', 'label' => 'Base currency'],
         ],
         'single_flags' => ['is_base'],
+    ],
+    'location_levels' => [
+        'label' => 'Location levels',
+        'module' => 'admin',
+        'model' => LocationLevel::class,
+        'permission' => 'admin.locations',
+        'extra_fields' => [],
     ],
 ];
