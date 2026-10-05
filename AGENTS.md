@@ -248,7 +248,10 @@ Below the `md` breakpoint, every screen must look and behave like a native mobil
 - **Navigation feel:** use `wire:navigate` for every in-app link so moves between screens feel like an app, and show a loading state (`x-ui.top-progress` / skeletons) instead of blank screens.
 - **Detail pages:** tabs become swipeable or segmented controls (`x-ui.segmented-control`), and key figures stack as summary cards at the top.
 - **No desktop leftovers:** no breadcrumbs, multi-column grids, right rails, tooltips as the only label, or text smaller than 14px on mobile.
-- Verify every new or changed screen at a 390×844 viewport before calling it done.
+- Verify every new or changed screen at a 390×844 viewport before calling it done, but only through a browser run when the user asks for it (see Browser Testing).
+
+## Browser Testing
+- Never run browser tests, headless browsers (Playwright, Puppeteer, Chrome) or screenshot checks unless the user explicitly asks for one. Rely on feature tests, and tell the user which screens are ready for them to check visually.
 
 ## Routing
 - Use a model's unique code from the data source (e.g. `code`, `sku`, `slug`) as the route key instead of the numeric `id` when one is available, via `getRouteKeyName()` or `{model:code}` route binding.
