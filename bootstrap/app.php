@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnforceSessionTimeout;
 use App\Http\Middleware\EnsurePasswordChanged;
+use App\Http\Middleware\EnsureTwoFactorEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureUserIsActive::class,
             EnforceSessionTimeout::class,
             EnsurePasswordChanged::class,
+            EnsureTwoFactorEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
