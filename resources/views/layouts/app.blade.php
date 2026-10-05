@@ -1,4 +1,4 @@
-<x-layouts::app.sidebar :title="$title ?? null" :back="$back ?? null">
+<x-layouts::app.sidebar :title="$title ?? null" :back="$back ?? null" :bottom-nav="$bottomNav ?? true">
     @isset($actions)
         <x-slot:actions>{{ $actions }}</x-slot:actions>
     @endisset
