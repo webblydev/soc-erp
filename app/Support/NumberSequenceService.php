@@ -104,7 +104,7 @@ class NumberSequenceService
         return (string) preg_replace_callback(
             '/\{(seq:(\d+)|yyyy|yy|bl_prefix|branch)\}/',
             fn (array $match): string => str_starts_with($match[1], 'seq:')
-                ? str_pad((string) $sequence, (int) $match[2], '0', STR_PAD_LEFT)
+                ? str_pad((string) $sequence, (int) ($match[2] ?? 0), '0', STR_PAD_LEFT)
                 : $tokens[$match[1]],
             $format,
         );
