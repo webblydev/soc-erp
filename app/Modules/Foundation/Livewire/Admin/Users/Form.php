@@ -63,6 +63,8 @@ class Form extends Component
     {
         $this->authorize($this->user === null ? 'admin.users.create' : 'admin.users.update');
 
+        $this->branch_id = filled($this->branch_id) ? (int) $this->branch_id : null;
+
         $input = $this->only(['name', 'username', 'email', 'phone', 'branch_id', 'roles', 'permissions', 'password', 'password_confirmation', 'is_active']);
 
         $this->user === null
