@@ -43,7 +43,8 @@ final class SettingsRepository
 
         $setting = Setting::query()->where('group', $group)->where('key', $name)->firstOrFail();
         $setting->value = $this->cast($setting->type, $value);
-        $setting->updated_by = Auth::id();
+        $userId = Auth::id();
+        $setting->updated_by = $userId === null ? null : (int) $userId;
         $setting->save();
 
         $this->flush();
