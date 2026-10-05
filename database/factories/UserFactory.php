@@ -26,21 +26,29 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+            'username' => Str::lower(fake()->unique()->lexify('user??????')),
             'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'is_active' => true,
+            'must_change_password' => false,
             'remember_token' => Str::random(10),
         ];
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Indicate that the user has been deactivated.
      */
-    public function unverified(): static
+    public function inactive(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        return $this->state(fn (array $attributes) => ['is_active' => false]);
+    }
+
+    /**
+     * Indicate that the user must change their password on next login.
+     */
+    public function mustChangePassword(): static
+    {
+        return $this->state(fn (array $attributes) => ['must_change_password' => true]);
     }
 
     /**
