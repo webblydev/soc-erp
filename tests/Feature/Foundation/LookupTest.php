@@ -4,6 +4,7 @@ use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\CompanyProfile;
 use App\Modules\Foundation\Models\Currency;
 use App\Support\Facades\Lookup;
+use App\Support\Lookups\LookupRegistry;
 
 test('options return active rows ordered by sort order then name', function () {
     Branch::factory()->create(['code' => 'B', 'name' => 'Beta', 'sort_order' => 2]);
@@ -36,4 +37,33 @@ test('fiscal year start month defaults to july and follows the company profile',
     ]);
 
     expect(CompanyProfile::fiscalYearStartMonth())->toBe(1);
+});
+
+test('the registry lists only tables the user may view', function () {
+    $user = userWithPermissions('admin.branches.view');
+
+    expect(array_keys(app(LookupRegistry::class)->visibleTo($user)))->toBe(['branches']);
+});
+
+test('table actions are checked against the table permission prefix', function () {
+    $user = userWithPermissions('admin.master_data.view', 'admin.master_data.update');
+    $registry = app(LookupRegistry::class);
+
+    expect($registry->allows($user, 'currencies', 'update'))->toBeTrue()
+        ->and($registry->allows($user, 'currencies', 'deactivate'))->toBeFalse()
+        ->and($registry->allows($user, 'branches', 'view'))->toBeFalse();
+});
+
+test('every registered table names its model and typed extra fields', function () {
+    $registry = app(LookupRegistry::class);
+
+    foreach ($registry->all() as $table => $entry) {
+        expect($registry->modelFor($table)->getTable())->toBe($table);
+
+        foreach ($entry['extra_fields'] as $field) {
+            expect($field['type'])->toBeIn(['text', 'textarea', 'number', 'bool']);
+        }
+    }
+
+    expect($registry->modelFor('branches'))->toBeInstanceOf(Branch::class);
 });
