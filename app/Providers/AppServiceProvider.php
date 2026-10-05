@@ -9,6 +9,7 @@ use App\Modules\Foundation\Models\Currency;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Foundation\Models\Setting;
 use App\Support\Database\BlueprintMacros;
+use App\Support\Facades\Settings;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
@@ -46,15 +47,13 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        Password::defaults(function (): Password {
+            $rule = Password::min((int) Settings::get('general.password_min_length', 8));
+
+            return app()->isProduction()
+                ? $rule->letters()->mixedCase()->numbers()->uncompromised()
+                : $rule;
+        });
     }
 
     /**
