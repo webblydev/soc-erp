@@ -47,17 +47,21 @@ class Form extends Component
 
     public function toggleResource(string $module, string $resource): void
     {
+        $this->authorizeWrite();
+
         $this->toggle(Permission::query()->where('module', $module)->where('resource', $resource)->orderBy('sort_order')->orderBy('id')->pluck('name'));
     }
 
     public function toggleAction(string $module, string $action): void
     {
+        $this->authorizeWrite();
+
         $this->toggle(Permission::query()->where('module', $module)->where('action', $action)->orderBy('sort_order')->orderBy('id')->pluck('name'));
     }
 
     public function save(SaveRole $saveRole): void
     {
-        $this->authorize($this->role === null ? 'admin.roles.create' : 'admin.roles.update');
+        $this->authorizeWrite();
 
         $saveRole->handle($this->only(['name', 'code', 'description', 'is_active', 'permissions']), $this->role);
 
@@ -89,6 +93,11 @@ class Form extends Component
                     ->all(),
             ])
             ->all();
+    }
+
+    private function authorizeWrite(): void
+    {
+        $this->authorize($this->role === null ? 'admin.roles.create' : 'admin.roles.update');
     }
 
     /**
