@@ -126,3 +126,62 @@ test('an accountant created by an admin must change password and sees no admin m
         ->assertOk()
         ->assertDontSee(route('admin.users.index'));
 });
+
+test('opening the row actions needs admin.users.view', function () {
+    $target = User::factory()->create();
+
+    Livewire::actingAs(User::factory()->create())
+        ->test(Index::class)
+        ->assertForbidden();
+
+    Livewire::actingAs(userWithPermissions('admin.users.view'))
+        ->test(Index::class)
+        ->call('openActions', $target->id)
+        ->assertSet('actionUserId', $target->id);
+});
+
+test('a normal user is deactivated with a success toast', function () {
+    $target = User::factory()->create();
+
+    Livewire::actingAs(userWithPermissions('admin.users.view', 'admin.users.deactivate'))
+        ->test(Index::class)
+        ->call('toggleActive', $target->id)
+        ->assertDispatched('toast', type: 'success');
+
+    expect($target->fresh()->is_active)->toBeFalse();
+});
+
+test('the edit form saves changes', function () {
+    $user = User::factory()->create(['username' => 'karim', 'name' => 'Karim Mia']);
+    $user->syncRoles(['accountant']);
+
+    Livewire::actingAs(userWithPermissions('admin.users.update'))
+        ->test(Form::class, ['user' => $user])
+        ->set('name', 'Karim Updated')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('admin.users.index'));
+
+    expect($user->fresh()->name)->toBe('Karim Updated');
+});
+
+test('create and edit pages are forbidden without their permission', function () {
+    $user = User::factory()->create(['username' => 'karim']);
+    $viewer = userWithPermissions('admin.users.view');
+
+    $this->actingAs($viewer)->get(route('admin.users.create'))->assertForbidden();
+    $this->actingAs($viewer)->get(route('admin.users.edit', $user))->assertForbidden();
+});
+
+test('choosing no branch stores null', function () {
+    $user = User::factory()->create(['username' => 'karim']);
+    $user->syncRoles(['accountant']);
+
+    Livewire::actingAs(userWithPermissions('admin.users.update'))
+        ->test(Form::class, ['user' => $user])
+        ->set('branch_id', '')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($user->fresh()->branch_id)->toBeNull();
+});
