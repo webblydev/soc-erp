@@ -61,7 +61,7 @@
                         <x-ui.button variant="outline" size="icon" class="relative size-11" :aria-label="__('Filters')">
                             <x-lucide-list-filter class="size-5" />
                             @if ($activeFilters > 0)
-                                <span class="absolute -top-1 -end-1 flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">{{ $activeFilters }}</span>
+                                <span class="absolute -top-1 -end-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-sm text-primary-foreground">{{ $activeFilters }}</span>
                             @endif
                         </x-ui.button>
                     </x-ui.drawer-trigger>
