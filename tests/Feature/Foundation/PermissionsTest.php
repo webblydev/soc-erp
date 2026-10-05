@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Modules\Foundation\Models\AuditLog;
+use App\Modules\Foundation\Services\PermissionRegistrar;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 
@@ -106,4 +107,12 @@ test('can middleware uses permissions', function () {
 
     $this->actingAs(User::factory()->create())->get('test/can')->assertForbidden();
     $this->actingAs($allowed)->get('test/can')->assertOk();
+});
+
+test('the permission registrar is rebuilt for each request or queued job', function () {
+    $first = app(PermissionRegistrar::class);
+
+    app()->forgetScopedInstances();
+
+    expect(app(PermissionRegistrar::class))->not->toBe($first);
 });
