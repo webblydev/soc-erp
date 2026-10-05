@@ -14,7 +14,7 @@ class RolePermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        $names = Permission::query()->pluck('name')->all();
+        $names = array_values(array_map(strval(...), Permission::query()->pluck('name')->all()));
 
         foreach (PermissionManifest::discover()->expandGrants($names) as $code => $granted) {
             Role::query()->where('code', $code)->firstOrFail()->grantPermissions($granted);
