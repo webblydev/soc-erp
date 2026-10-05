@@ -30,8 +30,8 @@ test('updating writes only the changed attributes with old and new values', func
 
     $entry = auditEntries($user, 'updated')->sole();
 
-    expect($entry->old_values)->toBe(['phone' => '+8801811000000'])
-        ->and($entry->new_values)->toBe(['phone' => '+8801711000000']);
+    expect($entry->old_values)->toBe(['phone' => '01811000000'])
+        ->and($entry->new_values)->toBe(['phone' => '01711000000']);
 });
 
 test('saving with only excluded attributes changed writes no updated entry', function () {
