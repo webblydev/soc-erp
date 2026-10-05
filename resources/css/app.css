@@ -1,1 +1,67 @@
 @import "./blatui.css";
+
+/* -------------------------------------------------------------------------- */
+/*  App theme — overrides the BlatUI base preset tokens. Light mode only.      */
+/* -------------------------------------------------------------------------- */
+:root {
+    /* Geometry / rhythm */
+    --radius: 0.3rem;
+    --spacing: 0.22rem;
+    --tracking-normal: 0em;
+
+    /* Fonts */
+    --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    --font-heading: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+    /* Shadow scale */
+    --shadow-2xs: 0 1px 3px 0px oklch(0% 0 0 / 0.05);
+    --shadow-xs: 0 1px 3px 0px oklch(0% 0 0 / 0.05);
+    --shadow-sm: 0 1px 3px 0px oklch(0% 0 0 / 0.1), 0 1px 2px -1px oklch(0% 0 0 / 0.1);
+    --shadow: 0 1px 3px 0px oklch(0% 0 0 / 0.1), 0 1px 2px -1px oklch(0% 0 0 / 0.1);
+    --shadow-md: 0 1px 3px 0px oklch(0% 0 0 / 0.1), 0 2px 4px -1px oklch(0% 0 0 / 0.1);
+    --shadow-lg: 0 1px 3px 0px oklch(0% 0 0 / 0.1), 0 4px 6px -1px oklch(0% 0 0 / 0.1);
+    --shadow-xl: 0 1px 3px 0px oklch(0% 0 0 / 0.1), 0 8px 10px -1px oklch(0% 0 0 / 0.1);
+    --shadow-2xl: 0 1px 3px 0px oklch(0% 0 0 / 0.25);
+
+    /* Colors */
+    --background: oklch(97.4% 0.004 240);
+    --foreground: oklch(24% 0.012 250);
+    --card: oklch(99% 0.002 240);
+    --card-foreground: oklch(24% 0.012 250);
+    --popover: oklch(99% 0.002 240);
+    --popover-foreground: oklch(24% 0.012 250);
+    --primary: oklch(50% 0.134 242.749);
+    --primary-foreground: oklch(97.7% 0.013 236.62);
+    --secondary: oklch(94.6% 0.006 240);
+    --secondary-foreground: oklch(26% 0.012 250);
+    --muted: oklch(95% 0.005 240);
+    --muted-foreground: oklch(46% 0.012 250);
+    --accent: oklch(94.6% 0.006 240);
+    --accent-foreground: oklch(26% 0.012 250);
+    --destructive: oklch(50.5% 0.225 27.325);
+    --destructive-foreground: oklch(98.5% 0 0);
+    --success: oklch(45.5% 0.125 150);
+    --success-foreground: oklch(98.5% 0.018 155);
+    --warning: oklch(48% 0.11 65);
+    --warning-foreground: oklch(98.7% 0.022 95);
+    --info: oklch(47.5% 0.16 250);
+    --info-foreground: oklch(98.5% 0.015 255);
+    --border: oklch(90.5% 0.006 240);
+    --input: oklch(89.5% 0.006 240);
+    --ring: oklch(68% 0.06 242);
+    --chart-1: oklch(82.8% 0.111 230.318);
+    --chart-2: oklch(68.5% 0.169 237.323);
+    --chart-3: oklch(58.8% 0.158 241.966);
+    --chart-4: oklch(50% 0.134 242.749);
+    --chart-5: oklch(44.3% 0.11 240.79);
+    --sidebar: oklch(96.2% 0.005 240);
+    --sidebar-foreground: oklch(24% 0.012 250);
+    --sidebar-primary: oklch(58.8% 0.158 241.966);
+    --sidebar-primary-foreground: oklch(97.7% 0.013 236.62);
+    --sidebar-accent: oklch(93.4% 0.007 240);
+    --sidebar-accent-foreground: oklch(26% 0.012 250);
+    --sidebar-border: oklch(90.5% 0.006 240);
+    --sidebar-ring: oklch(68% 0.06 242);
+}
