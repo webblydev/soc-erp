@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * Edits the single company profile row (docs/01 §3.3, §5.5).
@@ -43,19 +44,30 @@ class UpdateCompanyProfile
             'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:1024'],
         ])->validate();
 
-        $profile = CompanyProfile::current() ?? new CompanyProfile;
-        $oldLogo = $profile->logo_path;
         $newLogo = $logo?->store('company', 'public');
+        $oldLogo = null;
 
-        DB::transaction(function () use ($profile, $data, $newLogo): void {
-            $profile->fill(Arr::only($data, self::FIELDS));
+        try {
+            $profile = DB::transaction(function () use ($data, $newLogo, &$oldLogo): CompanyProfile {
+                $profile = CompanyProfile::query()->lockForUpdate()->first() ?? new CompanyProfile;
+                $oldLogo = $profile->logo_path;
+                $profile->fill(Arr::only($data, self::FIELDS));
 
-            if ($newLogo !== null && $newLogo !== false) {
-                $profile->logo_path = $newLogo;
+                if ($newLogo !== null && $newLogo !== false) {
+                    $profile->logo_path = $newLogo;
+                }
+
+                $profile->save();
+
+                return $profile;
+            });
+        } catch (Throwable $exception) {
+            if ($newLogo) {
+                Storage::disk('public')->delete($newLogo);
             }
 
-            $profile->save();
-        });
+            throw $exception;
+        }
 
         if ($newLogo && $oldLogo !== null && $oldLogo !== $newLogo) {
             Storage::disk('public')->delete($oldLogo);
