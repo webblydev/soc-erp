@@ -44,8 +44,20 @@ final class QueryExport implements FromQuery, ShouldAutoSize, WithHeadings, With
     public function map($row): array
     {
         return array_map(
-            fn (string|Closure $column): mixed => $column instanceof Closure ? $column($row) : data_get($row, $column),
+            fn (string|Closure $column): mixed => $this->neutralise($column instanceof Closure ? $column($row) : data_get($row, $column)),
             array_values($this->columns),
         );
+    }
+
+    /**
+     * Prefixes text that a spreadsheet would read as a formula (CSV/formula injection).
+     */
+    private function neutralise(mixed $value): mixed
+    {
+        if (is_string($value) && $value !== '' && str_contains("=+-@\t\r", $value[0])) {
+            return "'".$value;
+        }
+
+        return $value;
     }
 }
