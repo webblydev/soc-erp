@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Modules\Foundation\Concerns\HasRoles;
 use App\Support\AuditTrail\Auditable;
 use App\Support\AuditTrail\TracksAuthors;
 use Database\Factories\UserFactory;
@@ -43,7 +44,7 @@ use Illuminate\Support\Str;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use Auditable, HasFactory, Notifiable, SoftDeletes, TracksAuthors;
+    use Auditable, HasFactory, HasRoles, Notifiable, SoftDeletes, TracksAuthors;
 
     /**
      * Get the attributes that should be cast.
