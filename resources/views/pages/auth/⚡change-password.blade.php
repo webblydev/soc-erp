@@ -1,7 +1,6 @@
 <?php
 
 use App\Modules\Foundation\Actions\ChangePassword;
-use App\Support\Facades\Settings;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
@@ -20,7 +19,7 @@ new #[Title('Change password')] #[Layout('layouts::auth')] class extends Compone
     {
         $this->validate([
             'current_password' => ['required', 'string', 'current_password'],
-            'password' => ['required', 'string', 'confirmed', 'different:current_password', Password::min((int) Settings::get('general.password_min_length', 8))],
+            'password' => ['required', 'string', 'confirmed', 'different:current_password', Password::default()],
         ]);
 
         $changePassword->handle(Auth::user(), $this->password);
