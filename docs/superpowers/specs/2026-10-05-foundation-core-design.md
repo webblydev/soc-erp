@@ -3,7 +3,7 @@
 **Phase:** 1, sub-project 1 of 4 (Foundation core → Admin screens → Shared services → Catalog)
 **Source specs:** `docs/00-index-and-conventions.md`, `docs/01-foundation-admin.md`
 **Date:** 05 Oct 2026
-**Status:** Done, 06 Oct 2026. Implemented on branch `foundation-core` (plan: `docs/superpowers/plans/2026-10-05-foundation-core.md`).
+**Status:** Done, 06 Oct 2026. Merged into `master` (plan: `docs/superpowers/plans/2026-10-05-foundation-core.md`).
 
 ## 1. Goal
 
