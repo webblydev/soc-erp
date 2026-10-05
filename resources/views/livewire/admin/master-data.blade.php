@@ -78,9 +78,11 @@
 
     @if ($entry !== null)
         @php($isSystem = (bool) ($editingId && $rows->firstWhere('id', $editingId)?->is_system))
+        @php($canSave = $editingId ? $can('update') : $can('create'))
 
         <x-shell.sheet id="lookup-row" :title="$editingId ? __('Edit row') : __('Add row')">
             <form wire:submit="save" id="lookup-row-form" class="flex flex-col gap-4 pb-2">
+              <fieldset @disabled(! $canSave) class="contents">
                 <x-ui.field>
                     <x-ui.field-label for="form-code">{{ __('Code') }} *</x-ui.field-label>
                     <x-ui.input id="form-code" wire:model="form.code" autocapitalize="characters" class="h-11 font-mono text-base md:h-9 md:text-sm" :disabled="$isSystem" />
@@ -131,13 +133,16 @@
                     <x-ui.field-label for="form-is_active">{{ __('Active') }}</x-ui.field-label>
                 </x-ui.field>
                 <x-ui.field-error :messages="$errors->get('form.is_active')" />
+              </fieldset>
             </form>
 
             <x-slot:footer>
                 @if ($editingId && ! $isSystem && $can('deactivate'))
                     <x-ui.button variant="outline" class="text-destructive" wire:click="delete" wire:confirm="{{ __('Delete this row? Rows in use cannot be deleted.') }}">{{ __('Delete') }}</x-ui.button>
                 @endif
-                <x-ui.button type="submit" form="lookup-row-form">{{ __('Save') }}</x-ui.button>
+                @if ($canSave)
+                    <x-ui.button type="submit" form="lookup-row-form">{{ __('Save') }}</x-ui.button>
+                @endif
             </x-slot:footer>
         </x-shell.sheet>
     @endif
