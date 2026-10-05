@@ -14,6 +14,7 @@ class FoundationSeeder extends Seeder
             CompanyProfileSeeder::class,
             SettingSeeder::class,
             NumberSequenceFormatSeeder::class,
+            LocationSeeder::class,
             PermissionSeeder::class,
             RoleSeeder::class,
             RolePermissionSeeder::class,
