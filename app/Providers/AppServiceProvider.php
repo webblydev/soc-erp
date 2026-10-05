@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Support\Database\BlueprintMacros;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -15,7 +18,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        BlueprintMacros::register();
     }
 
     /**
@@ -24,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureMorphMap();
     }
 
     /**
@@ -46,5 +50,15 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    /**
+     * Register morph aliases so polymorphic columns never store class names (docs/00 §4.5).
+     */
+    protected function configureMorphMap(): void
+    {
+        Relation::enforceMorphMap([
+            'user' => User::class,
+        ]);
     }
 }
