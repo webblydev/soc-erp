@@ -82,7 +82,7 @@ Default formats seeded from `docs/00` §5.
 - **Login field:** "Username or email". `Fortify::authenticateUsing` matches `LOWER(username)` or `email`, verifies the password, rejects inactive users with a clear message.
 - **Login history:** every attempt writes `login_histories` (`user_id` null for unknown usernames).
 - **Rate limit:** the existing Fortify limiter stays at 5 / minute / IP+username (FD-AC-02).
-- **Lockout (FD-BR-04):** if the username has ≥ 10 failed attempts in the last 15 minutes, login is refused with a lockout message. Counted from `login_histories`.
+- **Lockout (FD-BR-04):** once a failure brings the username to 10 failed attempts within 15 minutes, login is refused for 15 minutes from that failure. The message shows the minutes left. Counted from `login_histories`, using the same 60-character form of the login that is stored there.
 - **On success:** stamp `last_login_at` / `last_login_ip`, record an `AuditTrail` `login` event, and record a `logout` event on logout.
 - **Middleware** (added to the authenticated web group):
   - `EnsureUserIsActive`: logs out and redirects to login when `is_active = 0`.
