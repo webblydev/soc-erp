@@ -2,6 +2,8 @@
 
 namespace App\Modules\Foundation;
 
+use App\Http\Middleware\EnforceSessionTimeout;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Models\User;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
 use App\Modules\Foundation\Models\Role;
@@ -13,6 +15,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class FoundationServiceProvider extends ServiceProvider
 {
@@ -43,5 +46,7 @@ class FoundationServiceProvider extends ServiceProvider
 
         Event::listen(Login::class, [RecordAuthenticationAudit::class, 'handleLogin']);
         Event::listen(Logout::class, [RecordAuthenticationAudit::class, 'handleLogout']);
+
+        Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class]);
     }
 }
