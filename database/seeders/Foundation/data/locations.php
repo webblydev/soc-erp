@@ -13,7 +13,7 @@ return [
     ],
     'Dhaka' => [
         'Dhaka' => [
-            'Adabor', 'Badda', 'Banani', 'Bangshal', 'Bhashantek', 'Bhatara', 'Biman Bandar', 'Cantonment', 'Chawkbazar',
+            'Adabor', 'Badda', 'Banani', 'Bangshal', 'Bhashantek', 'Biman Bandar', 'Cantonment', 'Chawkbazar',
             'Dakshinkhan', 'Darus Salam', 'Demra', 'Dhamrai', 'Dhanmondi', 'Dohar', 'Gendaria', 'Gulshan', 'Hatirjheel',
             'Hazaribagh', 'Jatrabari', 'Kadamtali', 'Kafrul', 'Kalabagan', 'Kamrangirchar', 'Keraniganj', 'Khilgaon',
             'Khilkhet', 'Kotwali', 'Lalbagh', 'Mirpur', 'Mohammadpur', 'Motijheel', 'Mugda', 'Nawabganj', 'New Market',
