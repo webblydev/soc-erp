@@ -19,7 +19,7 @@ class SettingSeeder extends Seeder
         ['group' => 'general', 'key' => 'money_grouping', 'type' => 'string', 'value' => 'bd', 'label' => 'Money digit grouping'],
         ['group' => 'general', 'key' => 'session_timeout_minutes', 'type' => 'int', 'value' => 120, 'label' => 'Session idle timeout (minutes)'],
         ['group' => 'general', 'key' => 'password_min_length', 'type' => 'int', 'value' => 8, 'label' => 'Minimum password length'],
-        ['group' => 'general', 'key' => 'require_2fa_roles', 'type' => 'json', 'value' => ['finance_manager', 'super_admin'], 'label' => 'Roles that must use two-factor authentication'],
+        ['group' => 'general', 'key' => 'require_2fa_roles', 'type' => 'roles', 'value' => [], 'label' => 'Roles that must use two-factor authentication'],
         ['group' => 'notifications', 'key' => 'email_enabled', 'type' => 'bool', 'value' => true, 'label' => 'Send email notifications'],
         ['group' => 'notifications', 'key' => 'sms_enabled', 'type' => 'bool', 'value' => false, 'label' => 'Send SMS notifications'],
         ['group' => 'notifications', 'key' => 'daily_digest_time', 'type' => 'string', 'value' => '09:00', 'label' => 'Daily digest time'],
@@ -28,10 +28,14 @@ class SettingSeeder extends Seeder
     public function run(): void
     {
         foreach (self::SETTINGS as $setting) {
-            Setting::query()->firstOrCreate(
+            $row = Setting::query()->firstOrCreate(
                 ['group' => $setting['group'], 'key' => $setting['key']],
                 ['type' => $setting['type'], 'value' => $setting['value'], 'label' => $setting['label']],
             );
+
+            if ($row->type !== $setting['type'] || $row->label !== $setting['label']) {
+                $row->update(['type' => $setting['type'], 'label' => $setting['label']]);
+            }
         }
 
         Settings::flush();
