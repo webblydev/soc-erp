@@ -4,6 +4,7 @@ use App\Modules\Foundation\Livewire\Admin\Company;
 use App\Modules\Foundation\Livewire\Admin\Locations;
 use App\Modules\Foundation\Livewire\Admin\MasterData;
 use App\Modules\Foundation\Livewire\Admin\Roles;
+use App\Modules\Foundation\Livewire\Admin\Sequences;
 use App\Modules\Foundation\Livewire\Admin\Settings;
 use App\Modules\Foundation\Livewire\Admin\Users;
 use Illuminate\Support\Facades\Route;
@@ -27,5 +28,6 @@ Route::middleware('app')->prefix('admin')->name('admin.')->group(function () {
     Route::livewire('locations', Locations::class)->middleware('can:admin.locations.view')->name('locations.index');
     Route::livewire('company', Company::class)->middleware('can:admin.company.view')->name('company.edit');
     Route::livewire('settings', Settings::class)->middleware('can:admin.settings.view')->name('settings.edit');
+    Route::livewire('sequences', Sequences::class)->middleware('can:admin.sequences.view')->name('sequences.index');
     Route::redirect('branches', '/admin/master-data/branches')->middleware('can:admin.branches.view')->name('branches.index');
 });
