@@ -1,4 +1,4 @@
-@props(['title' => null, 'back' => null])
+@props(['title' => null, 'back' => null, 'bottomNav' => true])
 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -31,7 +31,7 @@
                 <x-ui.sidebar-rail />
             </x-ui.sidebar>
 
-            <x-ui.sidebar-inset class="pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(4rem+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
+            <x-ui.sidebar-inset class="pt-[calc(3.5rem+env(safe-area-inset-top))] {{ $bottomNav ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : '' }} md:pt-0 md:pb-0">
                 <header class="hidden h-14 shrink-0 items-center gap-2 border-b px-4 md:flex">
                     <x-ui.sidebar-trigger class="-ms-1" />
                     <x-ui.separator orientation="vertical" class="me-2 h-4!" />
@@ -61,7 +61,9 @@
             </x-ui.sidebar-inset>
         </x-ui.sidebar-provider>
 
-        <x-shell.mobile-bottom-nav />
+        @if ($bottomNav)
+            <x-shell.mobile-bottom-nav />
+        @endif
 
         @persist('toast')
             <x-ui.sonner />
