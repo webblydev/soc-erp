@@ -58,12 +58,12 @@ class LoginHistory extends Component
     {
         $filters = $this->filters;
 
-        if (filled($filters['user'] ?? null)) {
-            $query->where('username_attempted', Str::lower(trim($filters['user'])));
+        if ($this->filterString('user') !== '') {
+            $query->where('username_attempted', Str::lower(trim($this->filterString('user'))));
         }
 
-        if (($filters['result'] ?? '') !== '') {
-            $query->where('succeeded', $filters['result'] === '1');
+        if (in_array($this->filterString('result'), ['0', '1'], true)) {
+            $query->where('succeeded', $this->filterString('result') === '1');
         }
 
         if (($from = $this->validDate($filters['from'] ?? null)) !== null) {
@@ -73,20 +73,6 @@ class LoginHistory extends Component
         if (($to = $this->validDate($filters['to'] ?? null)) !== null) {
             $query->whereDate('created_at', '<=', $to);
         }
-    }
-
-    /**
-     * Returns the value as a Y-m-d date, or null when it is empty or not a real date.
-     */
-    protected function validDate(mixed $value): ?string
-    {
-        if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
-            return null;
-        }
-
-        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
-
-        return $date !== false && $date->format('Y-m-d') === $value ? $value : null;
     }
 
     public function render(): View
