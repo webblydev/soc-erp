@@ -29,17 +29,7 @@ class NumberSequenceService
         $definition = NumberSequenceFormat::query()->where('document_type', $documentType)->first()
             ?? throw new InvalidArgumentException("No number format is defined for [{$documentType}].");
 
-        $fiscalYear = FiscalYear::for(
-            CarbonImmutable::parse($context['date'] ?? now()),
-            CompanyProfile::fiscalYearStartMonth(),
-        );
-
-        $tokens = [
-            'yy' => $fiscalYear->shortCode(),
-            'yyyy' => $fiscalYear->longCode(),
-            'bl_prefix' => $context['bl_prefix'] ?? '',
-            'branch' => $context['branch'] ?? '',
-        ];
+        $tokens = $this->tokens($context);
 
         $sequence = $this->lockSequence($definition, $this->scopeKey($definition, $tokens));
         $number = $this->render($sequence->format, $sequence->next_number, $tokens);
@@ -47,6 +37,35 @@ class NumberSequenceService
         $sequence->increment('next_number');
 
         return $number;
+    }
+
+    /**
+     * Render a format for display (e.g. the admin screen) without issuing a number.
+     *
+     * @param  array{date?: CarbonInterface|string, bl_prefix?: string, branch?: string}  $context
+     */
+    public function preview(string $format, int $number, array $context = []): string
+    {
+        return $this->render($format, $number, $this->tokens($context));
+    }
+
+    /**
+     * @param  array{date?: CarbonInterface|string, bl_prefix?: string, branch?: string}  $context
+     * @return array{yy: string, yyyy: string, bl_prefix: string, branch: string}
+     */
+    private function tokens(array $context): array
+    {
+        $fiscalYear = FiscalYear::for(
+            CarbonImmutable::parse($context['date'] ?? now()),
+            CompanyProfile::fiscalYearStartMonth(),
+        );
+
+        return [
+            'yy' => $fiscalYear->shortCode(),
+            'yyyy' => $fiscalYear->longCode(),
+            'bl_prefix' => $context['bl_prefix'] ?? '',
+            'branch' => $context['branch'] ?? '',
+        ];
     }
 
     /**
