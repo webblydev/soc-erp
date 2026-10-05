@@ -236,6 +236,20 @@ install_command; resources `blatui://component|block|chart/{name}`).
 - Always build UI with BlatUI components (`x-ui.*`). Install missing components with `php artisan blatui:add` instead of hand-rolling markup.
 - Light mode only. Do not add dark mode support: no `dark:` variants, `.dark` styles, or theme toggles.
 
+### Mobile UI (STRICT — must be followed on every screen)
+Below the `md` breakpoint, every screen must look and behave like a native mobile app, not a shrunken or merely responsive website. A screen is not done until its mobile layout meets all of these:
+- **App shell:** fixed top app bar (back button or menu, page title, at most 1–2 icon actions) plus a fixed bottom navigation bar (`x-ui.bottom-navigation`) with the 4–5 primary destinations. No desktop sidebar on mobile, and no hamburger menu as the only navigation.
+- **Safe areas:** respect `env(safe-area-inset-*)` on the top bar, bottom nav and sticky footers, and set `viewport-fit=cover` in the viewport meta.
+- **Lists, not tables:** data tables become tappable list rows or cards (`x-ui.item`) showing the key fields and a status badge, with a chevron that opens the detail screen. No horizontal-scrolling tables.
+- **Primary action:** a floating action button (`x-ui.speed-dial` or a fixed button) for create, sitting above the bottom nav.
+- **Overlays:** use bottom sheets (`x-ui.drawer` / `x-ui.sheet side="bottom"`) for filters, row actions, pickers and confirmations instead of centered dialogs or dropdown menus.
+- **Forms:** full-screen, one column, with a sticky bottom action bar (Save/Submit) above the keyboard. Use native-friendly input types (`tel`, `email`, `number`, `inputmode="decimal"`) and mobile pickers for dates and selects.
+- **Touch:** tap targets at least 44×44px, at least 8px between tappable items, no hover-only interactions, visible pressed/active states. Support pull-to-refresh and infinite scroll (`x-ui.infinite-scroll`) on lists instead of pagination links where practical.
+- **Navigation feel:** use `wire:navigate` for every in-app link so moves between screens feel like an app, and show a loading state (`x-ui.top-progress` / skeletons) instead of blank screens.
+- **Detail pages:** tabs become swipeable or segmented controls (`x-ui.segmented-control`), and key figures stack as summary cards at the top.
+- **No desktop leftovers:** no breadcrumbs, multi-column grids, right rails, tooltips as the only label, or text smaller than 14px on mobile.
+- Verify every new or changed screen at a 390×844 viewport before calling it done.
+
 ## Routing
 - Use a model's unique code from the data source (e.g. `code`, `sku`, `slug`) as the route key instead of the numeric `id` when one is available, via `getRouteKeyName()` or `{model:code}` route binding.
 
