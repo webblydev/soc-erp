@@ -88,7 +88,43 @@ Default role grants for every module's permissions are maintained in `database/s
 
 Indexes: `username` UNIQUE, `email` UNIQUE, `employee_id` UNIQUE, `is_active`.
 
-Spatie tables: `roles`, `permissions`, `model_has_roles`, `model_has_permissions`, `role_has_permissions` (standard).
+### 3.1.1 Roles & permissions (custom)
+
+No third-party permission package; see 00 §6.1 for runtime behaviour.
+
+**`roles`**
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| [STD] | | | |
+| code | VARCHAR(40) | no | UNIQUE; e.g. `super_admin`, `accountant`; stable, used by code |
+| name | VARCHAR(120) | no | display label |
+| description | VARCHAR(255) | yes | |
+| is_system | TINYINT(1) | no | default 0; seeded roles; cannot be deleted or have `code` changed |
+| is_active | TINYINT(1) | no | default 1 |
+| [AUDIT] | | | |
+
+**`permissions`** (seeded only, never edited in UI)
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| [STD] | | | |
+| name | VARCHAR(120) | no | UNIQUE; full ability string `{module}.{resource}.{action}` |
+| module | VARCHAR(40) | no | e.g. `crm` — groups rows in the matrix |
+| resource | VARCHAR(60) | no | e.g. `leads` — matrix row |
+| action | VARCHAR(40) | no | e.g. `view_own` — matrix column |
+| label | VARCHAR(150) | yes | |
+| sort_order | SMALLINT | no | default 0 |
+
+Index (module, resource).
+
+**`role_permissions`** — `id, role_id FK roles ON DELETE CASCADE, permission_id FK permissions ON DELETE CASCADE, created_at`. UNIQUE (role_id, permission_id).
+
+**`user_roles`** — `id, user_id FK users ON DELETE CASCADE, role_id FK roles, created_by, created_at`. UNIQUE (user_id, role_id).
+
+**`user_permissions`** (direct extra grants) — `id, user_id FK users ON DELETE CASCADE, permission_id FK permissions ON DELETE CASCADE, created_by, created_at`. UNIQUE (user_id, permission_id).
+
+Role and grant changes are audited (CM-BR-01) on the `role` / `user` auditable.
 
 ### 3.2 `login_histories`
 
@@ -396,7 +432,9 @@ Livewire: Admin\Users\Index, Admin\Users\Form, Admin\Roles\Index, Admin\Roles\Fo
           Admin\Sequences, Admin\AuditLog, Admin\LoginHistory, Profile\Edit
 Actions:  CreateUser, UpdateUser, DeactivateUser, ResetPassword, SaveRole,
           SaveLookup, SaveLocation
-Services: NumberSequenceService, SettingsRepository, LookupRegistry, AttachmentService
+Services: NumberSequenceService, SettingsRepository, LookupRegistry, AttachmentService,
+          PermissionRegistrar
+Traits:   HasRoles (User), HasDataScope, Auditable
 ```
 
 ---
