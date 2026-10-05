@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Support\Exports;
+
+use Closure;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+
+/**
+ * Excel export of a query. Columns map a heading to an attribute path or a closure.
+ */
+final class QueryExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
+{
+    /**
+     * @param  Builder<Model>  $query
+     * @param  array<string, string|Closure(Model): mixed>  $columns
+     */
+    public function __construct(private Builder $query, private array $columns) {}
+
+    /**
+     * @return Builder<Model>
+     */
+    public function query(): Builder
+    {
+        return $this->query;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function headings(): array
+    {
+        return array_keys($this->columns);
+    }
+
+    /**
+     * @param  Model  $row
+     * @return list<mixed>
+     */
+    public function map($row): array
+    {
+        return array_map(
+            fn (string|Closure $column): mixed => $column instanceof Closure ? $column($row) : data_get($row, $column),
+            array_values($this->columns),
+        );
+    }
+}
