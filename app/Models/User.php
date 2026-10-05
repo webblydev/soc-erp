@@ -8,6 +8,7 @@ use App\Support\AuditTrail\TracksAuthors;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -74,6 +75,46 @@ class User extends Authenticatable
             'last_login_at', 'last_login_ip', 'created_at', 'updated_at', 'deleted_at',
             'created_by', 'updated_by',
         ];
+    }
+
+    /**
+     * Usernames are unique case-insensitively (FD-BR-01), so they are stored lowercase.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function username(): Attribute
+    {
+        return Attribute::make(set: fn (string $value): string => Str::lower(trim($value)));
+    }
+
+    /**
+     * @return Attribute<string|null, string|null>
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(set: fn (?string $value): ?string => filled($value) ? Str::lower(trim($value)) : null);
+    }
+
+    /**
+     * @return Attribute<string|null, string|null>
+     */
+    protected function phone(): Attribute
+    {
+        return Attribute::make(set: fn (?string $value): ?string => self::normalisePhone($value));
+    }
+
+    /**
+     * Strip spaces and dashes and turn +880 / 880 prefixes into the local 0 form.
+     */
+    public static function normalisePhone(?string $phone): ?string
+    {
+        $digits = preg_replace('/[\s\-()]/', '', (string) $phone);
+
+        if ($digits === null || $digits === '') {
+            return null;
+        }
+
+        return (string) preg_replace('/^\+?880(?=1)/', '0', $digits);
     }
 
     /**
