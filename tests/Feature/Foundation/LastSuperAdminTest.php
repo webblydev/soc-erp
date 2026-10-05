@@ -6,14 +6,6 @@ use Illuminate\Validation\ValidationException;
 
 beforeEach(fn () => ensureRole('super_admin'));
 
-function superAdmin(array $attributes = []): User
-{
-    $user = User::factory()->create($attributes);
-    $user->assignRole('super_admin');
-
-    return $user;
-}
-
 test('the last active super admin is protected', function () {
     app(EnsureNotLastSuperAdmin::class)->handle(superAdmin());
 })->throws(ValidationException::class);
