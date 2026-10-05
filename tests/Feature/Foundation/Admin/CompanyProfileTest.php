@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Foundation\Actions\UpdateCompanyProfile;
 use App\Modules\Foundation\Livewire\Admin\Company;
 use App\Modules\Foundation\Models\AuditLog;
 use App\Modules\Foundation\Models\CompanyProfile;
@@ -61,4 +62,32 @@ test('logos must be png or jpg up to 1 MB', function () {
 
 test('saving without update permission is forbidden', function () {
     Livewire::actingAs(userWithPermissions('admin.company.view'))->test(Company::class)->call('save')->assertForbidden();
+});
+
+test('a failed save removes the newly stored logo', function () {
+    CompanyProfile::saving(fn () => throw new RuntimeException('boom'));
+
+    $input = CompanyProfile::current()->only(UpdateCompanyProfile::FIELDS);
+
+    expect(fn () => app(UpdateCompanyProfile::class)->handle($input, UploadedFile::fake()->image('logo.png', 200, 80)))
+        ->toThrow(RuntimeException::class);
+
+    expect(Storage::disk('public')->allFiles('company'))->toBeEmpty();
+});
+
+test('view-only users cannot upload a logo', function () {
+    Livewire::actingAs(userWithPermissions('admin.company.view'))
+        ->test(Company::class)
+        ->set('logo', UploadedFile::fake()->image('logo.png', 200, 80))
+        ->assertForbidden();
+});
+
+test('a gif logo is rejected and nothing is stored', function () {
+    Livewire::actingAs(userWithPermissions('admin.company.view', 'admin.company.update'))
+        ->test(Company::class)
+        ->set('logo', UploadedFile::fake()->image('logo.gif', 200, 80))
+        ->call('save')
+        ->assertHasErrors(['logo']);
+
+    expect(Storage::disk('public')->allFiles('company'))->toBeEmpty();
 });
