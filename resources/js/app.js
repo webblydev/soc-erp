@@ -1,9 +1,8 @@
-import "./blatui.js";
-import Alpine from "alpinejs";
 import { registerBlatUI } from "./blatui-core.js";
 import { registerCharts } from "./blatui-charts.js";
 
-registerBlatUI(Alpine);
-registerCharts(Alpine);
-window.Alpine = Alpine;
-Alpine.start();
+// Livewire bundles and starts Alpine; register BlatUI onto that instance (light-only).
+document.addEventListener("alpine:init", () => {
+    registerBlatUI(window.Alpine, { darkMode: false });
+    registerCharts(window.Alpine);
+});
