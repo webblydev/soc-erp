@@ -40,7 +40,7 @@ trait HasRoles
 
     public function assignRole(string $code): void
     {
-        $this->syncRoles([...$this->roles()->pluck('code')->all(), $code]);
+        $this->syncRoles([...array_values(array_map(strval(...), $this->roles()->pluck('code')->all())), $code]);
     }
 
     /**
@@ -55,7 +55,7 @@ trait HasRoles
             throw new InvalidArgumentException('Unknown role: '.implode(', ', array_diff($codes, $roles->pluck('code')->all())));
         }
 
-        $this->syncPivot($this->roles(), 'roles', 'roles.id', $roles->pluck('id')->all(), 'code');
+        $this->syncPivot($this->roles(), 'roles', 'roles.id', array_values(array_map(intval(...), $roles->pluck('id')->all())), 'code');
     }
 
     /**
@@ -70,7 +70,7 @@ trait HasRoles
             throw new InvalidArgumentException('Unknown permission: '.implode(', ', array_diff($names, $permissions->pluck('name')->all())));
         }
 
-        $this->syncPivot($this->directPermissions(), 'permissions', 'permissions.id', $permissions->pluck('id')->all(), 'name');
+        $this->syncPivot($this->directPermissions(), 'permissions', 'permissions.id', array_values(array_map(intval(...), $permissions->pluck('id')->all())), 'name');
     }
 
     /**
