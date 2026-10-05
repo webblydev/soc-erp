@@ -67,14 +67,14 @@ final class PermissionRegistrar
         $permissions = $roles
             ->flatMap(fn (Role $role) => $role->permissions->pluck('name'))
             ->merge($user->directPermissions()->pluck('name'))
+            ->map(fn (mixed $name): string => (string) $name)
             ->unique()
             ->sort()
-            ->values()
             ->all();
 
         return [
-            'roles' => $roles->pluck('code')->sort()->values()->all(),
-            'permissions' => $permissions,
+            'roles' => array_values($roles->map(fn (Role $role): string => $role->code)->sort()->all()),
+            'permissions' => array_values($permissions),
         ];
     }
 
