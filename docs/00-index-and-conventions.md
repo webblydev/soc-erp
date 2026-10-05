@@ -227,10 +227,14 @@ Each module spec lists its full permission set in §2.
 
 ### 7.1 Layout
 
+Desktop (`md` and up):
+
 - Left sidebar grouped by module (CRM · Projects · Estimation & Site · Sales · Purchases · Accounting · HRM · Reports · Admin); items hidden if user lacks `view` permission.
 - Top bar: global search (lead/customer/project/invoice number, phone), quick-create (+), notifications bell, user menu.
 - Breadcrumbs on every page.
-- All components will be using blat UI
+- All components use BlatUI (`x-ui.*`).
+
+Mobile (below `md`): native-app shell instead of the desktop layout (see §7.6).
 
 ### 7.2 List pages (standard)
 
@@ -259,6 +263,34 @@ Each module spec lists its full permission set in §2.
 ### 7.5 Print layouts
 
 A4 portrait, company letterhead from Company Profile (logo, name, address, phone, email, TIN/BIN), document title, number, date, party block, line table, totals, amount in words (English, BDT: "Taka … Only"), signatures row (Prepared by / Checked by / Approved by / Received by).
+
+### 7.6 Mobile app experience (strict)
+
+Below the `md` breakpoint, every screen must look and behave like a native mobile app, not a responsive website. This applies to every module screen, and the desktop standards in §7.1–7.4 change as follows:
+
+| Desktop standard | Mobile equivalent |
+|---|---|
+| Left sidebar, top bar | Fixed top app bar (back / menu, title, max 2 icon actions) + fixed bottom navigation (`x-ui.bottom-navigation`) with 4–5 primary destinations (Home · CRM · Projects · Tasks/Approvals · More). "More" opens a bottom sheet listing the remaining modules, filtered by permission. |
+| Global search, quick-create (+), notifications | Search icon in top bar opens a full-screen search; quick-create is a floating action button above the bottom nav; notifications open as a full-screen list. |
+| Breadcrumbs | Not shown. Back button in the top app bar. |
+| List page table, column chooser, bulk actions | Tappable list rows / cards (`x-ui.item`): number, title, key amount/date, status badge, chevron. No horizontal-scrolling tables. Column chooser hidden. Bulk actions via long-press / select mode with a bottom action bar. |
+| Filter panel, saved views | Filter icon opens a bottom sheet (`x-ui.drawer`); saved views as horizontally scrollable chips under the top bar. |
+| Pagination 25/50/100 | Infinite scroll (`x-ui.infinite-scroll`) + pull-to-refresh. |
+| Form page | Full-screen, single column, sticky bottom action bar (Save / Submit) respecting the safe area. Native input types (`tel`, `email`, `inputmode="decimal"`), mobile date pickers, selects open as bottom sheets with search. |
+| Line-item grids | Each line is a card; tap to edit in a bottom sheet; "+ Add line" button; running totals pinned above the action bar. |
+| Detail header actions (More ▾) | Primary action in the sticky bottom bar; other actions in a bottom sheet from the top-bar ⋮ icon. |
+| Detail tabs | Segmented control / swipeable tabs (`x-ui.segmented-control`). |
+| Right rail key figures | Summary cards stacked at the top of the Overview tab. |
+| Dialogs, dropdowns, confirmations | Bottom sheets. |
+
+Rules:
+
+- Tap targets ≥ 44×44 px; ≥ 8 px between tappable items; no hover-only interactions; visible pressed state.
+- Body text ≥ 14 px; money and status always visible on list rows without truncation.
+- Respect `env(safe-area-inset-*)`; viewport meta includes `viewport-fit=cover`.
+- All in-app links use `wire:navigate`; loading uses `x-ui.top-progress` / skeletons, never blank screens.
+- Print layouts (§7.5) and Excel exports remain available on mobile as share / download actions.
+- Each screen is verified at a 390×844 viewport before it is considered done.
 
 ---
 
@@ -305,7 +337,7 @@ A4 portrait, company letterhead from Company Profile (logo, name, address, phone
 
 - Migrations + seeders for all tables and lookup data in the spec.
 - Policies and permissions seeded and assigned to default roles.
-- All screens in §5 of the module spec built with list / form / detail standards above.
+- All screens in §5 of the module spec built with list / form / detail standards above, including the mobile app experience (§7.6) verified at 390×844.
 - Every `BR` rule has at least one automated test; every `AC` passes manual QA.
 - Audit trail visible on detail pages.
 - Exports and print layouts working.
