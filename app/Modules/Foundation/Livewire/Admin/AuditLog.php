@@ -72,20 +72,20 @@ class AuditLog extends Component
     {
         $filters = $this->filters;
 
-        if (filled($filters['user'] ?? null)) {
-            $query->whereHas('user', fn (Builder $users) => $users->where('username', Str::lower(trim($filters['user']))));
+        if ($this->filterString('user') !== '') {
+            $query->whereHas('user', fn (Builder $users) => $users->where('username', Str::lower(trim($this->filterString('user')))));
         }
 
-        if (filled($filters['type'] ?? null)) {
-            $query->where('auditable_type', $filters['type']);
+        if ($this->filterString('type') !== '') {
+            $query->where('auditable_type', $this->filterString('type'));
         }
 
-        if (filled($filters['record'] ?? null) && ctype_digit((string) $filters['record'])) {
-            $query->where('auditable_id', (int) $filters['record']);
+        if (ctype_digit($this->filterString('record'))) {
+            $query->where('auditable_id', (int) $this->filterString('record'));
         }
 
-        if (filled($filters['event'] ?? null)) {
-            $query->where('event', $filters['event']);
+        if ($this->filterString('event') !== '') {
+            $query->where('event', $this->filterString('event'));
         }
 
         if (($from = $this->validDate($filters['from'] ?? null)) !== null) {
@@ -95,20 +95,6 @@ class AuditLog extends Component
         if (($to = $this->validDate($filters['to'] ?? null)) !== null) {
             $query->whereDate('created_at', '<=', $to);
         }
-    }
-
-    /**
-     * Returns the value as a Y-m-d date, or null when it is empty or not a real date.
-     */
-    protected function validDate(mixed $value): ?string
-    {
-        if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
-            return null;
-        }
-
-        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
-
-        return $date !== false && $date->format('Y-m-d') === $value ? $value : null;
     }
 
     public function render(): View
