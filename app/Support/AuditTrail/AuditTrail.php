@@ -22,7 +22,7 @@ final class AuditTrail
         $request = app()->bound('request') ? request() : null;
 
         return AuditLog::query()->create([
-            'user_id' => $actor?->id ?? Auth::id(),
+            'user_id' => $actor !== null ? $actor->id : Auth::id(),
             'event' => $event,
             'auditable_type' => $model->getMorphClass(),
             'auditable_id' => $model->getKey(),
