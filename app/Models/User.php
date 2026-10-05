@@ -17,6 +17,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
+use Laravel\Fortify\Fortify;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 
 /**
  * @property int $id
@@ -47,7 +50,7 @@ use Illuminate\Support\Str;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use Auditable, HasFactory, HasRoles, Notifiable, SoftDeletes, TracksAuthors;
+    use Auditable, HasFactory, HasRoles, Notifiable, SoftDeletes, TracksAuthors, TwoFactorAuthenticatable;
 
     /**
      * Get the attributes that should be cast.
@@ -117,6 +120,19 @@ class User extends Authenticatable
         }
 
         return (string) preg_replace('/^\+?880(?=1)/', '0', $digits);
+    }
+
+    /**
+     * Label the authenticator entry with the username. Fortify's default reads the `login`
+     * form field name as a column, which does not exist (Fortify::username() is 'login').
+     */
+    public function twoFactorQrCodeUrl(): string
+    {
+        return app(TwoFactorAuthenticationProvider::class)->qrCodeUrl(
+            (string) config('app.name'),
+            $this->username,
+            Fortify::currentEncrypter()->decrypt($this->two_factor_secret),
+        );
     }
 
     /**
