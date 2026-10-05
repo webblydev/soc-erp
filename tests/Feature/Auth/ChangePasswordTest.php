@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use App\Support\Facades\Settings;
+use Database\Seeders\Foundation\SettingSeeder;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 
@@ -49,4 +51,18 @@ test('the new password must meet the minimum length and differ from the current 
         ->set('password_confirmation', 'password')
         ->call('save')
         ->assertHasErrors('password');
+});
+
+test('the forced change form enforces the minimum length setting', function () {
+    $this->seed(SettingSeeder::class);
+    Settings::set('general.password_min_length', 12);
+    $user = User::factory()->mustChangePassword()->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::auth.change-password')
+        ->set('current_password', 'password')
+        ->set('password', 'elevenchars')
+        ->set('password_confirmation', 'elevenchars')
+        ->call('save')
+        ->assertHasErrors(['password']);
 });
