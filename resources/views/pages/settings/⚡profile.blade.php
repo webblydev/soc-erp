@@ -2,7 +2,6 @@
 
 use App\Concerns\ProfileValidationRules;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -39,12 +38,6 @@ new #[Title('Profile settings')] class extends Component {
 
         $this->dispatch('toast', type: 'success', description: __('Profile updated.'));
     }
-
-    #[Computed]
-    public function showDeleteUser(): bool
-    {
-        return true;
-    }
 }; ?>
 
 <section class="w-full">
@@ -68,9 +61,5 @@ new #[Title('Profile settings')] class extends Component {
                 {{ __('Save') }}
             </x-ui.button>
         </form>
-
-        @if ($this->showDeleteUser)
-            <livewire:pages::settings.delete-user-form />
-        @endif
     </x-pages::settings.layout>
 </section>
