@@ -3,10 +3,14 @@
 namespace App\Modules\Foundation;
 
 use App\Models\User;
+use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Foundation\Services\PermissionRegistrar;
 use App\Support\Lookups\LookupRegistry;
 use App\Support\Settings\SettingsRepository;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -36,5 +40,8 @@ class FoundationServiceProvider extends ServiceProvider
 
             return str_contains($ability, '.') && $user->hasPermission($ability) ? true : null;
         });
+
+        Event::listen(Login::class, [RecordAuthenticationAudit::class, 'handleLogin']);
+        Event::listen(Logout::class, [RecordAuthenticationAudit::class, 'handleLogout']);
     }
 }
