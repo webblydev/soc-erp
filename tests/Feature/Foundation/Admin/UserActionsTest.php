@@ -102,3 +102,41 @@ test('changing a username after first login is audited (FD-BR-01)', function () 
     $entry = AuditLog::query()->where('auditable_type', 'user')->where('auditable_id', $user->id)->where('event', 'updated')->latest('id')->get()->first(fn (AuditLog $log) => isset($log->new_values['username']));
     expect($entry->old_values['username'])->toBe('oldname')->and($entry->new_values['username'])->toBe('newname');
 });
+
+test('only a super admin can update or deactivate a super admin account', function () {
+    $target = superAdmin();
+    superAdmin();
+
+    expectValidationError(fn () => app(UpdateUser::class)->handle($target, userInput(['username' => $target->username, 'email' => null, 'name' => 'Changed', 'password' => '', 'password_confirmation' => '', 'roles' => [Role::SUPER_ADMIN]]), $this->actor), 'user');
+    expectValidationError(fn () => app(SetUserActive::class)->handle($target, false, $this->actor), 'user');
+    expect($target->fresh()->is_active)->toBeTrue();
+});
+
+test('a non super admin cannot remove the super admin role from another user', function () {
+    $target = superAdmin();
+    superAdmin();
+
+    expectValidationError(fn () => app(UpdateUser::class)->handle($target, userInput(['username' => $target->username, 'email' => null, 'password' => '', 'password_confirmation' => '', 'roles' => ['accountant']]), $this->actor), 'user');
+});
+
+test('a non super admin can only grant direct permissions they hold', function () {
+    createPermissions('admin.roles.delete');
+
+    $created = app(CreateUser::class)->handle(userInput(['username' => 'granted', 'email' => 'g@example.com', 'permissions' => ['admin.users.create']]), $this->actor);
+    expect($created->hasPermission('admin.users.create'))->toBeTrue();
+
+    expectValidationError(fn () => app(CreateUser::class)->handle(userInput(['username' => 'denied', 'email' => 'd@example.com', 'permissions' => ['admin.roles.delete']]), $this->actor), 'permissions');
+
+    $byAdmin = app(CreateUser::class)->handle(userInput(['username' => 'byadmin', 'email' => 'b@example.com', 'permissions' => ['admin.roles.delete']]), superAdmin());
+    expect($byAdmin->hasPermission('admin.roles.delete'))->toBeTrue();
+});
+
+test('users can be deactivated through update and reactivated', function () {
+    $user = User::factory()->create();
+
+    app(UpdateUser::class)->handle($user, userInput(['username' => $user->username, 'password' => '', 'password_confirmation' => '', 'is_active' => false]), $this->actor);
+    expect($user->fresh()->is_active)->toBeFalse();
+
+    app(SetUserActive::class)->handle($user->fresh(), true, $this->actor);
+    expect($user->fresh()->is_active)->toBeTrue();
+});
