@@ -89,10 +89,13 @@ function userWithPermissions(string ...$permissions): User
     return $user;
 }
 
-function superAdmin(): User
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function superAdmin(array $attributes = []): User
 {
     ensureRole(Role::SUPER_ADMIN, ['is_system' => true]);
-    $user = User::factory()->create();
+    $user = User::factory()->create($attributes);
     $user->syncRoles([Role::SUPER_ADMIN]);
 
     return $user;
