@@ -8,7 +8,7 @@
 
 **Tech Stack:** Laravel 13, PHP 8.4, Livewire 4 (single-file `pages::` components), Fortify, BlatUI (`x-ui.*`), Tailwind v4, Pest 5, brick/money 0.15 (brick/math 1.0 — `RoundingMode::HalfUp` enum case), MySQL 8 (dev), SQLite in-memory (tests).
 
-**Status:** Done, 06 Oct 2026, on branch `foundation-core`. The visual check at 390×844 is still open and waits for the user.
+**Status:** Done, 06 Oct 2026, merged into `master`. The visual check at 390×844 is still open and waits for the user.
 
 **Spec:** `docs/superpowers/specs/2026-10-05-foundation-core-design.md` (source specs: `docs/00-index-and-conventions.md`, `docs/01-foundation-admin.md`)
 
