@@ -8,6 +8,8 @@
 
 **Tech Stack:** Laravel 13, PHP 8.4, Livewire 4 (single-file `pages::` components), Fortify, BlatUI (`x-ui.*`), Tailwind v4, Pest 5, brick/money 0.15 (brick/math 1.0 — `RoundingMode::HalfUp` enum case), MySQL 8 (dev), SQLite in-memory (tests).
 
+**Status:** Done, 06 Oct 2026, on branch `foundation-core`. The visual check at 390×844 is still open and waits for the user.
+
 **Spec:** `docs/superpowers/specs/2026-10-05-foundation-core-design.md` (source specs: `docs/00-index-and-conventions.md`, `docs/01-foundation-admin.md`)
 
 ## Global Constraints
@@ -79,7 +81,7 @@
 **Interfaces:**
 - Produces: `users` columns `name, username, email?, phone?, password, employee_id?, branch_id?, avatar_path?, is_active, must_change_password, two_factor_*, last_login_at?, last_login_ip?, remember_token, timestamps, created_by?, updated_by?, deleted_at`. `User` uses `SoftDeletes`; casts `is_active`, `must_change_password` to bool. `UserFactory` states `inactive()`, `mustChangePassword()`; default `must_change_password = false`, `is_active = true`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/Feature/Auth/AccountProvisioningTest.php`:
 
@@ -127,12 +129,12 @@ test('new users must change their password by default', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/Auth/AccountProvisioningTest.php`
 Expected: FAIL (`register` route exists; `username` column missing).
 
-- [ ] **Step 3: Disable registration and email verification**
+- [x] **Step 3: Disable registration and email verification**
 
 `config/fortify.php` — replace the `features` array:
 
@@ -160,7 +162,7 @@ git rm -q app/Actions/Fortify/CreateNewUser.php resources/views/pages/auth/regis
 `routes/web.php` — the dashboard group becomes `Route::middleware(['auth'])->group(...)`.
 `routes/settings.php` — the security group becomes `Route::middleware(['auth'])->group(...)`.
 
-- [ ] **Step 4: Rewrite the users migration**
+- [x] **Step 4: Rewrite the users migration**
 
 Replace the `users` `Schema::create` block in `database/migrations/0001_01_01_000000_create_users_table.php` (leave `password_reset_tokens` and `sessions` unchanged):
 
@@ -192,7 +194,7 @@ Replace the `users` `Schema::create` block in `database/migrations/0001_01_01_00
 
 (`branch_id` gets its FK in Task 4 once `branches` exists; `employee_id` stays unconstrained until Phase 9.)
 
-- [ ] **Step 5: Update the `User` model**
+- [x] **Step 5: Update the `User` model**
 
 `app/Models/User.php`:
 
@@ -274,7 +276,7 @@ class User extends Authenticatable
 
 Note: a freshly created model does not hold DB defaults until refreshed. That's why the test calls `refresh()`. Code that reads `is_active` right after `create()` must pass it explicitly.
 
-- [ ] **Step 6: Update the factory**
+- [x] **Step 6: Update the factory**
 
 `database/factories/UserFactory.php`: replace `definition()` and `unverified()`, and keep `withTwoFactor()`:
 
@@ -309,7 +311,7 @@ Note: a freshly created model does not hold DB defaults until refreshed. That's 
     }
 ```
 
-- [ ] **Step 7: Make the profile email optional and remove verification UI**
+- [x] **Step 7: Make the profile email optional and remove verification UI**
 
 `app/Concerns/ProfileValidationRules.php` → `emailRules()`: replace `'required'` with `'nullable'`.
 
@@ -337,12 +339,12 @@ Note: a freshly created model does not hold DB defaults until refreshed. That's 
 - Delete the `expect($user->email_verified_at)->toBeNull();` line.
 - Delete the whole `'email verification status is unchanged when email address is unchanged'` test.
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [x] **Step 8: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Auth/AccountProvisioningTest.php tests/Feature/Settings tests/Feature/DashboardTest.php`
 Expected: PASS. `tests/Feature/Auth/AuthenticationTest.php` still posts `email`, which works until Task 11.
 
-- [ ] **Step 9: Pint and commit (one commit per file)**
+- [x] **Step 9: Pint and commit (one commit per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -388,7 +390,7 @@ git add tests/Feature/Auth/AccountProvisioningTest.php && git commit -m "Test ad
   - `FoundationServiceProvider`: later tasks add bindings to `register()` and wiring to `boot()`.
   - The morph map is enforced in `AppServiceProvider::configureMorphMap()`; later tasks append aliases there.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/Feature/Foundation/AuditTrailTest.php`:
 
@@ -484,12 +486,12 @@ test('created_by and updated_by are stamped from the authenticated user', functi
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/Foundation/AuditTrailTest.php`
 Expected: FAIL (`AuditLog` class not found).
 
-- [ ] **Step 3: Blueprint macros**
+- [x] **Step 3: Blueprint macros**
 
 `app/Support/Database/BlueprintMacros.php`:
 
@@ -529,7 +531,7 @@ final class BlueprintMacros
 }
 ```
 
-- [ ] **Step 4: Foundation service provider and morph map**
+- [x] **Step 4: Foundation service provider and morph map**
 
 `app/Modules/Foundation/FoundationServiceProvider.php`:
 
@@ -581,7 +583,7 @@ Then call `BlueprintMacros::register();` in `register()`, and `$this->configureM
     }
 ```
 
-- [ ] **Step 5: Migration and model**
+- [x] **Step 5: Migration and model**
 
 ```bash
 php artisan make:migration create_audit_logs_table --path=database/migrations/foundation --no-interaction
@@ -676,7 +678,7 @@ class AuditLog extends Model
 }
 ```
 
-- [ ] **Step 6: Audit trail classes**
+- [x] **Step 6: Audit trail classes**
 
 `app/Support/AuditTrail/AuditTrail.php`:
 
@@ -870,7 +872,7 @@ trait TracksAuthors
 }
 ```
 
-- [ ] **Step 7: Make `User` auditable**
+- [x] **Step 7: Make `User` auditable**
 
 `app/Models/User.php`:
 - Add the imports `use App\Support\AuditTrail\Auditable;` and `use App\Support\AuditTrail\TracksAuthors;`.
@@ -893,14 +895,14 @@ trait TracksAuthors
     }
 ```
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [x] **Step 8: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Foundation/AuditTrailTest.php`
 Expected: PASS.
 
 Then run `php artisan test --compact` to confirm Task 1 tests are still green.
 
-- [ ] **Step 9: Pint and commit (per file)**
+- [x] **Step 9: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -932,7 +934,7 @@ git add tests/Feature/Foundation/AuditTrailTest.php && git commit -m "Test audit
   - `Money::format(Brick\Money\Money|BigNumber|int|string $amount, bool $withSymbol = true): string`.
   - `FiscalYear::for(CarbonInterface $date, int $startMonth = 7): FiscalYear` with public readonly `startYear`, `startMonth`, plus `endYear(): int`, `shortCode(): string`, `longCode(): string` and `label(): string`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/Unit/Support/MoneyTest.php`:
 
@@ -997,12 +999,12 @@ test('a january start month makes the fiscal year the calendar year', function (
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `php artisan test --compact tests/Unit/Support`
 Expected: FAIL (classes not found).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `app/Support/Money.php`:
 
@@ -1109,12 +1111,12 @@ final readonly class FiscalYear
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Unit/Support`
 Expected: PASS.
 
-- [ ] **Step 5: Pint and commit (per file)**
+- [x] **Step 5: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -1146,7 +1148,7 @@ git add tests/Unit/Support/FiscalYearTest.php && git commit -m "Test fiscal year
   - `CompanyProfile::current(): ?CompanyProfile` and `CompanyProfile::fiscalYearStartMonth(): int`, which defaults to 7.
   - Morph aliases `currency`, `branch` and `company`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/Feature/Foundation/LookupTest.php`:
 
@@ -1192,12 +1194,12 @@ test('fiscal year start month defaults to july and follows the company profile',
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/Foundation/LookupTest.php`
 Expected: FAIL (classes not found).
 
-- [ ] **Step 3: Migrations**
+- [x] **Step 3: Migrations**
 
 Generate the three migrations in this order with `php artisan make:migration <name> --path=database/migrations/foundation --no-interaction`, then fill them in.
 
@@ -1279,7 +1281,7 @@ Generate the three migrations in this order with `php artisan make:migration <na
     }
 ```
 
-- [ ] **Step 4: Lookup trait, registry, facade, config**
+- [x] **Step 4: Lookup trait, registry, facade, config**
 
 `app/Support/Lookups/IsLookup.php`:
 
@@ -1448,7 +1450,7 @@ return [
 
 (import `App\Support\Lookups\LookupRegistry`).
 
-- [ ] **Step 5: Models and factories**
+- [x] **Step 5: Models and factories**
 
 `app/Modules/Foundation/Models/Currency.php`:
 
@@ -1685,7 +1687,7 @@ class BranchFactory extends Factory
 
 `AppServiceProvider::configureMorphMap()` adds `'currency' => Currency::class, 'branch' => Branch::class, 'company' => CompanyProfile::class,`, with the matching imports.
 
-- [ ] **Step 6: Seeders**
+- [x] **Step 6: Seeders**
 
 `database/seeders/Foundation/CurrencySeeder.php`:
 
@@ -1763,12 +1765,12 @@ class CompanyProfileSeeder extends Seeder
 }
 ```
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Foundation/LookupTest.php`
 Expected: PASS.
 
-- [ ] **Step 8: Pint and commit (per file)**
+- [x] **Step 8: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -1807,7 +1809,7 @@ git add tests/Feature/Foundation/LookupTest.php && git commit -m "Test lookup op
 **Interfaces:**
 - Produces: `Settings::get(string $key, mixed $default = null): mixed`, `Settings::set(string $key, mixed $value): void`, `Settings::all(): array<string, mixed>`, `Settings::flush(): void`. Keys are `group.key`. Types: `string`, `int`, `bool`, `decimal`, `json`, `fk:<table>`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/Feature/Foundation/SettingsTest.php`:
 
@@ -1855,12 +1857,12 @@ test('re-seeding keeps values changed by an admin', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/Foundation/SettingsTest.php`
 Expected: FAIL (class not found).
 
-- [ ] **Step 3: Migration and model**
+- [x] **Step 3: Migration and model**
 
 `create_settings_table`:
 
@@ -1926,7 +1928,7 @@ class Setting extends Model
 }
 ```
 
-- [ ] **Step 4: Repository, facade, binding**
+- [x] **Step 4: Repository, facade, binding**
 
 `app/Support/Settings/SettingsRepository.php`:
 
@@ -2033,7 +2035,7 @@ class Settings extends Facade
 
 In `FoundationServiceProvider::register()`, add `$this->app->singleton(SettingsRepository::class);`. In `AppServiceProvider::configureMorphMap()`, add `'setting' => Setting::class,`. Add the imports for both.
 
-- [ ] **Step 5: Seeder**
+- [x] **Step 5: Seeder**
 
 `database/seeders/Foundation/SettingSeeder.php`:
 
@@ -2079,12 +2081,12 @@ class SettingSeeder extends Seeder
 }
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Foundation/SettingsTest.php`
 Expected: PASS.
 
-- [ ] **Step 7: Pint and commit (per file)**
+- [x] **Step 7: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -2119,7 +2121,7 @@ git add tests/Feature/Foundation/SettingsTest.php && git commit -m "Test setting
   - `Role::syncPermissions(list<string>)` and `Role::grantPermissions(list<string>)` (add-only). `Role::users()` and `Role::permissions()`.
   - Test helpers in `tests/Pest.php`: `createPermissions(string ...$names): void` and `ensureRole(string $code, array $attributes = []): Role`.
 
-- [ ] **Step 1: Add test helpers**
+- [x] **Step 1: Add test helpers**
 
 Append to `tests/Pest.php` (replace the sample `something()` function):
 
@@ -2149,7 +2151,7 @@ function ensureRole(string $code, array $attributes = []): \App\Modules\Foundati
 }
 ```
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `tests/Feature/Foundation/PermissionsTest.php`:
 
@@ -2265,12 +2267,12 @@ test('can middleware uses permissions', function () {
 });
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/Foundation/PermissionsTest.php`
 Expected: FAIL (classes not found).
 
-- [ ] **Step 4: Migration**
+- [x] **Step 4: Migration**
 
 `create_roles_and_permissions_tables`:
 
@@ -2341,7 +2343,7 @@ Expected: FAIL (classes not found).
     }
 ```
 
-- [ ] **Step 5: Models**
+- [x] **Step 5: Models**
 
 `app/Modules/Foundation/Models/Permission.php`:
 
@@ -2537,7 +2539,7 @@ class RoleFactory extends Factory
 }
 ```
 
-- [ ] **Step 6: Registrar and HasRoles**
+- [x] **Step 6: Registrar and HasRoles**
 
 `app/Modules/Foundation/Services/PermissionRegistrar.php`:
 
@@ -2751,12 +2753,12 @@ trait HasRoles
   This needs the imports `App\Models\User`, `App\Modules\Foundation\Models\Role`, `App\Modules\Foundation\Services\PermissionRegistrar` and `Illuminate\Support\Facades\Gate`.
 - In `AppServiceProvider::configureMorphMap()`, add `'role' => Role::class,`.
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Foundation/PermissionsTest.php`
 Expected: PASS.
 
-- [ ] **Step 8: Pint and commit (per file)**
+- [x] **Step 8: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -2796,7 +2798,7 @@ git add tests/Feature/Foundation/PermissionsTest.php && git commit -m "Test role
   - `RoleSeeder::ROLES`: the 10 system roles.
   - `FoundationSeeder`, which runs all foundation seeders in order. Task 9 adds the sequence seeder to it.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/Fixtures/permissions/sample.php`:
 
@@ -2907,12 +2909,12 @@ test('seeding without an initial admin password fails', function () {
 })->throws(RuntimeException::class);
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `php artisan test --compact tests/Feature/Foundation/PermissionManifestTest.php tests/Feature/Foundation/FoundationSeederTest.php`
 Expected: FAIL (classes not found).
 
-- [ ] **Step 3: Manifest loader**
+- [x] **Step 3: Manifest loader**
 
 `app/Modules/Foundation/Services/PermissionManifest.php`:
 
@@ -3006,7 +3008,7 @@ final class PermissionManifest
 }
 ```
 
-- [ ] **Step 4: Foundation manifest**
+- [x] **Step 4: Foundation manifest**
 
 `app/Modules/Foundation/permissions.php`:
 
@@ -3054,7 +3056,7 @@ return [
 ];
 ```
 
-- [ ] **Step 5: Config and seeders**
+- [x] **Step 5: Config and seeders**
 
 `config/foundation.php`:
 
@@ -3250,14 +3252,14 @@ class FoundationSeeder extends Seeder
 
 `database/seeders/DatabaseSeeder.php` — `run()` body becomes `$this->call(FoundationSeeder::class);`. Remove the `User` import, keep `WithoutModelEvents`, and import `Database\Seeders\Foundation\FoundationSeeder`.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Foundation/PermissionManifestTest.php tests/Feature/Foundation/FoundationSeederTest.php`
 Expected: PASS.
 
 Then run `php artisan migrate:fresh --seed` against the dev MySQL database. Expected: it completes without errors.
 
-- [ ] **Step 7: Pint and commit (per file)**
+- [x] **Step 7: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -3292,7 +3294,7 @@ git add tests/Feature/Foundation/FoundationSeederTest.php && git commit -m "Test
   - `EnsureNotLastSuperAdmin::handle(User $user): void`, which throws a `ValidationException` keyed `user`. Sub-project 2 calls it before deactivating, deleting or demoting a user.
   - The `HasDataScope` trait: `scopeVisibleTo(Builder, User, string $resource)`. Models must implement `dataScopeOwnerColumns(): list<string>` and `dataScopeTeamUserIds(User): list<int>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/Feature/Foundation/LastSuperAdminTest.php`:
 
@@ -3443,12 +3445,12 @@ test('super admin sees everything', function () {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `php artisan test --compact tests/Feature/Foundation/LastSuperAdminTest.php tests/Feature/Foundation/DataScopeTest.php`
 Expected: FAIL (classes not found).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `app/Modules/Foundation/Actions/EnsureNotLastSuperAdmin.php`:
 
@@ -3553,12 +3555,12 @@ trait HasDataScope
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Foundation/LastSuperAdminTest.php tests/Feature/Foundation/DataScopeTest.php`
 Expected: PASS.
 
-- [ ] **Step 5: Pint and commit (per file)**
+- [x] **Step 5: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -3589,7 +3591,7 @@ git add tests/Feature/Foundation/DataScopeTest.php && git commit -m "Test data s
   - Format tokens: `{seq:N}`, `{yy}`, `{yyyy}`, `{bl_prefix}`, `{branch}`.
   - The scope key is built from `fy:{yy}`, `bl:{prefix}` and `br:{code}`, joined with `|`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/Feature/Foundation/NumberSequenceTest.php`:
 
@@ -3674,12 +3676,12 @@ test('unknown document types are rejected', function () {
 
 (The "outside a transaction" guard can't be tested here because `RefreshDatabase` wraps every test in a transaction. It is tested in Task 10.)
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/Foundation/NumberSequenceTest.php`
 Expected: FAIL (classes not found).
 
-- [ ] **Step 3: Migration and models**
+- [x] **Step 3: Migration and models**
 
 `create_number_sequences_tables`:
 
@@ -3769,7 +3771,7 @@ class NumberSequence extends Model
 }
 ```
 
-- [ ] **Step 4: Service**
+- [x] **Step 4: Service**
 
 `app/Support/NumberSequenceService.php`:
 
@@ -3888,7 +3890,7 @@ class NumberSequenceService
 }
 ```
 
-- [ ] **Step 5: Default formats seeder**
+- [x] **Step 5: Default formats seeder**
 
 `database/seeders/Foundation/NumberSequenceFormatSeeder.php`:
 
@@ -3945,12 +3947,12 @@ class NumberSequenceFormatSeeder extends Seeder
 
 In `FoundationSeeder`, add `NumberSequenceFormatSeeder::class` after `SettingSeeder::class`.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Foundation/NumberSequenceTest.php tests/Feature/Foundation/FoundationSeederTest.php`
 Expected: PASS.
 
-- [ ] **Step 7: Pint and commit (per file)**
+- [x] **Step 7: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -3975,7 +3977,7 @@ git add tests/Feature/Foundation/NumberSequenceTest.php && git commit -m "Test n
 - Consumes: `NumberSequenceService::next()` and `NumberSequenceFormat` (Task 9).
 - Produces: the `tests/Isolated` suite, which uses `DatabaseMigrations` and has no wrapping transaction. It also adds the `mysql` group, which runs only when `DB_CONNECTION=mysql`.
 
-- [ ] **Step 1: Register the suite**
+- [x] **Step 1: Register the suite**
 
 `phpunit.xml` — inside `<testsuites>` add:
 
@@ -3993,7 +3995,7 @@ pest()->extend(TestCase::class)
     ->in('Isolated');
 ```
 
-- [ ] **Step 2: Write the tests**
+- [x] **Step 2: Write the tests**
 
 `tests/Isolated/NumberSequenceIsolationTest.php`:
 
@@ -4029,12 +4031,12 @@ test('fifty parallel requests never receive the same number', function () {
 })->group('mysql')->skip(fn () => config('database.default') !== 'mysql', 'Requires MySQL (FD-AC-05).');
 ```
 
-- [ ] **Step 3: Run the SQLite part**
+- [x] **Step 3: Run the SQLite part**
 
 Run: `php artisan test --compact tests/Isolated`
 Expected: the guard test PASSES and the concurrency test is SKIPPED.
 
-- [ ] **Step 4: Run the MySQL concurrency test**
+- [x] **Step 4: Run the MySQL concurrency test**
 
 Create the test database. Use the `mcp__lerd__db_create` tool with name `soc_erp_testing`, or run:
 
@@ -4050,7 +4052,7 @@ DB_CONNECTION=mysql DB_HOST=lerd-mysql DB_PORT=3306 DB_DATABASE=soc_erp_testing 
 
 Expected: PASS, with 50 unique numbers. If the host name doesn't resolve from the CLI, use the host and port that `mcp__lerd__status` reports. If the test fails with duplicates or deadlocks, stop and use superpowers:systematic-debugging. Don't loosen the assertion.
 
-- [ ] **Step 5: Commit (per file)**
+- [x] **Step 5: Commit (per file)**
 
 ```bash
 git add phpunit.xml && git commit -m "Add isolated test suite without wrapping transaction"
@@ -4078,7 +4080,7 @@ git add tests/Isolated/NumberSequenceIsolationTest.php && git commit -m "Test se
   - The login form field is named `login`.
   - `AuthenticateUser::LOCKOUT_ATTEMPTS = 10` and `LOCKOUT_MINUTES = 15`.
 
-- [ ] **Step 1: Update the starter test and write the failing tests**
+- [x] **Step 1: Update the starter test and write the failing tests**
 
 In `tests/Feature/Auth/AuthenticationTest.php`:
 - Replace every `'email' => $user->email,` in the POST payloads with `'login' => $user->username,`.
@@ -4186,12 +4188,12 @@ test('ten failures within fifteen minutes lock the username for fifteen minutes'
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `php artisan test --compact tests/Feature/Auth`
 Expected: FAIL (`login` field unknown, `LoginHistory` missing).
 
-- [ ] **Step 3: Migration and model**
+- [x] **Step 3: Migration and model**
 
 `create_login_histories_table`:
 
@@ -4262,7 +4264,7 @@ class LoginHistory extends Model
 }
 ```
 
-- [ ] **Step 4: Authentication action**
+- [x] **Step 4: Authentication action**
 
 `app/Modules/Foundation/Actions/AuthenticateUser.php`:
 
@@ -4346,7 +4348,7 @@ class AuthenticateUser
 }
 ```
 
-- [ ] **Step 5: Audit listener and wiring**
+- [x] **Step 5: Audit listener and wiring**
 
 `app/Modules/Foundation/Listeners/RecordAuthenticationAudit.php`:
 
@@ -4402,7 +4404,7 @@ This needs the imports `Illuminate\Auth\Events\Login`, `Illuminate\Auth\Events\L
 
 This needs the imports `App\Models\User` and `App\Modules\Foundation\Actions\AuthenticateUser`; `Request` is already imported. The login rate limiter already keys on `Fortify::username()`, which is now `login`, so it needs no change.
 
-- [ ] **Step 6: Login view**
+- [x] **Step 6: Login view**
 
 In `resources/views/pages/auth/login.blade.php`:
 - Change the header description to `__('Enter your username or email and password below to log in')`.
@@ -4418,12 +4420,12 @@ In `resources/views/pages/auth/login.blade.php`:
 
 - Delete the `@if (Route::has('register')) … @endif` block.
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Auth`
 Expected: PASS. If the two-factor starter test is skipped, that's expected because the feature is disabled.
 
-- [ ] **Step 8: Pint and commit (per file)**
+- [x] **Step 8: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -4457,7 +4459,7 @@ git add tests/Feature/Auth/LoginSecurityTest.php && git commit -m "Test login hi
   - The `password.change` route at `/password/change`.
   - `ChangePassword::handle(User $user, string $newPassword): void`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/Feature/Auth/SessionGuardsTest.php`:
 
@@ -4569,12 +4571,12 @@ test('the new password must meet the minimum length and differ from the current 
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `php artisan test --compact tests/Feature/Auth/SessionGuardsTest.php tests/Feature/Auth/ChangePasswordTest.php`
 Expected: FAIL (`password.change` route not defined).
 
-- [ ] **Step 3: Middleware**
+- [x] **Step 3: Middleware**
 
 `app/Http/Middleware/EnsureUserIsActive.php`:
 
@@ -4698,7 +4700,7 @@ This needs imports for the three middleware classes. Note that a custom group do
 
 This needs the imports `Livewire\Livewire` and the two middleware classes.
 
-- [ ] **Step 4: Action, page and routes**
+- [x] **Step 4: Action, page and routes**
 
 `app/Modules/Foundation/Actions/ChangePassword.php`:
 
@@ -4807,12 +4809,12 @@ require __DIR__.'/settings.php';
 
 `routes/settings.php`: change both `Route::middleware(['auth'])` groups to `Route::middleware('app')`.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Auth tests/Feature/Settings tests/Feature/DashboardTest.php`
 Expected: PASS.
 
-- [ ] **Step 6: Pint and commit (per file)**
+- [x] **Step 6: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -4847,7 +4849,7 @@ git add tests/Feature/Auth/ChangePasswordTest.php && git commit -m "Test forced 
   - `NavItem` is `array{label: string, route: string, icon: string, url: string, active: bool}`.
   - Config shape: `groups: list<array{key, label, icon, items: list<array{label, route, icon, permission?: ?string, mobile_primary?: bool}>}>`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/Feature/Foundation/NavigationTest.php`:
 
@@ -4906,12 +4908,12 @@ test('items are marked active for their route family', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/Foundation/NavigationTest.php`
 Expected: FAIL (class not found).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `config/navigation.php`:
 
@@ -5043,12 +5045,12 @@ final class Navigation
 
 This needs the import `App\Modules\Foundation\Services\Navigation`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Foundation/NavigationTest.php`
 Expected: PASS.
 
-- [ ] **Step 5: Pint and commit (per file)**
+- [x] **Step 5: Pint and commit (per file)**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -5079,7 +5081,7 @@ git add tests/Feature/Foundation/NavigationTest.php && git commit -m "Test navig
   - `breadcrumbs` (desktop only)
   - `quickCreate` (desktop `+`)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/Feature/Foundation/AppShellTest.php`:
 
@@ -5113,12 +5115,12 @@ test('users without an email see their username in the menus', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/Foundation/AppShellTest.php`
 Expected: FAIL.
 
-- [ ] **Step 3: Head, progress bar, Livewire config**
+- [x] **Step 3: Head, progress bar, Livewire config**
 
 `resources/views/partials/head.blade.php`: change the viewport meta to
 
@@ -5140,7 +5142,7 @@ document.addEventListener("livewire:navigated", () => {
 });
 ```
 
-- [ ] **Step 4: Shell components**
+- [x] **Step 4: Shell components**
 
 `resources/views/components/shell/sidebar-nav.blade.php`:
 
@@ -5276,7 +5278,7 @@ document.addEventListener("livewire:navigated", () => {
 </div>
 ```
 
-- [ ] **Step 5: Layouts and user menu**
+- [x] **Step 5: Layouts and user menu**
 
 `resources/views/layouts/app.blade.php`:
 
@@ -5376,14 +5378,14 @@ document.addEventListener("livewire:navigated", () => {
 
 `resources/views/components/desktop-user-menu.blade.php`: replace both `{{ auth()->user()->email }}` occurrences with `{{ auth()->user()->email ?? auth()->user()->username }}`.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/Foundation/AppShellTest.php tests/Feature/DashboardTest.php tests/Feature/Settings`
 Expected: PASS.
 
 If a lucide icon name doesn't exist (for example `house` or `chart-column` in this version of `mallardduck/blade-lucide-icons`), the render throws. Check with `ls vendor/mallardduck/blade-lucide-icons/resources/svg | grep -E '^(house|chart-column|folder-kanban|handshake|id-card|landmark|ruler|ellipsis|circle-user)\.svg'` and swap in the closest existing name.
 
-- [ ] **Step 7: Build and verify visually at 390×844 and desktop**
+- [ ] **Step 7: Build and verify visually at 390×844 and desktop** (skipped: browser checks only when the user asks)
 
 Run: `npm run build`. Then seed a user:
 
@@ -5402,7 +5404,7 @@ Then check at **1280×800**: the sidebar shows Home, and the desktop header show
 
 Fix any issue before committing. Record a screenshot for each viewport in the task report.
 
-- [ ] **Step 8: Commit (per file)**
+- [x] **Step 8: Commit (per file)**
 
 ```bash
 git add resources/views/partials/head.blade.php && git commit -m "Allow drawing under safe areas with viewport-fit=cover"
@@ -5421,20 +5423,20 @@ git add tests/Feature/Foundation/AppShellTest.php && git commit -m "Test app she
 
 ### Task 15: Final checks
 
-- [ ] **Step 1: Format and static analysis**
+- [x] **Step 1: Format and static analysis**
 
 Run: `vendor/bin/pint --format agent`. Expected: no changes. If anything changes, commit it per file.
 Run: `vendor/bin/phpstan analyse --memory-limit=1G`. Expected: no errors. Fix any reported errors, commit per file, and re-run.
 
-- [ ] **Step 2: Full SQLite suite**
+- [x] **Step 2: Full SQLite suite**
 
 Run: `php artisan test --compact`
 Expected: everything passes. The MySQL concurrency test is skipped.
 
-- [ ] **Step 3: Fresh seed**
+- [x] **Step 3: Fresh seed**
 
 Run: `php artisan migrate:fresh --seed` on the dev database. Expected: it succeeds. Running `php artisan db:seed` again adds no duplicate rows.
 
-- [ ] **Step 4: Ask the user to run the full suite**
+- [x] **Step 4: Ask the user to run the full suite**
 
 Ask the user to run `php artisan test --compact` themselves, and the MySQL group command from Task 10 Step 4.
