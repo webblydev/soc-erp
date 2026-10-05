@@ -3,6 +3,9 @@
 use App\Models\User;
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
+use Database\Seeders\Foundation\PermissionSeeder;
+use Database\Seeders\Foundation\RolePermissionSeeder;
+use Database\Seeders\Foundation\RoleSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -99,4 +102,12 @@ function superAdmin(array $attributes = []): User
     $user->syncRoles([Role::SUPER_ADMIN]);
 
     return $user;
+}
+
+/**
+ * Seed every module permission, the system roles and their default grants.
+ */
+function seedAccessControl(): void
+{
+    test()->seed([PermissionSeeder::class, RoleSeeder::class, RolePermissionSeeder::class]);
 }
