@@ -49,6 +49,8 @@ class FoundationServiceProvider extends ServiceProvider
         Event::listen(Login::class, [RecordAuthenticationAudit::class, 'handleLogin']);
         Event::listen(Logout::class, [RecordAuthenticationAudit::class, 'handleLogout']);
 
+        Livewire::addLocation(classNamespace: 'App\\Modules\\Foundation\\Livewire');
+
         Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class]);
     }
 }
