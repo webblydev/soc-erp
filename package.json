@@ -24,6 +24,7 @@
         "@alpinejs/anchor": "^3.17.4",
         "@alpinejs/collapse": "^3.17.4",
         "@alpinejs/focus": "^3.17.4",
-        "alpinejs": "^3.17.4"
+        "alpinejs": "^3.17.4",
+        "apexcharts": "^7.8.0"
     }
 }
