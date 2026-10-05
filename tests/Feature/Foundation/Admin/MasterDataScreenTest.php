@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Modules\Foundation\Livewire\Admin\MasterData;
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\Currency;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
 test('master data needs a view permission for at least one table', function () {
@@ -85,4 +86,58 @@ test('sorting needs update permission and a row from the open table', function (
         ->test(MasterData::class, ['table' => 'branches'])
         ->call('sort', $currency->id + 1000, 0)
         ->assertNotFound();
+});
+
+test('the open table cannot be switched from the client', function () {
+    Currency::factory()->create(['code' => 'ZZZ']);
+
+    $component = Livewire::actingAs(userWithPermissions('admin.branches.view'))
+        ->test(MasterData::class, ['table' => 'branches']);
+
+    expect(fn () => $component->set('table', 'currencies'))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
+
+    $component->assertDontSee('ZZZ');
+});
+
+test('sorting a row that belongs to another table is a 404', function () {
+    $branch = Branch::factory()->create();
+    $currency = Currency::factory()->count(Branch::query()->max('id') + 2)->create()->last();
+
+    expect(Branch::query()->whereKey($currency->id)->exists())->toBeFalse();
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.update'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('sort', $currency->id, 0)
+        ->assertNotFound();
+
+    expect($branch->fresh()->sort_order)->toBe($branch->sort_order);
+});
+
+test('creating without the create permission is forbidden', function () {
+    Livewire::actingAs(userWithPermissions('admin.branches.view'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('create')
+        ->assertForbidden();
+});
+
+test('deleting without the deactivate permission is forbidden', function () {
+    $branch = Branch::factory()->create();
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.update'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('edit', $branch->id)
+        ->call('delete')
+        ->assertForbidden();
+
+    expect(Branch::query()->whereKey($branch->id)->exists())->toBeTrue();
+});
+
+test('viewers without update permission get no save button', function () {
+    Branch::factory()->create();
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->assertDontSee('form="lookup-row-form"', false)
+        ->assertSee('disabled', false);
 });
