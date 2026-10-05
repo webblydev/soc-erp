@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Foundation\Livewire\Admin\Locations;
 use App\Modules\Foundation\Livewire\Admin\MasterData;
 use App\Modules\Foundation\Livewire\Admin\Roles;
 use App\Modules\Foundation\Livewire\Admin\Users;
@@ -21,5 +22,6 @@ Route::middleware('app')->prefix('admin')->name('admin.')->group(function () {
     // Master data carries no `can:` middleware: the permission is per table, so mount() and every action authorize it.
     Route::livewire('master-data', MasterData::class)->name('master-data.index');
     Route::livewire('master-data/{table}', MasterData::class)->name('master-data.show');
+    Route::livewire('locations', Locations::class)->middleware('can:admin.locations.view')->name('locations.index');
     Route::redirect('branches', '/admin/master-data/branches')->middleware('can:admin.branches.view')->name('branches.index');
 });
