@@ -45,3 +45,13 @@ test('login history exports to excel', function () {
 
     Excel::assertDownloaded('/^login-history-\d{8}-\d{6}\.xlsx$/');
 });
+
+test('array-valued filters are ignored instead of failing', function () {
+    Livewire::actingAs(userWithPermissions('admin.login_history.view'))
+        ->test(LoginHistoryScreen::class)
+        ->set('filters.user', ['x'])
+        ->set('filters.result', ['x'])
+        ->assertOk()
+        ->assertSee('goodlogin')
+        ->assertSee('badlogin');
+});
