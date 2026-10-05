@@ -1,7 +1,9 @@
 <?php
 
+use App\Modules\Foundation\Livewire\Admin\AuditLog;
 use App\Modules\Foundation\Livewire\Admin\Company;
 use App\Modules\Foundation\Livewire\Admin\Locations;
+use App\Modules\Foundation\Livewire\Admin\LoginHistory;
 use App\Modules\Foundation\Livewire\Admin\MasterData;
 use App\Modules\Foundation\Livewire\Admin\Roles;
 use App\Modules\Foundation\Livewire\Admin\Sequences;
@@ -29,5 +31,7 @@ Route::middleware('app')->prefix('admin')->name('admin.')->group(function () {
     Route::livewire('company', Company::class)->middleware('can:admin.company.view')->name('company.edit');
     Route::livewire('settings', Settings::class)->middleware('can:admin.settings.view')->name('settings.edit');
     Route::livewire('sequences', Sequences::class)->middleware('can:admin.sequences.view')->name('sequences.index');
+    Route::livewire('audit', AuditLog::class)->middleware('can:admin.audit.view')->name('audit.index');
+    Route::livewire('login-history', LoginHistory::class)->middleware('can:admin.login_history.view')->name('login-history.index');
     Route::redirect('branches', '/admin/master-data/branches')->middleware('can:admin.branches.view')->name('branches.index');
 });
