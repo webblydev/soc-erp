@@ -47,17 +47,18 @@ Each module spec follows the same layout:
 
 | Concern | Decision |
 |---|---|
-| Framework | Laravel (current supported major), PHP 8.3+ |
-| UI | Livewire 3 + Alpine.js + Tailwind CSS; server-rendered; BLAT UI Library |
+| Framework | Laravel 13, PHP 8.4 |
+| UI | Livewire 4 + Alpine.js + Tailwind CSS v4; server-rendered; BlatUI components (`x-ui.*`) only — no Flux |
 | DB | MySQL 8.0 (InnoDB, `utf8mb4_unicode_ci`) |
 | Auth | Laravel session auth (Fortify)|
-| Permissions | `spatie/laravel-permission` Custom User Role + Permission Setup with data visibility access |
-| Audit | `owen-it/laravel-auditing` or custom observer writing to `audit_logs` |
+| Permissions | Custom role + permission system (no third-party package) with data-scope visibility; see §6 and 01 §3.1.1 |
+| Audit | Custom `Auditable` trait + observer writing to `audit_logs` (01 §3.11) |
 | Files | Laravel filesystem, `local` private disk (S3-compatible later); downloads via signed routes |
 | PDF | `carlos-meneses/laravel-mpdf` |
 | Excel | `maatwebsite/excel` for exports/imports |
 | Queue | Database queue driver (Redis later) for notifications, exports, report builds |
 | Scheduler | Laravel scheduler (reminders, overdue checks, daily backups) |
+| Money | `brick/money` |
 | Tests | Pest; feature tests per business rule and per posting rule |
 
 ---
@@ -211,6 +212,14 @@ Data scope permissions (checked in policies and list queries):
 Example set for leads: `crm.leads.view_own`, `crm.leads.view_team`, `crm.leads.view_all`, `crm.leads.create`, `crm.leads.update`, `crm.leads.delete`, `crm.leads.assign`, `crm.leads.convert`, `crm.leads.export`.
 
 Each module spec lists its full permission set in §2.
+
+### 6.1 Implementation (custom, no package)
+
+- Tables `roles`, `permissions`, `role_permissions`, `user_roles`, `user_permissions` (01 §3.1.1).
+- Permissions are seeded from each module's §2 by `PermissionSeeder`; the code never creates permissions at runtime.
+- `App\Modules\Foundation\Services\PermissionRegistrar` loads a user's effective permissions (role grants ∪ direct grants) once per request and caches them per user (cache key busted on any role / grant change).
+- `Gate::before` returns `true` for `super_admin`; otherwise every ability string `{module}.{resource}.{action}` resolves through `User::hasPermission()`. Policies, `@can`, `$this->authorize()` and route `can:` middleware all work unchanged.
+- Data scope: models with scoped lists use the `HasDataScope` trait, exposing `scopeVisibleTo(Builder $query, User $user, string $resource)`. It applies `view_all` → no filter, `view_team` → team / project members, `view_own` → owner / assignee / creator, none → empty result. Each model declares its owner and team columns.
 
 ---
 
