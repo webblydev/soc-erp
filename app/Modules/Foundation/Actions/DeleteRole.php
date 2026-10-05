@@ -13,16 +13,20 @@ class DeleteRole
      */
     public function handle(Role $role): void
     {
-        if ($role->is_system) {
-            throw ValidationException::withMessages(['role' => __('System roles cannot be deleted.')]);
-        }
+        DB::transaction(function () use ($role): void {
+            $locked = Role::query()->whereKey($role->id)->lockForUpdate()->first() ?? $role;
 
-        $holders = $role->users()->count();
+            if ($locked->is_system) {
+                throw ValidationException::withMessages(['role' => __('System roles cannot be deleted.')]);
+            }
 
-        if ($holders > 0) {
-            throw ValidationException::withMessages(['role' => trans_choice('Remove this role from its :count user first.|Remove this role from its :count users first.', $holders, ['count' => $holders])]);
-        }
+            $holders = $locked->users()->count();
 
-        DB::transaction(fn () => $role->delete());
+            if ($holders > 0) {
+                throw ValidationException::withMessages(['role' => trans_choice('Remove this role from its :count user first.|Remove this role from its :count users first.', $holders, ['count' => $holders])]);
+            }
+
+            $locked->delete();
+        });
     }
 }
