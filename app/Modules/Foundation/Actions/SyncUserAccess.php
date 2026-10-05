@@ -33,7 +33,29 @@ class SyncUserAccess
             $this->ensureNotLastSuperAdmin->handle($user);
         }
 
+        $this->ensureActorMayGrant($user, $permissions, $actor);
+
         $user->syncRoles(array_values($roles));
         $user->syncDirectPermissions(array_values($permissions));
+    }
+
+    /**
+     * @param  list<string>  $permissions
+     *
+     * @throws ValidationException
+     */
+    private function ensureActorMayGrant(User $user, array $permissions, User $actor): void
+    {
+        if ($actor->hasRole(Role::SUPER_ADMIN)) {
+            return;
+        }
+
+        $current = $user->exists ? $user->directPermissions()->pluck('name')->all() : [];
+
+        foreach (array_diff($permissions, $current) as $name) {
+            if (! $actor->hasPermission($name)) {
+                throw ValidationException::withMessages(['permissions' => __('You can only grant permissions you hold.')]);
+            }
+        }
     }
 }
