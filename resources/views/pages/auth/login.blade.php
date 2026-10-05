@@ -1,6 +1,6 @@
 <x-layouts::auth :title="__('Log in')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
+        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your username or email and password below to log in')" />
 
         <x-auth-session-status class="text-center" :status="session('status')" />
 
@@ -8,9 +8,9 @@
             @csrf
 
             <x-ui.field>
-                <x-ui.field-label for="email">{{ __('Email address') }}</x-ui.field-label>
-                <x-ui.input id="email" name="email" type="email" :value="old('email')" required autofocus autocomplete="email" placeholder="email@example.com" :aria-invalid="$errors->has('email') ? 'true' : null" />
-                <x-ui.field-error :messages="$errors->get('email')" />
+                <x-ui.field-label for="login">{{ __('Username or email') }}</x-ui.field-label>
+                <x-ui.input id="login" name="login" type="text" :value="old('login')" required autofocus autocapitalize="none" autocomplete="username" :aria-invalid="$errors->has('login') ? 'true' : null" />
+                <x-ui.field-error :messages="$errors->get('login')" />
             </x-ui.field>
 
             <x-ui.field>
@@ -36,11 +36,5 @@
             </x-ui.button>
         </form>
 
-        @if (Route::has('register'))
-            <div class="space-x-1 text-center text-sm text-muted-foreground rtl:space-x-reverse">
-                <span>{{ __('Don\'t have an account?') }}</span>
-                <x-ui.link :href="route('register')" wire:navigate>{{ __('Sign up') }}</x-ui.link>
-            </div>
-        @endif
     </div>
 </x-layouts::auth>
