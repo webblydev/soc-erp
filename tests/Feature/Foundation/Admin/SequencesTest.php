@@ -64,3 +64,41 @@ test('the counter being edited cannot be chosen from the client', function () {
         ->test(Sequences::class)
         ->set('counterId', $this->counter->id);
 })->throws(CannotUpdateLockedPropertyException::class);
+
+test('a format must keep the tokens its reset and scope rely on', function () {
+    expectValidationError(fn () => app(UpdateSequenceFormat::class)->handle($this->definition, 'INV-{seq:5}'), 'format');
+
+    $perLine = NumberSequenceFormat::query()->create(['document_type' => 'quotation', 'format' => 'Q-{bl_prefix}-{seq:4}', 'reset_policy' => 'never', 'scope_by' => 'business_line']);
+    expectValidationError(fn () => app(UpdateSequenceFormat::class)->handle($perLine, 'Q-{seq:4}'), 'format');
+
+    $perBranch = NumberSequenceFormat::query()->create(['document_type' => 'receipt', 'format' => 'R-{branch}-{seq:4}', 'reset_policy' => 'never', 'scope_by' => 'branch']);
+    expectValidationError(fn () => app(UpdateSequenceFormat::class)->handle($perBranch, 'R-{seq:4}'), 'format');
+
+    $plain = NumberSequenceFormat::query()->create(['document_type' => 'customer', 'format' => 'C-{yy}-{seq:6}', 'reset_policy' => 'never']);
+    app(UpdateSequenceFormat::class)->handle($plain, 'C-{seq:6}');
+    expect($plain->fresh()->format)->toBe('C-{seq:6}');
+});
+
+test('a format must contain exactly one seq token', function () {
+    expectValidationError(fn () => app(UpdateSequenceFormat::class)->handle($this->definition, 'INV-{yy}-{seq:3}{seq:2}'), 'format');
+});
+
+test('the next number cannot exceed the column maximum', function () {
+    Livewire::actingAs(userWithPermissions('admin.sequences.view', 'admin.sequences.update'))
+        ->test(Sequences::class)
+        ->call('editCounter', $this->counter->id)
+        ->set('nextNumber', 4294967296)
+        ->call('saveCounter')
+        ->assertHasErrors(['nextNumber']);
+});
+
+test('saving without admin.sequences.update is forbidden', function (string $method, array $arguments) {
+    Livewire::actingAs(userWithPermissions('admin.sequences.view'))
+        ->test(Sequences::class)
+        ->call($method, ...$arguments)
+        ->assertForbidden();
+})->with([
+    'editCounter' => ['editCounter', [1]],
+    'saveFormat' => ['saveFormat', []],
+    'saveCounter' => ['saveCounter', []],
+]);
