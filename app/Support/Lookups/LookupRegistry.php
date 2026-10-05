@@ -2,6 +2,8 @@
 
 namespace App\Support\Lookups;
 
+use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -9,15 +11,18 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use stdClass;
 
+/**
+ * @phpstan-type LookupEntry array{label: string, module: string, model: class-string<Model>, permission: string, extra_fields: array<string, array{type: string, label: string}>, single_flags?: list<string>}
+ */
 final class LookupRegistry
 {
     /**
-     * @param  array<string, array{label: string, module: string, permission: string, extra_fields?: list<string>}>  $tables
+     * @param  array<string, LookupEntry>  $tables
      */
     public function __construct(private array $tables) {}
 
     /**
-     * @return array<string, array{label: string, module: string, permission: string, extra_fields?: list<string>}>
+     * @return array<string, LookupEntry>
      */
     public function all(): array
     {
@@ -25,12 +30,34 @@ final class LookupRegistry
     }
 
     /**
-     * @return array{label: string, module: string, permission: string, extra_fields?: list<string>}
+     * @return LookupEntry
      */
     public function get(string $table): array
     {
         return $this->tables[$table]
             ?? throw new InvalidArgumentException("Lookup table [{$table}] is not registered.");
+    }
+
+    /**
+     * Tables the user may open in Master Data, in registry order.
+     *
+     * @return array<string, LookupEntry>
+     */
+    public function visibleTo(User $user): array
+    {
+        return array_filter($this->tables, fn (array $entry): bool => $user->can($entry['permission'].'.view'));
+    }
+
+    public function allows(User $user, string $table, string $action): bool
+    {
+        return $user->can($this->get($table)['permission'].'.'.$action);
+    }
+
+    public function modelFor(string $table): Model
+    {
+        $class = $this->get($table)['model'];
+
+        return new $class;
     }
 
     /**
