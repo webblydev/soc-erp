@@ -6,6 +6,7 @@ use App\Http\Middleware\EnforceSessionTimeout;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Models\User;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
+use App\Modules\Foundation\Livewire\Profile\TwoFactor;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Foundation\Services\Navigation;
 use App\Modules\Foundation\Services\PermissionRegistrar;
@@ -50,6 +51,8 @@ class FoundationServiceProvider extends ServiceProvider
         Event::listen(Logout::class, [RecordAuthenticationAudit::class, 'handleLogout']);
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Foundation\\Livewire');
+
+        Livewire::component('foundation.profile.two-factor', TwoFactor::class);
 
         Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class]);
     }
