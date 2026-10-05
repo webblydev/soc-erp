@@ -9,4 +9,5 @@ Route::middleware('app')->group(function () {
     Route::livewire('password/change', 'pages::auth.change-password')->name('password.change');
 });
 
+require __DIR__.'/modules/foundation.php';
 require __DIR__.'/settings.php';
