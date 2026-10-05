@@ -60,6 +60,11 @@ class Company extends Component
         }
     }
 
+    public function updatingLogo(): void
+    {
+        $this->authorize('admin.company.update');
+    }
+
     public function save(UpdateCompanyProfile $updateCompanyProfile): void
     {
         $this->authorize('admin.company.update');
