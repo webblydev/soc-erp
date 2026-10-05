@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 /**
  * Creates or edits a location. The level follows from the parent, and full_path is rebuilt
@@ -39,12 +40,14 @@ class SaveLocation
         $this->ensureValidParent($location, $parent, $level);
         $this->ensureUniqueName($location, $parentId, $data['name']);
 
-        return DB::transaction(function () use ($location, $data, $parentId, $parent, $level): Location {
+        return DB::transaction(function () use ($location, $data, $input, $parentId, $parent, $level): Location {
             $pathChanged = ! $location->exists || $location->name !== $data['name'] || $location->parent_id !== $parentId;
 
             $location->fill([
                 'name' => $data['name'],
-                'name_bn' => $data['name_bn'] ?? $location->name_bn,
+                'name_bn' => array_key_exists('name_bn', $input)
+                    ? (($data['name_bn'] ?? null) === '' ? null : ($data['name_bn'] ?? null))
+                    : $location->name_bn,
                 'parent_id' => $parentId,
                 'location_level_id' => $level->id,
                 'full_path' => $this->pathFor($parent, $data['name']),
@@ -60,7 +63,18 @@ class SaveLocation
 
     private function levelBelow(?Location $parent): LocationLevel
     {
-        $index = $parent === null ? 0 : array_search($parent->level->code, LocationLevel::ORDER, true) + 1;
+        $index = 0;
+
+        if ($parent !== null) {
+            $parentIndex = array_search($parent->level->code, LocationLevel::ORDER, true);
+
+            if ($parentIndex === false) {
+                throw new LogicException("Unknown location level [{$parent->level->code}].");
+            }
+
+            $index = $parentIndex + 1;
+        }
+
         $code = LocationLevel::ORDER[$index] ?? null;
 
         if ($code === null) {
@@ -72,7 +86,7 @@ class SaveLocation
 
     private function ensureValidParent(Location $location, ?Location $parent, LocationLevel $level): void
     {
-        if (! $location->exists || $parent === null) {
+        if (! $location->exists) {
             return;
         }
 
