@@ -95,3 +95,32 @@ test('ten failures within fifteen minutes lock the username for fifteen minutes'
     attemptLogin('rahim');
     $this->assertAuthenticated();
 });
+
+test('long email addresses are locked out like any other login', function () {
+    $email = str_repeat('a', 60).'@soc-consultant.test';
+    User::factory()->create(['email' => $email]);
+
+    foreach (range(1, 10) as $attempt) {
+        LoginHistory::query()->create(['username_attempted' => mb_substr($email, 0, 60), 'succeeded' => false, 'ip_address' => '10.0.0.'.$attempt]);
+    }
+
+    attemptLogin($email)->assertSessionHasErrors('login');
+    $this->assertGuest();
+});
+
+test('the lock lasts fifteen minutes from the tenth failure', function () {
+    User::factory()->create(['username' => 'rahim']);
+
+    foreach (range(1, 10) as $attempt) {
+        LoginHistory::query()->create(['username_attempted' => 'rahim', 'succeeded' => false, 'ip_address' => '10.0.0.1']);
+        $this->travel(84)->seconds();
+    }
+
+    $this->travel(2)->minutes();
+    attemptLogin('rahim')->assertSessionHasErrors('login');
+    $this->assertGuest();
+
+    $this->travel(14)->minutes();
+    attemptLogin('rahim');
+    $this->assertAuthenticated();
+});
