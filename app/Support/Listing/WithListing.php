@@ -21,6 +21,8 @@ trait WithListing
 
     public const PER_PAGE_OPTIONS = [25, 50, 100];
 
+    public const MAX_MOBILE_ROWS = 500;
+
     #[Url(except: '')]
     public string $search = '';
 
@@ -97,7 +99,7 @@ trait WithListing
 
     public function loadMore(): void
     {
-        $this->limit += 25;
+        $this->limit = min(self::MAX_MOBILE_ROWS, max(25, intdiv($this->limit, 25) * 25) + 25);
     }
 
     public function clearFilters(): void
@@ -122,6 +124,8 @@ trait WithListing
      */
     public function mobileRows(): Collection
     {
+        $this->limit = min(self::MAX_MOBILE_ROWS, max(25, intdiv($this->limit, 25) * 25));
+
         $rows = $this->filteredQuery()->limit($this->limit + 1)->get();
         $this->hasMoreRows = $rows->count() > $this->limit;
 
@@ -152,6 +156,7 @@ trait WithListing
 
         if ($column !== null) {
             $query->reorder($column, $this->direction === 'desc' ? 'desc' : 'asc');
+            $query->orderBy($query->getModel()->getQualifiedKeyName());
         }
 
         return $query;
