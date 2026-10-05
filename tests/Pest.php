@@ -9,6 +9,7 @@ use Database\Seeders\Foundation\RoleSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /*
@@ -110,4 +111,20 @@ function superAdmin(array $attributes = []): User
 function seedAccessControl(): void
 {
     test()->seed([PermissionSeeder::class, RoleSeeder::class, RolePermissionSeeder::class]);
+}
+
+/**
+ * Assert the callback throws a ValidationException with an error on the given key.
+ */
+function expectValidationError(Closure $callback, string $key): void
+{
+    try {
+        $callback();
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey($key);
+
+        return;
+    }
+
+    test()->fail("Expected a validation error on [{$key}].");
 }
