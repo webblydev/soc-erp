@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\CompanyProfile;
 use App\Modules\Foundation\Models\Currency;
+use App\Modules\Foundation\Models\Location;
+use App\Modules\Foundation\Models\LocationLevel;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Foundation\Models\Setting;
 use App\Support\Database\BlueprintMacros;
@@ -68,6 +70,8 @@ class AppServiceProvider extends ServiceProvider
             'company' => CompanyProfile::class,
             'setting' => Setting::class,
             'role' => Role::class,
+            'location' => Location::class,
+            'location_level' => LocationLevel::class,
         ]);
     }
 }
