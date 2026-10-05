@@ -16,6 +16,17 @@ return [
         ['key' => 'accounting', 'label' => 'Accounting', 'icon' => 'landmark', 'items' => []],
         ['key' => 'hrm', 'label' => 'HRM', 'icon' => 'id-card', 'items' => []],
         ['key' => 'reports', 'label' => 'Reports', 'icon' => 'chart-column', 'items' => []],
-        ['key' => 'admin', 'label' => 'Admin', 'icon' => 'shield', 'items' => []],
+        ['key' => 'admin', 'label' => 'Admin', 'icon' => 'shield', 'items' => [
+            ['label' => 'Users', 'route' => 'admin.users.index', 'icon' => 'users', 'permission' => 'admin.users.view'],
+            ['label' => 'Roles', 'route' => 'admin.roles.index', 'icon' => 'shield-check', 'permission' => 'admin.roles.view'],
+            ['label' => 'Master data', 'route' => 'admin.master-data.index', 'icon' => 'list', 'permission' => 'admin.master_data.view'],
+            ['label' => 'Branches', 'route' => 'admin.branches.index', 'icon' => 'building-2', 'permission' => 'admin.branches.view'],
+            ['label' => 'Locations', 'route' => 'admin.locations.index', 'icon' => 'map-pin', 'permission' => 'admin.locations.view'],
+            ['label' => 'Company', 'route' => 'admin.company.edit', 'icon' => 'building', 'permission' => 'admin.company.view'],
+            ['label' => 'Settings', 'route' => 'admin.settings.edit', 'icon' => 'settings', 'permission' => 'admin.settings.view'],
+            ['label' => 'Number sequences', 'route' => 'admin.sequences.index', 'icon' => 'hash', 'permission' => 'admin.sequences.view'],
+            ['label' => 'Audit log', 'route' => 'admin.audit.index', 'icon' => 'history', 'permission' => 'admin.audit.view'],
+            ['label' => 'Login history', 'route' => 'admin.login-history.index', 'icon' => 'log-in', 'permission' => 'admin.login_history.view'],
+        ]],
     ],
 ];
