@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Modules\Foundation\Actions\SaveLocation;
 use App\Modules\Foundation\Livewire\Admin\Locations;
 use App\Modules\Foundation\Models\Location;
+use App\Modules\Foundation\Services\PermissionRegistrar;
 use Database\Seeders\Foundation\LocationLevelSeeder;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
@@ -85,4 +86,47 @@ test('toggling and editing are refused without permission', function () {
         ->test(Locations::class)
         ->call('edit', $this->district->id)
         ->assertForbidden();
+});
+
+test('expanded ids cannot be set from the client', function () {
+    $component = Livewire::actingAs(userWithPermissions('admin.locations.view'))->test(Locations::class);
+
+    expect(fn () => $component->set('expanded', [1, 2, 3]))->toThrow(CannotUpdateLockedPropertyException::class);
+});
+
+test('an area cannot receive children', function () {
+    $thana = app(SaveLocation::class)->handle(['name' => 'Kaliakair', 'parent_id' => $this->district->id]);
+    $area = app(SaveLocation::class)->handle(['name' => 'Mouchak', 'parent_id' => $thana->id]);
+
+    Livewire::actingAs(userWithPermissions('admin.locations.view', 'admin.locations.create'))
+        ->test(Locations::class)
+        ->call('addChild', $area->id)
+        ->set('name', 'Block A')
+        ->call('save')
+        ->assertHasErrors(['parent_id']);
+});
+
+test('saving is refused once create permission is revoked', function () {
+    $user = userWithPermissions('admin.locations.view', 'admin.locations.create');
+
+    $component = Livewire::actingAs($user)
+        ->test(Locations::class)
+        ->call('addChild', null)
+        ->set('name', 'Sylhet');
+
+    $user->syncDirectPermissions(['admin.locations.view']);
+    app(PermissionRegistrar::class)->forget($user);
+
+    $component->call('save')->assertForbidden();
+    expect(Location::query()->where('name', 'Sylhet')->exists())->toBeFalse();
+});
+
+test('searching for a percent sign matches it literally', function () {
+    app(SaveLocation::class)->handle(['name' => '50% Market']);
+
+    Livewire::actingAs(userWithPermissions('admin.locations.view'))
+        ->test(Locations::class)
+        ->set('search', '0%')
+        ->assertSee('50% Market')
+        ->assertDontSee('Dhaka');
 });
