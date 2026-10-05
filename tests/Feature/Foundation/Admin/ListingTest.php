@@ -61,3 +61,15 @@ test('mobile rows load 25 at a time', function () {
         ->assertSet('limit', 50)
         ->assertSee('more:no');
 });
+
+test('a tampered limit is clamped to a positive multiple of 25 within the cap', function () {
+    User::factory()->count(30)->create();
+
+    Livewire::test(ListingFixture::class)
+        ->set('limit', 100000)
+        ->assertSet('limit', 500)
+        ->set('limit', -40)
+        ->assertSet('limit', 25)
+        ->set('limit', 30)
+        ->assertSet('limit', 25);
+});
