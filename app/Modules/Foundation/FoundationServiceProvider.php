@@ -2,6 +2,7 @@
 
 namespace App\Modules\Foundation;
 
+use App\Support\Lookups\LookupRegistry;
 use Illuminate\Support\ServiceProvider;
 
 class FoundationServiceProvider extends ServiceProvider
@@ -11,7 +12,7 @@ class FoundationServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(LookupRegistry::class, fn (): LookupRegistry => new LookupRegistry(config('lookups', [])));
     }
 
     /**
