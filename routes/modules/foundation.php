@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Foundation\Livewire\Admin\MasterData;
 use App\Modules\Foundation\Livewire\Admin\Roles;
 use App\Modules\Foundation\Livewire\Admin\Users;
 use Illuminate\Support\Facades\Route;
@@ -17,4 +18,8 @@ Route::middleware('app')->prefix('admin')->name('admin.')->group(function () {
     Route::livewire('roles', Roles\Index::class)->middleware('can:admin.roles.view')->name('roles.index');
     Route::livewire('roles/create', Roles\Form::class)->middleware('can:admin.roles.create')->name('roles.create');
     Route::livewire('roles/{role:code}/edit', Roles\Form::class)->middleware('can:admin.roles.update')->name('roles.edit');
+    // Master data carries no `can:` middleware: the permission is per table, so mount() and every action authorize it.
+    Route::livewire('master-data', MasterData::class)->name('master-data.index');
+    Route::livewire('master-data/{table}', MasterData::class)->name('master-data.show');
+    Route::redirect('branches', '/admin/master-data/branches')->middleware('can:admin.branches.view')->name('branches.index');
 });
