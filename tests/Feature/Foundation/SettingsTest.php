@@ -12,7 +12,7 @@ test('values are returned with their declared type', function () {
     expect(Settings::get('general.session_timeout_minutes'))->toBe(120)
         ->and(Settings::get('notifications.email_enabled'))->toBeTrue()
         ->and(Settings::get('general.timezone'))->toBe('Asia/Dhaka')
-        ->and(Settings::get('general.require_2fa_roles'))->toBe(['finance_manager', 'super_admin']);
+        ->and(Settings::get('general.require_2fa_roles'))->toBe([]);
 });
 
 test('missing keys return the default', function () {
@@ -38,4 +38,20 @@ test('re-seeding keeps values changed by an admin', function () {
     $this->seed(SettingSeeder::class);
 
     expect(Setting::query()->where('key', 'password_min_length')->value('value'))->toBe(12);
+});
+
+test('roles settings are stored and read as a list of role codes', function () {
+    Settings::set('general.require_2fa_roles', ['finance_manager', 'super_admin']);
+
+    expect(Settings::get('general.require_2fa_roles'))->toBe(['finance_manager', 'super_admin'])
+        ->and(Setting::query()->where('key', 'require_2fa_roles')->value('type'))->toBe('roles');
+});
+
+test('re-seeding corrects the type of an existing row but keeps its value', function () {
+    Setting::query()->where('key', 'require_2fa_roles')->update(['type' => 'json', 'value' => json_encode(['viewer'])]);
+
+    $this->seed(SettingSeeder::class);
+
+    $row = Setting::query()->where('key', 'require_2fa_roles')->first();
+    expect($row->type)->toBe('roles')->and($row->value)->toBe(['viewer']);
 });
