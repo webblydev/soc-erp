@@ -2,30 +2,25 @@
     <div class="flex flex-col gap-6">
         <x-auth-header :title="__('Forgot password')" :description="__('Enter your email to receive a password reset link')" />
 
-        <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
         <form method="POST" action="{{ route('password.email') }}" class="flex flex-col gap-6">
             @csrf
 
-            <!-- Email Address -->
-            <flux:input
-                name="email"
-                :label="__('Email address')"
-                type="email"
-                required
-                autofocus
-                placeholder="email@example.com"
-            />
+            <x-ui.field>
+                <x-ui.field-label for="email">{{ __('Email address') }}</x-ui.field-label>
+                <x-ui.input id="email" name="email" type="email" :value="old('email')" required autofocus placeholder="email@example.com" :aria-invalid="$errors->has('email') ? 'true' : null" />
+                <x-ui.field-error :messages="$errors->get('email')" />
+            </x-ui.field>
 
-            <flux:button variant="primary" type="submit" class="w-full" data-test="email-password-reset-link-button">
+            <x-ui.button type="submit" class="w-full" data-test="email-password-reset-link-button">
                 {{ __('Email password reset link') }}
-            </flux:button>
+            </x-ui.button>
         </form>
 
-        <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-400">
+        <div class="space-x-1 text-center text-sm text-muted-foreground rtl:space-x-reverse">
             <span>{{ __('Or, return to') }}</span>
-            <flux:link :href="route('login')" wire:navigate>{{ __('log in') }}</flux:link>
+            <x-ui.link :href="route('login')" wire:navigate>{{ __('log in') }}</x-ui.link>
         </div>
     </div>
 </x-layouts::auth>
