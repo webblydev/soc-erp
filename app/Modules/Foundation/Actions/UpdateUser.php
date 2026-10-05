@@ -20,6 +20,7 @@ class UpdateUser
     public function __construct(
         private SyncUserAccess $syncUserAccess,
         private SetUserActive $setUserActive,
+        private EnsureNotLastSuperAdmin $ensureNotLastSuperAdmin,
     ) {}
 
     /**
@@ -33,11 +34,14 @@ class UpdateUser
         $data = Validator::make($this->prepareUserInput($input), $this->userRules($user))->validate();
         $active = (bool) ($data['is_active'] ?? $user->is_active);
 
-        if ($user->is_active && ! $active) {
-            $this->setUserActive->ensureCanDeactivate($user, $actor);
-        }
-
         return DB::transaction(function () use ($user, $data, $active, $actor): User {
+            $this->ensureNotLastSuperAdmin->lockActiveSuperAdmins();
+            $this->ensureNotLastSuperAdmin->ensureActorMayChange($user, $actor);
+
+            if ($user->is_active && ! $active) {
+                $this->setUserActive->ensureCanDeactivate($user, $actor);
+            }
+
             $user->fill(Arr::only($data, ['name', 'username', 'email', 'phone', 'branch_id']));
             $user->is_active = $active;
 
