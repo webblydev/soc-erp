@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Models\User;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
 use App\Modules\Foundation\Models\Role;
+use App\Modules\Foundation\Services\Navigation;
 use App\Modules\Foundation\Services\PermissionRegistrar;
 use App\Support\Lookups\LookupRegistry;
 use App\Support\Settings\SettingsRepository;
@@ -27,6 +28,7 @@ class FoundationServiceProvider extends ServiceProvider
         $this->app->singleton(LookupRegistry::class, fn (): LookupRegistry => new LookupRegistry(config('lookups', [])));
         $this->app->singleton(SettingsRepository::class);
         $this->app->singleton(PermissionRegistrar::class);
+        $this->app->singleton(Navigation::class, fn (): Navigation => new Navigation(config('navigation.groups', [])));
     }
 
     /**
