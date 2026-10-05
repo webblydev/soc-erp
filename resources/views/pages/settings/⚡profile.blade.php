@@ -1,9 +1,7 @@
 <?php
 
 use App\Concerns\ProfileValidationRules;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -12,7 +10,7 @@ new #[Title('Profile settings')] class extends Component {
     use ProfileValidationRules;
 
     public string $name = '';
-    public string $email = '';
+    public ?string $email = '';
 
     /**
      * Mount the component.
@@ -20,7 +18,7 @@ new #[Title('Profile settings')] class extends Component {
     public function mount(): void
     {
         $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
+        $this->email = Auth::user()->email ?? '';
     }
 
     /**
@@ -32,46 +30,20 @@ new #[Title('Profile settings')] class extends Component {
 
         $validated = $this->validate($this->profileRules($user->id));
 
-        $user->fill($validated);
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
+        $user->fill([
+            'name' => $validated['name'],
+            'email' => filled($validated['email'] ?? null) ? $validated['email'] : null,
+        ]);
 
         $user->save();
 
         $this->dispatch('toast', type: 'success', description: __('Profile updated.'));
     }
 
-    /**
-     * Send an email verification notification to the current user.
-     */
-    public function resendVerificationNotification(): void
-    {
-        $user = Auth::user();
-
-        if ($user->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route('dashboard', absolute: false));
-
-            return;
-        }
-
-        $user->sendEmailVerificationNotification();
-
-        Session::flash('status', 'verification-link-sent');
-    }
-
-    #[Computed]
-    public function hasUnverifiedEmail(): bool
-    {
-        return Auth::user() instanceof MustVerifyEmail && ! Auth::user()->hasVerifiedEmail();
-    }
-
     #[Computed]
     public function showDeleteUser(): bool
     {
-        return ! Auth::user() instanceof MustVerifyEmail
-            || (Auth::user() instanceof MustVerifyEmail && Auth::user()->hasVerifiedEmail());
+        return true;
     }
 }; ?>
 
@@ -88,23 +60,8 @@ new #[Title('Profile settings')] class extends Component {
 
             <x-ui.field>
                 <x-ui.field-label for="email">{{ __('Email') }}</x-ui.field-label>
-                <x-ui.input id="email" wire:model="email" type="email" required autocomplete="email" :aria-invalid="$errors->has('email') ? 'true' : null" />
+                <x-ui.input id="email" wire:model="email" type="email" autocomplete="email" :aria-invalid="$errors->has('email') ? 'true' : null" />
                 <x-ui.field-error :messages="$errors->get('email')" />
-
-                @if ($this->hasUnverifiedEmail)
-                    <x-ui.field-description>
-                        {{ __('Your email address is unverified.') }}
-                        <x-ui.link href="#" class="cursor-pointer" wire:click.prevent="resendVerificationNotification">
-                            {{ __('Click here to re-send the verification email.') }}
-                        </x-ui.link>
-                    </x-ui.field-description>
-
-                    @if (session('status') === 'verification-link-sent')
-                        <x-ui.field-description class="font-medium text-green-600">
-                            {{ __('A new verification link has been sent to your email address.') }}
-                        </x-ui.field-description>
-                    @endif
-                @endif
             </x-ui.field>
 
             <x-ui.button type="submit" data-test="update-profile-button">
