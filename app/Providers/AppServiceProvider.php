@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\CompanyProfile;
 use App\Modules\Foundation\Models\Currency;
+use App\Modules\Foundation\Models\Setting;
 use App\Support\Database\BlueprintMacros;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -65,6 +66,7 @@ class AppServiceProvider extends ServiceProvider
             'currency' => Currency::class,
             'branch' => Branch::class,
             'company' => CompanyProfile::class,
+            'setting' => Setting::class,
         ]);
     }
 }
