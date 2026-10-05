@@ -66,7 +66,7 @@ class Sequences extends Component
     public function saveCounter(IncreaseSequenceNumber $increaseSequenceNumber): void
     {
         $this->authorize('admin.sequences.update');
-        $this->validate(['nextNumber' => ['required', 'integer', 'min:1']]);
+        $this->validate(['nextNumber' => ['required', 'integer', 'min:1', 'max:4294967295']]);
 
         try {
             $increaseSequenceNumber->handle(NumberSequence::query()->findOrFail($this->counterId), (int) $this->nextNumber);
