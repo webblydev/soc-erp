@@ -23,8 +23,15 @@ class Index extends Component
 
     public ?int $actionUserId = null;
 
+    public function mount(): void
+    {
+        $this->authorize('admin.users.view');
+    }
+
     public function openActions(int $userId): void
     {
+        $this->authorize('admin.users.view');
+
         $this->actionUserId = $userId;
         $this->dispatch('open-sheet-user-actions');
     }
