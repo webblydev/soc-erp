@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -74,4 +75,25 @@ function ensureRole(string $code, array $attributes = []): Role
         ['code' => $code],
         ['name' => Str::headline($code), ...$attributes],
     );
+}
+
+/**
+ * A user holding exactly the given direct permissions (created if missing).
+ */
+function userWithPermissions(string ...$permissions): User
+{
+    createPermissions(...$permissions);
+    $user = User::factory()->create();
+    $user->syncDirectPermissions(array_values($permissions));
+
+    return $user;
+}
+
+function superAdmin(): User
+{
+    ensureRole(Role::SUPER_ADMIN, ['is_system' => true]);
+    $user = User::factory()->create();
+    $user->syncRoles([Role::SUPER_ADMIN]);
+
+    return $user;
 }
