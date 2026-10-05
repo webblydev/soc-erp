@@ -45,7 +45,7 @@
                                         <x-ui.table-head class="font-semibold uppercase">{{ $module }}</x-ui.table-head>
                                         @foreach ($group['actions'] as $action)
                                             <x-ui.table-head class="text-center">
-                                                <button type="button" wire:click="toggleAction('{{ $module }}', '{{ $action }}')" class="hover:underline">{{ str_replace('_', ' ', $action) }}</button>
+                                                <button type="button" wire:click="toggleAction(@js($module), @js($action))" class="hover:underline">{{ str_replace('_', ' ', $action) }}</button>
                                             </x-ui.table-head>
                                         @endforeach
                                     </x-ui.table-row>
@@ -54,7 +54,7 @@
                                     @foreach ($group['resources'] as $resource => $names)
                                         <x-ui.table-row>
                                             <x-ui.table-cell>
-                                                <button type="button" wire:click="toggleResource('{{ $module }}', '{{ $resource }}')" class="hover:underline">{{ $resource !== '' ? str_replace('_', ' ', $resource) : $module }}</button>
+                                                <button type="button" wire:click="toggleResource(@js($module), @js($resource))" class="hover:underline">{{ $resource !== '' ? str_replace('_', ' ', $resource) : $module }}</button>
                                             </x-ui.table-cell>
                                             @foreach ($group['actions'] as $action)
                                                 <x-ui.table-cell class="text-center">
@@ -79,7 +79,7 @@
                             <x-ui.accordion-content>
                                 @foreach ($group['resources'] as $resource => $names)
                                     <div class="mb-3">
-                                        <button type="button" wire:click="toggleResource('{{ $module }}', '{{ $resource }}')" class="min-h-11 text-sm font-semibold">
+                                        <button type="button" wire:click="toggleResource(@js($module), @js($resource))" class="min-h-11 text-sm font-semibold">
                                             {{ $resource !== '' ? str_replace('_', ' ', $resource) : $module }}
                                         </button>
                                         @foreach ($names as $action => $permissionName)
