@@ -3,6 +3,7 @@
 namespace App\Modules\Foundation\Actions;
 
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -18,11 +19,16 @@ class SetUserActive
      */
     public function handle(User $user, bool $active, User $actor): void
     {
-        if (! $active) {
-            $this->ensureCanDeactivate($user, $actor);
-        }
+        DB::transaction(function () use ($user, $active, $actor): void {
+            $this->ensureNotLastSuperAdmin->lockActiveSuperAdmins();
+            $this->ensureNotLastSuperAdmin->ensureActorMayChange($user, $actor);
 
-        $user->update(['is_active' => $active]);
+            if (! $active) {
+                $this->ensureCanDeactivate($user, $actor);
+            }
+
+            $user->update(['is_active' => $active]);
+        });
     }
 
     /**
