@@ -1,0 +1,112 @@
+<?php
+
+namespace App\Support;
+
+use App\Modules\Foundation\Models\CompanyProfile;
+use App\Modules\Foundation\Models\NumberSequence;
+use App\Modules\Foundation\Models\NumberSequenceFormat;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+use LogicException;
+
+/**
+ * Issues document numbers (docs/01 §3.8). Must run inside the caller's DB transaction so
+ * the row lock is held until the document is saved (CM-BR-04, FD-AC-05).
+ */
+class NumberSequenceService
+{
+    /**
+     * @param  array{date?: CarbonInterface|string, bl_prefix?: string, branch?: string}  $context
+     */
+    public function next(string $documentType, array $context = []): string
+    {
+        if (DB::transactionLevel() === 0) {
+            throw new LogicException('NumberSequenceService::next() must be called inside a database transaction.');
+        }
+
+        $definition = NumberSequenceFormat::query()->where('document_type', $documentType)->first()
+            ?? throw new InvalidArgumentException("No number format is defined for [{$documentType}].");
+
+        $fiscalYear = FiscalYear::for(
+            CarbonImmutable::parse($context['date'] ?? now()),
+            CompanyProfile::fiscalYearStartMonth(),
+        );
+
+        $tokens = [
+            'yy' => $fiscalYear->shortCode(),
+            'yyyy' => $fiscalYear->longCode(),
+            'bl_prefix' => $context['bl_prefix'] ?? '',
+            'branch' => $context['branch'] ?? '',
+        ];
+
+        $sequence = $this->lockSequence($definition, $this->scopeKey($definition, $tokens));
+        $number = $this->render($sequence->format, $sequence->next_number, $tokens);
+
+        $sequence->increment('next_number');
+
+        return $number;
+    }
+
+    /**
+     * @param  array{yy: string, yyyy: string, bl_prefix: string, branch: string}  $tokens
+     */
+    private function scopeKey(NumberSequenceFormat $definition, array $tokens): string
+    {
+        $parts = [];
+
+        if ($definition->reset_policy === 'fiscal_year') {
+            $parts[] = 'fy:'.$tokens['yy'];
+        }
+
+        if ($definition->scope_by === 'business_line') {
+            $parts[] = 'bl:'.($tokens['bl_prefix'] !== '' ? $tokens['bl_prefix'] : throw new InvalidArgumentException("[{$definition->document_type}] numbers need a bl_prefix."));
+        }
+
+        if ($definition->scope_by === 'branch') {
+            $parts[] = 'br:'.($tokens['branch'] !== '' ? $tokens['branch'] : throw new InvalidArgumentException("[{$definition->document_type}] numbers need a branch."));
+        }
+
+        return implode('|', $parts);
+    }
+
+    /**
+     * Lock the scope row, creating it first if needed. The non-locking existence check followed by
+     * insertOrIgnore avoids the gap-lock deadlock that SELECT … FOR UPDATE on a missing row causes in MySQL.
+     */
+    private function lockSequence(NumberSequenceFormat $definition, string $scopeKey): NumberSequence
+    {
+        $query = fn () => NumberSequence::query()
+            ->where('document_type', $definition->document_type)
+            ->where('scope_key', $scopeKey);
+
+        if (! $query()->exists()) {
+            NumberSequence::query()->insertOrIgnore([
+                'document_type' => $definition->document_type,
+                'scope_key' => $scopeKey,
+                'format' => $definition->format,
+                'next_number' => 1,
+                'reset_policy' => $definition->reset_policy,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return $query()->lockForUpdate()->firstOrFail();
+    }
+
+    /**
+     * @param  array{yy: string, yyyy: string, bl_prefix: string, branch: string}  $tokens
+     */
+    private function render(string $format, int $sequence, array $tokens): string
+    {
+        return (string) preg_replace_callback(
+            '/\{(seq:(\d+)|yyyy|yy|bl_prefix|branch)\}/',
+            fn (array $match): string => str_starts_with($match[1], 'seq:')
+                ? str_pad((string) $sequence, (int) $match[2], '0', STR_PAD_LEFT)
+                : $tokens[$match[1]],
+            $format,
+        );
+    }
+}
