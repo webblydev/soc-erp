@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Modules\Foundation\Actions\AuthenticateUser;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Fortify\Fortify;
@@ -44,6 +45,9 @@ class FortifyServiceProvider extends ServiceProvider
             $request->ip(),
             $request->userAgent(),
         ));
+
+        // Fortify's default confirmation looks the user up by the `login` form field, which is not a column.
+        Fortify::confirmPasswordsUsing(fn (User $user, ?string $password): bool => Hash::check((string) $password, $user->password));
     }
 
     /**
