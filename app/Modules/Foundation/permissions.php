@@ -14,7 +14,7 @@ return [
             'roles' => ['view', 'create', 'update', 'delete'],
             'settings' => ['view', 'update'],
             'company' => ['view', 'update'],
-            'branches' => ['view', 'create', 'update'],
+            'branches' => ['view', 'create', 'update', 'deactivate'],
             'master_data' => ['view', 'create', 'update', 'deactivate'],
             'locations' => ['view', 'create', 'update'],
             'sequences' => ['view', 'update'],
