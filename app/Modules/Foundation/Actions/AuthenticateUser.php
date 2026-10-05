@@ -4,6 +4,8 @@ namespace App\Modules\Foundation\Actions;
 
 use App\Models\User;
 use App\Modules\Foundation\Models\LoginHistory;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -23,10 +25,13 @@ class AuthenticateUser
     public function handle(string $login, string $password, ?string $ip, ?string $userAgent): ?User
     {
         $login = Str::lower(trim($login));
+        $attempted = mb_substr($login, 0, 60);
 
-        if ($this->isLockedOut($login)) {
+        $lockedUntil = $this->lockedUntil($attempted);
+
+        if ($lockedUntil !== null) {
             throw ValidationException::withMessages([
-                'login' => __('Too many failed attempts. Try again in :minutes minutes.', ['minutes' => self::LOCKOUT_MINUTES]),
+                'login' => __('Too many failed attempts. Try again in :minutes minutes.', ['minutes' => max(1, (int) ceil(now()->diffInSeconds($lockedUntil) / 60))]),
             ]);
         }
 
@@ -37,38 +42,59 @@ class AuthenticateUser
             ->first();
 
         if ($user === null || ! Hash::check($password, $user->password)) {
-            $this->record($login, $user, false, $ip, $userAgent);
+            $this->record($attempted, $user, false, $ip, $userAgent);
 
             return null;
         }
 
         if (! $user->is_active) {
-            $this->record($login, $user, false, $ip, $userAgent);
+            $this->record($attempted, $user, false, $ip, $userAgent);
 
             throw ValidationException::withMessages(['login' => __('This account is inactive.')]);
         }
 
-        $this->record($login, $user, true, $ip, $userAgent);
+        $this->record($attempted, $user, true, $ip, $userAgent);
 
         $user->forceFill(['last_login_at' => now(), 'last_login_ip' => $ip])->saveQuietly();
 
         return $user;
     }
 
-    private function isLockedOut(string $login): bool
+    /**
+     * FD-BR-04: once the latest failure completes 10 failures within 15 minutes, the login is
+     * locked for 15 minutes from that failure. No failures are recorded while locked.
+     */
+    private function lockedUntil(string $attempted): ?CarbonInterface
     {
-        return LoginHistory::query()
-            ->where('username_attempted', $login)
+        $latestFailure = LoginHistory::query()
+            ->where('username_attempted', $attempted)
             ->where('succeeded', false)
             ->where('created_at', '>=', now()->subMinutes(self::LOCKOUT_MINUTES))
-            ->count() >= self::LOCKOUT_ATTEMPTS;
+            ->latest('created_at')
+            ->value('created_at');
+
+        if ($latestFailure === null) {
+            return null;
+        }
+
+        $latestFailure = CarbonImmutable::parse($latestFailure);
+
+        $failuresInWindow = LoginHistory::query()
+            ->where('username_attempted', $attempted)
+            ->where('succeeded', false)
+            ->whereBetween('created_at', [$latestFailure->subMinutes(self::LOCKOUT_MINUTES), $latestFailure])
+            ->count();
+
+        return $failuresInWindow >= self::LOCKOUT_ATTEMPTS
+            ? $latestFailure->addMinutes(self::LOCKOUT_MINUTES)
+            : null;
     }
 
-    private function record(string $login, ?User $user, bool $succeeded, ?string $ip, ?string $userAgent): void
+    private function record(string $attempted, ?User $user, bool $succeeded, ?string $ip, ?string $userAgent): void
     {
         LoginHistory::query()->create([
             'user_id' => $user?->id,
-            'username_attempted' => Str::limit($login, 60, ''),
+            'username_attempted' => $attempted,
             'succeeded' => $succeeded,
             'ip_address' => $ip ?? '0.0.0.0',
             'user_agent' => $userAgent !== null ? Str::limit($userAgent, 252) : null,
