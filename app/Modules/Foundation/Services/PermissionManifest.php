@@ -82,6 +82,14 @@ final class PermissionManifest
      */
     private function manifests(): array
     {
-        return array_map(fn (string $path): array => require $path, $this->paths);
+        $manifests = [];
+
+        foreach ($this->paths as $path) {
+            /** @var array{permissions: array<string, array<string, list<string>>>, grants?: array<string, list<string>>} $manifest */
+            $manifest = require $path;
+            $manifests[] = $manifest;
+        }
+
+        return $manifests;
     }
 }
