@@ -1,6 +1,9 @@
 <?php
 
+use App\Modules\Foundation\Models\Permission;
+use App\Modules\Foundation\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /*
@@ -44,7 +47,26 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function createPermissions(string ...$names): void
 {
-    // ..
+    foreach ($names as $name) {
+        $parts = explode('.', $name);
+
+        Permission::query()->firstOrCreate(['name' => $name], [
+            'module' => $parts[0],
+            'resource' => count($parts) === 3 ? $parts[1] : '',
+            'action' => end($parts),
+        ]);
+    }
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function ensureRole(string $code, array $attributes = []): Role
+{
+    return Role::query()->firstOrCreate(
+        ['code' => $code],
+        ['name' => Str::headline($code), ...$attributes],
+    );
 }
