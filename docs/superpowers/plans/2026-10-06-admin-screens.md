@@ -2,8 +2,6 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **STATUS: DRAFT — Tasks 1–10 written; Tasks 11–20 still to be written (outline at the end).**
-
 **Goal:** Build the doc 01 §5 administration screens (users, roles matrix, master data, locations, company, settings, number sequences, audit log, login history, profile with 2FA and notification preferences, impersonation) on top of the foundation core.
 
 **Architecture:**
@@ -4156,15 +4154,3967 @@ git add tests/Feature/Foundation/Admin/LookupActionsTest.php && git commit -m "T
 
 ---
 
-<!-- PLAN IN PROGRESS: Tasks 11–20 still to be written:
-11 Master data screen (MasterData component, master-data/{table} route, admin.branches.index redirect, wire:sort, sheet editor)
-12 Locations screen (lazy tree, search, add child / edit / activate sheets)
-13 Company profile (UpdateCompanyProfile, logo upload on public disk, x-print.letterhead preview)
-14 Settings screen (UpdateSettings, tabs/segmented control, typed fields incl. roles checklist)
-15 Number sequences (UpdateSequenceFormat token validation, IncreaseSequenceNumber FD-BR-07 under lockForUpdate)
-16 Audit log screen (filters, old→new table, export gated by admin.audit.export)
-17 Login history screen (filters, export)
-18 2FA: Fortify feature, TwoFactorAuthenticatable + QR label override, challenge view, TwoFactorPolicy, EnsureTwoFactorEnabled, UserFactory::withTwoFactor fix
-19 Profile page (details/password/2FA/notifications, settings/* redirect, rewrite tests/Feature/Settings in place) + two-factor/setup page
-20 Impersonation (Start/StopImpersonation, HandleImpersonation, banner, listener + AuthenticateUser skips) then final checks (pint, phpstan, full suite, migrate:fresh --seed)
--->
+### Task 11: Master data screen and branches entry point
+
+**Files:**
+- Create: `app/Modules/Foundation/Livewire/Admin/MasterData.php`
+- Create: `resources/views/livewire/admin/master-data.blade.php`
+- Modify: `routes/modules/foundation.php`
+- Test: `tests/Feature/Foundation/Admin/MasterDataScreenTest.php`
+
+**Interfaces:**
+- Consumes: `LookupRegistry::visibleTo/allows/modelFor/get` (Task 2); `SaveLookup`, `DeleteLookup`, `ReorderLookup` (Task 10); `x-shell.sheet`.
+- Produces:
+  - Routes `admin.master-data.index` (`admin/master-data`), `admin.master-data.show` (`admin/master-data/{table}`) and `admin.branches.index` (a redirect to `admin/master-data/branches`).
+  - Component methods: `create()`, `edit(int $id)`, `save()`, `delete()`, `sort(int $id, int $position)`.
+  - Public state: `?string $table`, `?int $editingId`, `array $form`.
+
+These routes carry no `can:` middleware, because the permission depends on the table. `mount()` aborts with 403 or 404 instead, and every action re-checks permission through `authorizeTable()`.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Foundation/Admin/MasterDataScreenTest.php`:
+
+```php
+<?php
+
+use App\Models\User;
+use App\Modules\Foundation\Livewire\Admin\MasterData;
+use App\Modules\Foundation\Models\Branch;
+use App\Modules\Foundation\Models\Currency;
+use Livewire\Livewire;
+
+test('master data needs a view permission for at least one table', function () {
+    $this->actingAs(User::factory()->create())->get(route('admin.master-data.index'))->assertForbidden();
+    $this->actingAs(userWithPermissions('admin.branches.view'))->get(route('admin.master-data.index'))->assertOk()->assertSee('Branches');
+});
+
+test('unknown tables are 404 and tables without permission are 403', function () {
+    $this->actingAs(userWithPermissions('admin.branches.view'));
+
+    $this->get(route('admin.master-data.show', 'nope'))->assertNotFound();
+    $this->get(route('admin.master-data.show', 'currencies'))->assertForbidden();
+    $this->get(route('admin.master-data.show', 'branches'))->assertOk();
+});
+
+test('the branches nav item redirects to the branches table', function () {
+    $this->actingAs(userWithPermissions('admin.branches.view'))
+        ->get(route('admin.branches.index'))
+        ->assertRedirect(route('admin.master-data.show', 'branches'));
+});
+
+test('a row is created through the sheet form', function () {
+    Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.create'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('create')
+        ->assertDispatched('open-sheet-lookup-row')
+        ->set('form.code', 'CTG')
+        ->set('form.name', 'Chattogram')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertDispatched('close-sheet-lookup-row');
+
+    expect(Branch::query()->where('code', 'CTG')->exists())->toBeTrue();
+});
+
+test('rule failures show on the sheet fields', function () {
+    $system = Branch::factory()->create(['code' => 'HO', 'is_system' => true]);
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.update'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('edit', $system->id)
+        ->set('form.code', 'HQ')
+        ->call('save')
+        ->assertHasErrors(['form.code']);
+});
+
+test('deactivating through the form needs the deactivate permission', function () {
+    $branch = Branch::factory()->create();
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.update'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('edit', $branch->id)
+        ->set('form.is_active', false)
+        ->call('save')
+        ->assertForbidden();
+});
+
+test('deleting a row in use shows an error toast', function () {
+    $branch = Branch::factory()->create();
+    User::factory()->create(['branch_id' => $branch->id]);
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.update', 'admin.branches.deactivate'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('edit', $branch->id)
+        ->call('delete')
+        ->assertDispatched('toast', type: 'error');
+});
+
+test('sorting needs update permission and a row from the open table', function () {
+    $branch = Branch::factory()->create();
+    $currency = Currency::factory()->create();
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('sort', $branch->id, 0)
+        ->assertForbidden();
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.update'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('sort', $currency->id + 1000, 0)
+        ->assertNotFound();
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/MasterDataScreenTest.php`
+Expected: FAIL with "Route [admin.master-data.index] not defined".
+
+- [ ] **Step 3: Add the routes**
+
+In `routes/modules/foundation.php`, add `use App\Modules\Foundation\Livewire\Admin\MasterData;`. Inside the admin group, add:
+
+```php
+    Route::livewire('master-data', MasterData::class)->name('master-data.index');
+    Route::livewire('master-data/{table}', MasterData::class)->name('master-data.show');
+    Route::redirect('branches', '/admin/master-data/branches')->middleware('can:admin.branches.view')->name('branches.index');
+```
+
+- [ ] **Step 4: Write the component**
+
+`app/Modules/Foundation/Livewire/Admin/MasterData.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Livewire\Admin;
+
+use App\Models\User;
+use App\Modules\Foundation\Actions\DeleteLookup;
+use App\Modules\Foundation\Actions\ReorderLookup;
+use App\Modules\Foundation\Actions\SaveLookup;
+use App\Support\Lookups\LookupRegistry;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+/**
+ * Generic editor for every table in config/lookups.php (docs/01 §5.8).
+ */
+#[Title('Master data')]
+class MasterData extends Component
+{
+    public ?string $table = null;
+
+    public ?int $editingId = null;
+
+    /** @var array<string, mixed> */
+    public array $form = [];
+
+    public function mount(?string $table = null): void
+    {
+        $registry = $this->registry();
+
+        if ($table === null) {
+            abort_if($registry->visibleTo($this->actor()) === [], 403);
+
+            return;
+        }
+
+        abort_unless(array_key_exists($table, $registry->all()), 404);
+        abort_unless($registry->allows($this->actor(), $table, 'view'), 403);
+
+        $this->table = $table;
+    }
+
+    public function create(): void
+    {
+        $this->authorizeTable('create');
+
+        $this->editingId = null;
+        $this->form = $this->blankForm();
+        $this->resetErrorBag();
+        $this->dispatch('open-sheet-lookup-row');
+    }
+
+    public function edit(int $id): void
+    {
+        $this->authorizeTable('view');
+
+        $row = $this->findRow($id);
+        $this->editingId = $row->getKey();
+        $this->form = array_merge($this->blankForm(), $row->only(array_keys($this->blankForm())));
+        $this->resetErrorBag();
+        $this->dispatch('open-sheet-lookup-row');
+    }
+
+    public function save(SaveLookup $saveLookup): void
+    {
+        $row = $this->editingId !== null ? $this->findRow($this->editingId) : null;
+
+        $this->authorizeTable($row === null ? 'create' : 'update');
+
+        if ($row !== null && (bool) $row->getAttribute('is_active') !== (bool) ($this->form['is_active'] ?? true)) {
+            $this->authorizeTable('deactivate');
+        }
+
+        try {
+            $saveLookup->handle((string) $this->table, $this->form, $row);
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(
+                collect($exception->errors())->mapWithKeys(fn (array $messages, string $key): array => ['form.'.$key => $messages])->all(),
+            );
+        }
+
+        $this->dispatch('close-sheet-lookup-row');
+        $this->dispatch('toast', type: 'success', description: __('Saved.'));
+    }
+
+    public function delete(DeleteLookup $deleteLookup): void
+    {
+        $this->authorizeTable('deactivate');
+
+        try {
+            $deleteLookup->handle((string) $this->table, $this->findRow((int) $this->editingId));
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', description: (string) collect($exception->errors())->flatten()->first());
+
+            return;
+        }
+
+        $this->editingId = null;
+        $this->dispatch('close-sheet-lookup-row');
+        $this->dispatch('toast', type: 'success', description: __('Deleted.'));
+    }
+
+    public function sort(int $id, int $position, ReorderLookup $reorderLookup): void
+    {
+        $this->authorizeTable('update');
+        $this->findRow($id);
+
+        $reorderLookup->handle((string) $this->table, $id, $position);
+    }
+
+    public function render(): View
+    {
+        $registry = $this->registry();
+        $visible = $registry->visibleTo($this->actor());
+
+        return view('livewire.admin.master-data', [
+            'groups' => collect($visible)->groupBy('module', preserveKeys: true),
+            'entry' => $this->table !== null ? $registry->get($this->table) : null,
+            'rows' => $this->table !== null ? $registry->modelFor($this->table)->newQuery()->orderBy('sort_order')->orderBy('name')->get() : collect(),
+            'colors' => SaveLookup::COLORS,
+            'can' => fn (string $action): bool => $this->table !== null && $registry->allows($this->actor(), $this->table, $action),
+        ])->layoutData(['back' => $this->table !== null ? route('admin.master-data.index') : null]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function blankForm(): array
+    {
+        $form = ['code' => '', 'name' => '', 'description' => '', 'color' => '', 'is_active' => true];
+
+        foreach ($this->registry()->get((string) $this->table)['extra_fields'] as $field => $definition) {
+            $form[$field] = $definition['type'] === 'bool' ? false : '';
+        }
+
+        return $form;
+    }
+
+    private function findRow(int $id): Model
+    {
+        $row = $this->registry()->modelFor((string) $this->table)->newQuery()->find($id);
+        abort_if($row === null, 404);
+
+        return $row;
+    }
+
+    private function authorizeTable(string $action): void
+    {
+        abort_unless($this->table !== null && $this->registry()->allows($this->actor(), $this->table, $action), 403);
+    }
+
+    private function registry(): LookupRegistry
+    {
+        return app(LookupRegistry::class);
+    }
+
+    private function actor(): User
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return $user;
+    }
+}
+```
+
+`SaveLookup` validates `color` against `Rule::in`, and blank strings must be stored as null. In `SaveLookup::handle()`, before validation, add:
+
+```php
+        $input = array_map(fn (mixed $value): mixed => $value === '' ? null : $value, $input);
+```
+
+Then `code` and `name` fail as "required" when blank, as they should.
+
+- [ ] **Step 5: Write the view**
+
+`resources/views/livewire/admin/master-data.blade.php`:
+
+```blade
+<div class="flex flex-col gap-4 md:grid md:grid-cols-[14rem_1fr] md:gap-6">
+    {{-- Table list: always on desktop, only when no table is open on mobile --}}
+    <nav @class(['flex flex-col gap-4', 'max-md:hidden' => $table !== null]) aria-label="{{ __('Lookup tables') }}">
+        @foreach ($groups as $module => $tables)
+            <x-ui.item-group class="gap-1">
+                <p class="px-1 text-sm font-medium uppercase text-muted-foreground">{{ $module }}</p>
+                @foreach ($tables as $key => $definition)
+                    <x-ui.item size="sm" :href="route('admin.master-data.show', $key)" wire:navigate
+                        @class(['min-h-11 active:bg-accent', 'bg-accent' => $key === $table])>
+                        <span class="flex-1 text-sm">{{ __($definition['label']) }}</span>
+                        <x-lucide-chevron-right class="size-4 text-muted-foreground md:hidden" />
+                    </x-ui.item>
+                @endforeach
+            </x-ui.item-group>
+        @endforeach
+    </nav>
+
+    <section @class(['flex flex-col gap-4', 'max-md:hidden' => $table === null])>
+        @if ($entry === null)
+            <x-ui.empty class="hidden md:flex">
+                <x-ui.empty-header>
+                    <x-ui.empty-title>{{ __('Choose a table') }}</x-ui.empty-title>
+                    <x-ui.empty-description>{{ __('Pick a lookup table on the left to edit its rows.') }}</x-ui.empty-description>
+                </x-ui.empty-header>
+            </x-ui.empty>
+        @else
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold">{{ __($entry['label']) }}</h2>
+                @if ($can('create'))
+                    <x-ui.button class="hidden md:inline-flex" wire:click="create"><x-lucide-plus /> {{ __('Add row') }}</x-ui.button>
+                @endif
+            </div>
+
+            <div class="flex flex-col gap-2" @if ($can('update')) wire:sort="sort" @endif>
+                @forelse ($rows as $row)
+                    <x-ui.item variant="outline" class="min-h-14 gap-2 py-2 ps-1" wire:key="row-{{ $row->id }}" wire:sort:item="{{ $row->id }}">
+                        @if ($can('update'))
+                            <span wire:sort:handle class="flex size-11 cursor-grab touch-none items-center justify-center text-muted-foreground" aria-label="{{ __('Drag to reorder') }}">
+                                <x-lucide-grip-vertical class="size-5" />
+                            </span>
+                        @endif
+                        <button type="button" wire:click="edit({{ $row->id }})" class="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-md px-2 text-start active:bg-accent">
+                            <span class="flex min-w-0 flex-1 flex-col">
+                                <span class="flex items-center gap-2 text-base font-medium md:text-sm">
+                                    <span class="truncate">{{ $row->name }}</span>
+                                    @if ($row->color)
+                                        <x-ui.badge :tone="$row->color">{{ $row->code }}</x-ui.badge>
+                                    @else
+                                        <span class="font-mono text-sm text-muted-foreground">{{ $row->code }}</span>
+                                    @endif
+                                    @if ($row->is_system)
+                                        <x-lucide-lock class="size-3.5 text-muted-foreground" :aria-label="__('System row')" />
+                                    @endif
+                                </span>
+                                @if ($row->description)
+                                    <span class="truncate text-sm text-muted-foreground">{{ $row->description }}</span>
+                                @endif
+                            </span>
+                            @unless ($row->is_active)
+                                <x-ui.badge tone="neutral">{{ __('Inactive') }}</x-ui.badge>
+                            @endunless
+                            <x-lucide-chevron-right class="size-4 text-muted-foreground" />
+                        </button>
+                    </x-ui.item>
+                @empty
+                    <p class="py-10 text-center text-sm text-muted-foreground">{{ __('No rows yet.') }}</p>
+                @endforelse
+            </div>
+
+            @if ($can('create'))
+                <button type="button" wire:click="create" aria-label="{{ __('Add row') }}"
+                    class="fixed end-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 md:hidden">
+                    <x-lucide-plus class="size-6" />
+                </button>
+            @endif
+        @endif
+    </section>
+
+    @if ($entry !== null)
+        <x-shell.sheet id="lookup-row" :title="$editingId ? __('Edit row') : __('Add row')">
+            <form wire:submit="save" id="lookup-row-form" class="flex flex-col gap-4 pb-2">
+                @php($isSystem = $editingId && $rows->firstWhere('id', $editingId)?->is_system)
+
+                <x-ui.field>
+                    <x-ui.field-label for="form-code">{{ __('Code') }} *</x-ui.field-label>
+                    <x-ui.input id="form-code" wire:model="form.code" autocapitalize="characters" class="h-11 font-mono text-base md:h-9 md:text-sm" :disabled="$isSystem" />
+                    <x-ui.field-error :messages="$errors->get('form.code')" />
+                </x-ui.field>
+                <x-ui.field>
+                    <x-ui.field-label for="form-name">{{ __('Name') }} *</x-ui.field-label>
+                    <x-ui.input id="form-name" wire:model="form.name" class="h-11 text-base md:h-9 md:text-sm" />
+                    <x-ui.field-error :messages="$errors->get('form.name')" />
+                </x-ui.field>
+                <x-ui.field>
+                    <x-ui.field-label for="form-description">{{ __('Description') }}</x-ui.field-label>
+                    <x-ui.input id="form-description" wire:model="form.description" class="h-11 text-base md:h-9 md:text-sm" />
+                    <x-ui.field-error :messages="$errors->get('form.description')" />
+                </x-ui.field>
+                <x-ui.field>
+                    <x-ui.field-label for="form-color">{{ __('Badge colour') }}</x-ui.field-label>
+                    <x-ui.select native id="form-color" wire:model="form.color" class="h-11 text-base md:h-9 md:text-sm">
+                        <option value="">{{ __('None') }}</option>
+                        @foreach ($colors as $color)
+                            <option value="{{ $color }}">{{ ucfirst($color) }}</option>
+                        @endforeach
+                    </x-ui.select>
+                    <x-ui.field-error :messages="$errors->get('form.color')" />
+                </x-ui.field>
+
+                @foreach ($entry['extra_fields'] as $field => $definition)
+                    @if ($definition['type'] === 'bool')
+                        <x-ui.field orientation="horizontal" class="min-h-11 items-center">
+                            <x-ui.switch id="form-{{ $field }}" wire:model="form.{{ $field }}" :checked="(bool) ($form[$field] ?? false)" />
+                            <x-ui.field-label for="form-{{ $field }}">{{ __($definition['label']) }}</x-ui.field-label>
+                        </x-ui.field>
+                    @else
+                        <x-ui.field>
+                            <x-ui.field-label for="form-{{ $field }}">{{ __($definition['label']) }}{{ ($definition['required'] ?? false) ? ' *' : '' }}</x-ui.field-label>
+                            @if ($definition['type'] === 'textarea')
+                                <x-ui.textarea id="form-{{ $field }}" wire:model="form.{{ $field }}" rows="3" class="text-base md:text-sm" />
+                            @else
+                                <x-ui.input id="form-{{ $field }}" wire:model="form.{{ $field }}" :type="$definition['type'] === 'number' ? 'number' : 'text'" :inputmode="$definition['type'] === 'number' ? 'numeric' : null" class="h-11 text-base md:h-9 md:text-sm" />
+                            @endif
+                            <x-ui.field-error :messages="$errors->get('form.'.$field)" />
+                        </x-ui.field>
+                    @endif
+                @endforeach
+
+                <x-ui.field orientation="horizontal" class="min-h-11 items-center">
+                    <x-ui.switch id="form-is_active" wire:model="form.is_active" :checked="(bool) ($form['is_active'] ?? true)" :disabled="$isSystem || ! $can('deactivate')" />
+                    <x-ui.field-label for="form-is_active">{{ __('Active') }}</x-ui.field-label>
+                </x-ui.field>
+                <x-ui.field-error :messages="$errors->get('form.is_active')" />
+            </form>
+
+            <x-slot:footer>
+                @if ($editingId && ! $isSystem && $can('deactivate'))
+                    <x-ui.button variant="outline" class="text-destructive" wire:click="delete" wire:confirm="{{ __('Delete this row? Rows in use cannot be deleted.') }}">{{ __('Delete') }}</x-ui.button>
+                @endif
+                <x-ui.button type="submit" form="lookup-row-form">{{ __('Save') }}</x-ui.button>
+            </x-slot:footer>
+        </x-shell.sheet>
+    @endif
+</div>
+```
+
+`wire:confirm` shows the browser's native confirm dialog. The mobile rules prefer bottom sheets for confirmations. Because the delete button already sits inside a bottom sheet, this uses `wire:confirm` as a second guard instead of stacking a second sheet. Note it in the task report.
+
+If `x-ui.empty*` or `x-ui.textarea` is missing, run `php artisan blatui:add empty textarea --no-interaction`.
+
+- [ ] **Step 6: Run the tests to see them pass**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/MasterDataScreenTest.php tests/Feature/Foundation/Admin/LookupActionsTest.php`
+Expected: PASS.
+
+- [ ] **Step 7: Commit (per file)**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add routes/modules/foundation.php && git commit -m "Add master data and branches routes"
+git add app/Modules/Foundation/Livewire/Admin/MasterData.php && git commit -m "Add generic master data editor component"
+git add resources/views/livewire/admin/master-data.blade.php && git commit -m "Add master data view with sortable rows and edit sheet"
+git add app/Modules/Foundation/Actions/SaveLookup.php && git commit -m "Treat blank lookup inputs as null"
+git add tests/Feature/Foundation/Admin/MasterDataScreenTest.php && git commit -m "Test master data screen access, editing and sorting"
+```
+
+---
+
+### Task 12: Locations tree screen
+
+**Files:**
+- Create: `app/Modules/Foundation/Livewire/Admin/Locations.php`
+- Create: `resources/views/livewire/admin/locations.blade.php`, `resources/views/livewire/admin/locations/node.blade.php`
+- Modify: `routes/modules/foundation.php`
+- Test: `tests/Feature/Foundation/Admin/LocationsScreenTest.php`
+
+**Interfaces:**
+- Consumes: `SaveLocation`, `SetLocationActive` (Task 3); `x-shell.sheet`.
+- Produces:
+  - Route `admin.locations.index` (`admin/locations`, `can:admin.locations.view`).
+  - Methods `toggle(int $id)`, `addChild(?int $parentId)`, `edit(int $id)`, `save()`, `toggleActive(int $id)`.
+  - Public state `list<int> $expanded`, `string $search`, `?int $editingId`, `?int $parent_id`, `string $name`, `string $name_bn`.
+- **Children load lazily:** only the children of ids in `$expanded` are queried.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Foundation/Admin/LocationsScreenTest.php`:
+
+```php
+<?php
+
+use App\Models\User;
+use App\Modules\Foundation\Actions\SaveLocation;
+use App\Modules\Foundation\Livewire\Admin\Locations;
+use App\Modules\Foundation\Models\Location;
+use Database\Seeders\Foundation\LocationLevelSeeder;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->seed(LocationLevelSeeder::class);
+    $this->division = app(SaveLocation::class)->handle(['name' => 'Dhaka']);
+    $this->district = app(SaveLocation::class)->handle(['name' => 'Gazipur', 'parent_id' => $this->division->id]);
+});
+
+test('locations need admin.locations.view', function () {
+    $this->actingAs(User::factory()->create())->get(route('admin.locations.index'))->assertForbidden();
+    $this->actingAs(userWithPermissions('admin.locations.view'))->get(route('admin.locations.index'))->assertOk()->assertSee('Dhaka');
+});
+
+test('children appear only once their parent is expanded', function () {
+    Livewire::actingAs(userWithPermissions('admin.locations.view'))
+        ->test(Locations::class)
+        ->assertDontSee('Gazipur')
+        ->call('toggle', $this->division->id)
+        ->assertSee('Gazipur');
+});
+
+test('search lists matches with their full path', function () {
+    Livewire::actingAs(userWithPermissions('admin.locations.view'))
+        ->test(Locations::class)
+        ->set('search', 'gazi')
+        ->assertSee('Dhaka › Gazipur');
+});
+
+test('adding a child and renaming go through the sheet', function () {
+    $component = Livewire::actingAs(userWithPermissions('admin.locations.view', 'admin.locations.create', 'admin.locations.update'))
+        ->test(Locations::class)
+        ->call('addChild', $this->district->id)
+        ->assertDispatched('open-sheet-location')
+        ->set('name', 'Kaliakair')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $thana = Location::query()->where('name', 'Kaliakair')->firstOrFail();
+    expect($thana->full_path)->toBe('Dhaka › Gazipur › Kaliakair');
+
+    $component->call('edit', $this->district->id)->set('name', 'Gazipur City')->call('save')->assertHasNoErrors();
+    expect($thana->fresh()->full_path)->toBe('Dhaka › Gazipur City › Kaliakair');
+});
+
+test('duplicate names show on the name field', function () {
+    Livewire::actingAs(userWithPermissions('admin.locations.view', 'admin.locations.create'))
+        ->test(Locations::class)
+        ->call('addChild', $this->division->id)
+        ->set('name', 'GAZIPUR')
+        ->call('save')
+        ->assertHasErrors(['name']);
+});
+
+test('activating and deactivating needs admin.locations.deactivate', function () {
+    Livewire::actingAs(userWithPermissions('admin.locations.view', 'admin.locations.update'))
+        ->test(Locations::class)
+        ->call('toggleActive', $this->district->id)
+        ->assertForbidden();
+
+    Livewire::actingAs(userWithPermissions('admin.locations.view', 'admin.locations.deactivate'))
+        ->test(Locations::class)
+        ->call('toggleActive', $this->district->id);
+
+    expect($this->district->fresh()->is_active)->toBeFalse();
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/LocationsScreenTest.php`
+Expected: FAIL with "Route [admin.locations.index] not defined".
+
+- [ ] **Step 3: Add the route**
+
+In `routes/modules/foundation.php`, add `use App\Modules\Foundation\Livewire\Admin\Locations;`. Inside the group, add:
+
+```php
+    Route::livewire('locations', Locations::class)->middleware('can:admin.locations.view')->name('locations.index');
+```
+
+- [ ] **Step 4: Write the component**
+
+`app/Modules/Foundation/Livewire/Admin/Locations.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Livewire\Admin;
+
+use App\Modules\Foundation\Actions\SaveLocation;
+use App\Modules\Foundation\Actions\SetLocationActive;
+use App\Modules\Foundation\Models\Location;
+use App\Modules\Foundation\Models\LocationLevel;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+/**
+ * Division → district → thana → area tree (docs/01 §5.9). Children load when a node expands.
+ */
+#[Title('Locations')]
+class Locations extends Component
+{
+    /** @var list<int> */
+    public array $expanded = [];
+
+    public string $search = '';
+
+    public ?int $editingId = null;
+
+    public ?int $parent_id = null;
+
+    public string $name = '';
+
+    public string $name_bn = '';
+
+    public function mount(): void
+    {
+        $this->authorize('admin.locations.view');
+    }
+
+    public function toggle(int $id): void
+    {
+        $this->expanded = in_array($id, $this->expanded, true)
+            ? array_values(array_diff($this->expanded, [$id]))
+            : [...$this->expanded, $id];
+    }
+
+    public function addChild(?int $parentId = null): void
+    {
+        $this->authorize('admin.locations.create');
+
+        $this->reset('editingId', 'name', 'name_bn');
+        $this->parent_id = $parentId;
+        $this->resetErrorBag();
+        $this->dispatch('open-sheet-location');
+    }
+
+    public function edit(int $id): void
+    {
+        $this->authorize('admin.locations.update');
+
+        $location = Location::query()->findOrFail($id);
+        $this->editingId = $location->id;
+        $this->parent_id = $location->parent_id;
+        $this->name = $location->name;
+        $this->name_bn = (string) $location->name_bn;
+        $this->resetErrorBag();
+        $this->dispatch('open-sheet-location');
+    }
+
+    public function save(SaveLocation $saveLocation): void
+    {
+        if ($this->editingId === null) {
+            $this->authorize('admin.locations.create');
+            $saveLocation->handle(['name' => $this->name, 'name_bn' => $this->name_bn ?: null, 'parent_id' => $this->parent_id]);
+
+            if ($this->parent_id !== null && ! in_array($this->parent_id, $this->expanded, true)) {
+                $this->expanded[] = $this->parent_id;
+            }
+        } else {
+            $this->authorize('admin.locations.update');
+            $saveLocation->handle(['name' => $this->name, 'name_bn' => $this->name_bn ?: null], Location::query()->findOrFail($this->editingId));
+        }
+
+        $this->dispatch('close-sheet-location');
+        $this->dispatch('toast', type: 'success', description: __('Location saved.'));
+    }
+
+    public function toggleActive(int $id, SetLocationActive $setLocationActive): void
+    {
+        $this->authorize('admin.locations.deactivate');
+
+        $location = Location::query()->findOrFail($id);
+        $setLocationActive->handle($location, ! $location->is_active);
+    }
+
+    public function render(): View
+    {
+        $term = trim($this->search);
+
+        return view('livewire.admin.locations', [
+            'roots' => Location::query()->whereNull('parent_id')->withCount('children')->orderBy('name')->get(),
+            'childrenByParent' => Location::query()->whereIn('parent_id', $this->expanded)->withCount('children')->orderBy('name')->get()->groupBy('parent_id'),
+            'results' => mb_strlen($term) >= 2
+                ? Location::query()
+                    ->whereRaw("LOWER(name) LIKE ? ESCAPE '!'", ['%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], Str::lower($term)).'%'])
+                    ->orderBy('full_path')->limit(50)->get()
+                : null,
+            'parentPath' => $this->parent_id !== null ? Location::query()->whereKey($this->parent_id)->value('full_path') : null,
+            'areaLevelId' => LocationLevel::query()->where('code', LocationLevel::AREA)->value('id'),
+        ]);
+    }
+}
+```
+
+- [ ] **Step 5: Write the views**
+
+`resources/views/livewire/admin/locations.blade.php`:
+
+```blade
+<div class="flex flex-col gap-4">
+    <div class="flex items-center gap-2">
+        <x-ui.input type="search" wire:model.live.debounce.300ms="search" :placeholder="__('Search locations')" class="h-11 flex-1 text-base md:h-9 md:max-w-xs md:text-sm" />
+        @can('admin.locations.create')
+            <x-ui.button class="hidden md:inline-flex" wire:click="addChild"><x-lucide-plus /> {{ __('Add division') }}</x-ui.button>
+        @endcan
+    </div>
+
+    @if ($results !== null)
+        <x-ui.item-group class="gap-2">
+            @forelse ($results as $location)
+                <x-ui.item variant="outline" class="min-h-14" wire:key="result-{{ $location->id }}">
+                    <x-ui.item-content>
+                        <x-ui.item-title class="text-base md:text-sm">{{ $location->name }}</x-ui.item-title>
+                        <x-ui.item-description class="text-sm">{{ $location->full_path }}</x-ui.item-description>
+                    </x-ui.item-content>
+                    @can('admin.locations.update')
+                        <x-ui.button variant="ghost" size="icon" class="size-11" wire:click="edit({{ $location->id }})" :aria-label="__('Edit')"><x-lucide-pencil class="size-5" /></x-ui.button>
+                    @endcan
+                </x-ui.item>
+            @empty
+                <p class="py-10 text-center text-sm text-muted-foreground">{{ __('No locations match.') }}</p>
+            @endforelse
+        </x-ui.item-group>
+    @else
+        <ul class="flex flex-col gap-1" role="tree">
+            @foreach ($roots as $node)
+                @include('livewire.admin.locations.node', ['node' => $node, 'depth' => 0])
+            @endforeach
+        </ul>
+    @endif
+
+    @can('admin.locations.create')
+        <button type="button" wire:click="addChild" aria-label="{{ __('Add division') }}"
+            class="fixed end-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 md:hidden">
+            <x-lucide-plus class="size-6" />
+        </button>
+    @endcan
+
+    <x-shell.sheet id="location" :title="$editingId ? __('Edit location') : __('Add location')" :description="$parentPath ? __('Under :path', ['path' => $parentPath]) : null">
+        <form wire:submit="save" id="location-form" class="flex flex-col gap-4 pb-2">
+            <x-ui.field>
+                <x-ui.field-label for="location-name">{{ __('Name') }} *</x-ui.field-label>
+                <x-ui.input id="location-name" wire:model="name" class="h-11 text-base md:h-9 md:text-sm" />
+                <x-ui.field-error :messages="$errors->get('name')" />
+                <x-ui.field-error :messages="$errors->get('parent_id')" />
+            </x-ui.field>
+            <x-ui.field>
+                <x-ui.field-label for="location-name-bn">{{ __('Name (Bangla)') }}</x-ui.field-label>
+                <x-ui.input id="location-name-bn" wire:model="name_bn" lang="bn" class="h-11 text-base md:h-9 md:text-sm" />
+                <x-ui.field-error :messages="$errors->get('name_bn')" />
+            </x-ui.field>
+        </form>
+        <x-slot:footer>
+            <x-ui.button type="submit" form="location-form">{{ __('Save') }}</x-ui.button>
+        </x-slot:footer>
+    </x-shell.sheet>
+</div>
+```
+
+`resources/views/livewire/admin/locations/node.blade.php`:
+
+```blade
+@php($isOpen = in_array($node->id, $expanded, true))
+<li role="treeitem" aria-expanded="{{ $isOpen ? 'true' : 'false' }}" wire:key="node-{{ $node->id }}">
+    <div class="flex min-h-11 items-center gap-1 rounded-md pe-1 hover:bg-accent/50" style="padding-inline-start: {{ $depth * 1.25 }}rem">
+        @if ($node->children_count > 0)
+            <button type="button" wire:click="toggle({{ $node->id }})" class="flex size-11 items-center justify-center" aria-label="{{ $isOpen ? __('Collapse') : __('Expand') }}">
+                <x-dynamic-component :component="$isOpen ? 'lucide-chevron-down' : 'lucide-chevron-right'" class="size-4" />
+            </button>
+        @else
+            <span class="size-11"></span>
+        @endif
+
+        <span @class(['flex-1 truncate text-base md:text-sm', 'text-muted-foreground line-through' => ! $node->is_active])>{{ $node->name }}</span>
+
+        @if ($node->location_level_id !== $areaLevelId)
+            @can('admin.locations.create')
+                <x-ui.button variant="ghost" size="icon" class="size-11 md:size-8" wire:click="addChild({{ $node->id }})" :aria-label="__('Add child')"><x-lucide-plus /></x-ui.button>
+            @endcan
+        @endif
+        @can('admin.locations.update')
+            <x-ui.button variant="ghost" size="icon" class="size-11 md:size-8" wire:click="edit({{ $node->id }})" :aria-label="__('Edit')"><x-lucide-pencil /></x-ui.button>
+        @endcan
+        @can('admin.locations.deactivate')
+            <x-ui.button variant="ghost" size="icon" class="size-11 md:size-8" wire:click="toggleActive({{ $node->id }})" :aria-label="$node->is_active ? __('Deactivate') : __('Activate')">
+                <x-dynamic-component :component="$node->is_active ? 'lucide-eye-off' : 'lucide-eye'" />
+            </x-ui.button>
+        @endcan
+    </div>
+
+    @if ($isOpen)
+        <ul role="group" class="flex flex-col gap-1">
+            @foreach ($childrenByParent->get($node->id, collect()) as $child)
+                @include('livewire.admin.locations.node', ['node' => $child, 'depth' => $depth + 1])
+            @endforeach
+        </ul>
+    @endif
+</li>
+```
+
+`$expanded`, `$childrenByParent` and `$areaLevelId` reach the partial because `@include` inherits the parent view's variables.
+
+- [ ] **Step 6: Run the tests to see them pass**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/LocationsScreenTest.php`
+Expected: PASS.
+
+- [ ] **Step 7: Commit (per file)**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add routes/modules/foundation.php && git commit -m "Add locations route"
+git add app/Modules/Foundation/Livewire/Admin/Locations.php && git commit -m "Add locations tree component with lazy children and search"
+git add resources/views/livewire/admin/locations.blade.php && git commit -m "Add locations view with search and edit sheet"
+git add resources/views/livewire/admin/locations/node.blade.php && git commit -m "Add recursive location tree node"
+git add tests/Feature/Foundation/Admin/LocationsScreenTest.php && git commit -m "Test locations screen"
+```
+
+---
+
+### Task 13: Company profile and print letterhead
+
+**Files:**
+- Create: `app/Modules/Foundation/Actions/UpdateCompanyProfile.php`
+- Create: `app/Modules/Foundation/Livewire/Admin/Company.php`, `resources/views/livewire/admin/company.blade.php`
+- Create: `resources/views/components/print/letterhead.blade.php`
+- Modify: `resources/views/components/shell/form-page.blade.php` (a `null` submit label hides the actions)
+- Modify: `routes/modules/foundation.php`
+- Test: `tests/Feature/Foundation/Admin/CompanyProfileTest.php`
+
+**Interfaces:**
+- Produces:
+  - `UpdateCompanyProfile::handle(array $input, ?UploadedFile $logo = null): CompanyProfile`. The logo is stored on the `public` disk under `company/`, and the old file is deleted.
+  - `<x-print.letterhead :company="$company" />` (FD-AC-08), reused by every later print.
+  - Route `admin.company.edit` (`admin/company`, `can:admin.company.view`).
+  - `<x-shell.form-page :submit-label="null">` renders no action bars.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Foundation/Admin/CompanyProfileTest.php`:
+
+```php
+<?php
+
+use App\Models\User;
+use App\Modules\Foundation\Livewire\Admin\Company;
+use App\Modules\Foundation\Models\AuditLog;
+use App\Modules\Foundation\Models\CompanyProfile;
+use Database\Seeders\Foundation\CompanyProfileSeeder;
+use Database\Seeders\Foundation\CurrencySeeder;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->seed([CurrencySeeder::class, CompanyProfileSeeder::class]);
+    Storage::fake('public');
+});
+
+test('the company page needs admin.company.view and is read-only without update', function () {
+    $this->actingAs(User::factory()->create())->get(route('admin.company.edit'))->assertForbidden();
+
+    $this->actingAs(userWithPermissions('admin.company.view'))
+        ->get(route('admin.company.edit'))
+        ->assertOk()
+        ->assertSee('SOC Consultant')
+        ->assertDontSee(__('Save company profile'));
+});
+
+test('saving updates the profile, audits it and shows TIN and BIN on the letterhead', function () {
+    Livewire::actingAs(userWithPermissions('admin.company.view', 'admin.company.update'))
+        ->test(Company::class)
+        ->set('tin', '123456789012')
+        ->set('bin', '000111222-0101')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertSee('123456789012')
+        ->assertSee('000111222-0101');
+
+    expect(CompanyProfile::current()->tin)->toBe('123456789012')
+        ->and(AuditLog::query()->where('auditable_type', 'company')->where('event', 'updated')->exists())->toBeTrue();
+});
+
+test('a new logo replaces the old file', function () {
+    $component = Livewire::actingAs(userWithPermissions('admin.company.view', 'admin.company.update'))->test(Company::class);
+
+    $component->set('logo', UploadedFile::fake()->image('logo.png', 200, 80))->call('save')->assertHasNoErrors();
+    $first = CompanyProfile::current()->logo_path;
+    Storage::disk('public')->assertExists($first);
+
+    $component->set('logo', UploadedFile::fake()->image('logo2.jpg', 200, 80))->call('save')->assertHasNoErrors();
+    Storage::disk('public')->assertMissing($first);
+    Storage::disk('public')->assertExists(CompanyProfile::current()->logo_path);
+});
+
+test('logos must be png or jpg up to 1 MB', function () {
+    Livewire::actingAs(userWithPermissions('admin.company.view', 'admin.company.update'))
+        ->test(Company::class)
+        ->set('logo', UploadedFile::fake()->create('logo.png', 2048, 'image/png'))
+        ->call('save')
+        ->assertHasErrors(['logo']);
+});
+
+test('saving without update permission is forbidden', function () {
+    Livewire::actingAs(userWithPermissions('admin.company.view'))->test(Company::class)->call('save')->assertForbidden();
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/CompanyProfileTest.php`
+Expected: FAIL with "Route [admin.company.edit] not defined".
+
+- [ ] **Step 3: Write the action**
+
+`app/Modules/Foundation/Actions/UpdateCompanyProfile.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Actions;
+
+use App\Modules\Foundation\Models\CompanyProfile;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Edits the single company profile row (docs/01 §3.3, §5.5).
+ */
+class UpdateCompanyProfile
+{
+    public const FIELDS = ['name', 'short_name', 'address', 'phone', 'email', 'website', 'tin', 'bin', 'trade_license_no', 'base_currency_id', 'fiscal_year_start_month', 'print_footer'];
+
+    /**
+     * @param  array<string, mixed>  $input
+     *
+     * @throws ValidationException
+     */
+    public function handle(array $input, ?UploadedFile $logo = null): CompanyProfile
+    {
+        $input = array_map(fn (mixed $value): mixed => $value === '' ? null : $value, $input);
+
+        /** @var array<string, mixed> $data */
+        $data = Validator::make([...$input, 'logo' => $logo], [
+            'name' => ['required', 'string', 'max:150'],
+            'short_name' => ['nullable', 'string', 'max:40'],
+            'address' => ['nullable', 'string', 'max:1000'],
+            'phone' => ['nullable', 'string', 'max:60'],
+            'email' => ['nullable', 'email', 'max:150'],
+            'website' => ['nullable', 'url', 'max:150'],
+            'tin' => ['nullable', 'string', 'max:30'],
+            'bin' => ['nullable', 'string', 'max:30'],
+            'trade_license_no' => ['nullable', 'string', 'max:60'],
+            'base_currency_id' => ['required', 'integer', 'exists:currencies,id'],
+            'fiscal_year_start_month' => ['required', 'integer', 'between:1,12'],
+            'print_footer' => ['nullable', 'string', 'max:255'],
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:1024'],
+        ])->validate();
+
+        $profile = CompanyProfile::current() ?? new CompanyProfile;
+        $oldLogo = $profile->logo_path;
+        $newLogo = $logo?->store('company', 'public');
+
+        DB::transaction(function () use ($profile, $data, $newLogo): void {
+            $profile->fill(Arr::only($data, self::FIELDS));
+
+            if ($newLogo !== null && $newLogo !== false) {
+                $profile->logo_path = $newLogo;
+            }
+
+            $profile->save();
+        });
+
+        if ($newLogo && $oldLogo !== null && $oldLogo !== $newLogo) {
+            Storage::disk('public')->delete($oldLogo);
+        }
+
+        return $profile;
+    }
+}
+```
+
+- [ ] **Step 4: Write the letterhead component**
+
+`resources/views/components/print/letterhead.blade.php`:
+
+```blade
+@props(['company'])
+
+{{-- Company letterhead for A4 prints (docs/00 §7.5, FD-AC-08). --}}
+<header {{ $attributes->merge(['class' => 'flex items-start gap-4 border-b pb-4']) }}>
+    @if ($company?->logo_path)
+        <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($company->logo_path) }}" alt="{{ $company->name }}" class="h-16 w-auto object-contain">
+    @endif
+    <div class="flex flex-1 flex-col gap-0.5 text-sm">
+        <p class="text-lg font-semibold">{{ $company?->name }}</p>
+        @if ($company?->address)
+            <p class="whitespace-pre-line">{{ $company->address }}</p>
+        @endif
+        <p>{{ collect([$company?->phone, $company?->email, $company?->website])->filter()->implode(' · ') }}</p>
+        <p>
+            @if ($company?->tin) <span>{{ __('TIN') }}: {{ $company->tin }}</span> @endif
+            @if ($company?->bin) <span class="ms-3">{{ __('BIN') }}: {{ $company->bin }}</span> @endif
+        </p>
+    </div>
+</header>
+```
+
+- [ ] **Step 5: Hide the form actions when there is no submit label**
+
+In `resources/views/components/shell/form-page.blade.php`:
+- wrap the `x-ui.card-footer` element and the `data-test="mobile-action-bar"` div each in `@if ($submitLabel) … @endif`;
+- change the form class merge to `'flex flex-col gap-6 '.($submitLabel ? 'pb-28 md:pb-0' : '')`.
+
+- [ ] **Step 6: Write the component, view and route**
+
+`app/Modules/Foundation/Livewire/Admin/Company.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Livewire\Admin;
+
+use App\Modules\Foundation\Actions\UpdateCompanyProfile;
+use App\Modules\Foundation\Models\CompanyProfile;
+use App\Support\Facades\Lookup;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\UploadedFile;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+
+#[Title('Company profile')]
+class Company extends Component
+{
+    use WithFileUploads;
+
+    public string $name = '';
+
+    public string $short_name = '';
+
+    public string $address = '';
+
+    public string $phone = '';
+
+    public string $email = '';
+
+    public string $website = '';
+
+    public string $tin = '';
+
+    public string $bin = '';
+
+    public string $trade_license_no = '';
+
+    public ?int $base_currency_id = null;
+
+    public int $fiscal_year_start_month = 7;
+
+    public string $print_footer = '';
+
+    /** @var UploadedFile|null */
+    public $logo = null;
+
+    public function mount(): void
+    {
+        $this->authorize('admin.company.view');
+
+        $profile = CompanyProfile::current();
+
+        foreach (UpdateCompanyProfile::FIELDS as $field) {
+            $value = $profile?->getAttribute($field);
+
+            if ($value === null) {
+                continue;
+            }
+
+            $this->{$field} = in_array($field, ['base_currency_id', 'fiscal_year_start_month'], true) ? (int) $value : (string) $value;
+        }
+    }
+
+    public function save(UpdateCompanyProfile $updateCompanyProfile): void
+    {
+        $this->authorize('admin.company.update');
+
+        $updateCompanyProfile->handle($this->only(UpdateCompanyProfile::FIELDS), $this->logo instanceof UploadedFile ? $this->logo : null);
+
+        $this->reset('logo');
+        $this->dispatch('toast', type: 'success', description: __('Company profile saved.'));
+    }
+
+    public function render(): View
+    {
+        return view('livewire.admin.company', [
+            'company' => CompanyProfile::current(),
+            'currencies' => Lookup::options('currencies', $this->base_currency_id),
+            'readOnly' => ! auth()->user()->can('admin.company.update'),
+        ]);
+    }
+}
+```
+
+`resources/views/livewire/admin/company.blade.php`:
+
+```blade
+<div class="flex flex-col gap-6 lg:grid lg:grid-cols-[1fr_24rem]">
+    <x-shell.form-page wire:submit="save" :submit-label="$readOnly ? null : __('Save company profile')">
+        <fieldset @disabled($readOnly) class="flex flex-col gap-6">
+            @foreach ([
+                'name' => [__('Company name').' *', 'text', null],
+                'short_name' => [__('Short name'), 'text', null],
+                'phone' => [__('Phone'), 'tel', 'tel'],
+                'email' => [__('Email'), 'email', 'email'],
+                'website' => [__('Website'), 'url', 'url'],
+                'tin' => [__('TIN'), 'text', null],
+                'bin' => [__('VAT BIN'), 'text', null],
+                'trade_license_no' => [__('Trade license no.'), 'text', null],
+                'print_footer' => [__('Print footer'), 'text', null],
+            ] as $field => [$label, $type, $inputmode])
+                <x-ui.field>
+                    <x-ui.field-label for="{{ $field }}">{{ $label }}</x-ui.field-label>
+                    <x-ui.input id="{{ $field }}" type="{{ $type }}" :inputmode="$inputmode" wire:model="{{ $field }}" class="h-11 text-base md:h-9 md:text-sm" />
+                    <x-ui.field-error :messages="$errors->get($field)" />
+                </x-ui.field>
+            @endforeach
+
+            <x-ui.field>
+                <x-ui.field-label for="address">{{ __('Address') }}</x-ui.field-label>
+                <x-ui.textarea id="address" wire:model="address" rows="3" class="text-base md:text-sm" />
+                <x-ui.field-error :messages="$errors->get('address')" />
+            </x-ui.field>
+
+            <x-ui.field>
+                <x-ui.field-label for="base_currency_id">{{ __('Base currency') }} *</x-ui.field-label>
+                <x-ui.select native id="base_currency_id" wire:model="base_currency_id" class="h-11 text-base md:h-9 md:text-sm">
+                    @foreach ($currencies as $currency)
+                        <option value="{{ $currency->id }}">{{ $currency->code }} — {{ $currency->name }}</option>
+                    @endforeach
+                </x-ui.select>
+                <x-ui.field-error :messages="$errors->get('base_currency_id')" />
+            </x-ui.field>
+
+            <x-ui.field>
+                <x-ui.field-label for="fiscal_year_start_month">{{ __('Fiscal year starts in') }} *</x-ui.field-label>
+                <x-ui.select native id="fiscal_year_start_month" wire:model="fiscal_year_start_month" class="h-11 text-base md:h-9 md:text-sm">
+                    @foreach (range(1, 12) as $month)
+                        <option value="{{ $month }}">{{ \Illuminate\Support\Carbon::create(2026, $month, 1)->format('F') }}</option>
+                    @endforeach
+                </x-ui.select>
+                <x-ui.field-error :messages="$errors->get('fiscal_year_start_month')" />
+            </x-ui.field>
+
+            @unless ($readOnly)
+                <x-ui.field>
+                    <x-ui.field-label for="logo">{{ __('Logo (PNG or JPG, up to 1 MB)') }}</x-ui.field-label>
+                    <x-ui.input id="logo" type="file" wire:model="logo" accept="image/png,image/jpeg" class="h-11 md:h-9" />
+                    <x-ui.field-error :messages="$errors->get('logo')" />
+                </x-ui.field>
+            @endunless
+        </fieldset>
+    </x-shell.form-page>
+
+    <x-ui.card>
+        <x-ui.card-header>
+            <x-ui.card-title>{{ __('Print preview') }}</x-ui.card-title>
+        </x-ui.card-header>
+        <x-ui.card-content>
+            <x-print.letterhead :company="$company" />
+        </x-ui.card-content>
+    </x-ui.card>
+</div>
+```
+
+In `routes/modules/foundation.php`, add `use App\Modules\Foundation\Livewire\Admin\Company;` and, inside the group:
+
+```php
+    Route::livewire('company', Company::class)->middleware('can:admin.company.view')->name('company.edit');
+```
+
+- [ ] **Step 7: Run the tests to see them pass**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/CompanyProfileTest.php tests/Feature/Foundation/Admin/UsersScreenTest.php`
+Expected: PASS. The users screens use the form page too, so their run checks the change to it.
+
+Logos are served from `/storage`. If `public/storage` doesn't exist locally, run `php artisan storage:link` once.
+
+- [ ] **Step 8: Commit (per file)**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add app/Modules/Foundation/Actions/UpdateCompanyProfile.php && git commit -m "Add update company profile action with logo replacement"
+git add resources/views/components/print/letterhead.blade.php && git commit -m "Add company letterhead for prints"
+git add resources/views/components/shell/form-page.blade.php && git commit -m "Hide form actions on read-only pages"
+git add app/Modules/Foundation/Livewire/Admin/Company.php && git commit -m "Add company profile component"
+git add resources/views/livewire/admin/company.blade.php && git commit -m "Add company profile view with print preview"
+git add routes/modules/foundation.php && git commit -m "Add company profile route"
+git add tests/Feature/Foundation/Admin/CompanyProfileTest.php && git commit -m "Test company profile editing and logo upload"
+```
+
+---
+
+### Task 14: Settings screen
+
+**Files:**
+- Create: `app/Modules/Foundation/Actions/UpdateSettings.php`
+- Create: `app/Modules/Foundation/Livewire/Admin/Settings.php`, `resources/views/livewire/admin/settings.blade.php`
+- Modify: `routes/modules/foundation.php`
+- Test: `tests/Feature/Foundation/Admin/SettingsScreenTest.php`
+
+**Interfaces:**
+- Consumes: `SettingsRepository::set()` (casts by type, flushes the cache, audits), the `roles` type (Task 5).
+- Produces:
+  - `UpdateSettings::handle(string $group, array<string, mixed> $values): void`. It validates each key by its type, and unknown keys fail validation. Errors are keyed by the short key.
+  - Route `admin.settings.edit` (`admin/settings`, `can:admin.settings.view`).
+  - Component state `#[Url] string $group` and `array<string, array<string, mixed>> $values` (group → key → value). JSON settings are edited as pretty-printed strings.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Foundation/Admin/SettingsScreenTest.php`:
+
+```php
+<?php
+
+use App\Models\User;
+use App\Modules\Foundation\Livewire\Admin\Settings as SettingsScreen;
+use App\Support\Facades\Settings;
+use Database\Seeders\Foundation\SettingSeeder;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->seed(SettingSeeder::class);
+    ensureRole('finance_manager');
+});
+
+test('settings need admin.settings.view', function () {
+    $this->actingAs(User::factory()->create())->get(route('admin.settings.edit'))->assertForbidden();
+    $this->actingAs(userWithPermissions('admin.settings.view'))->get(route('admin.settings.edit'))->assertOk()->assertSee(__('Session idle timeout (minutes)'));
+});
+
+test('a tab saves typed values and flushes the cache', function () {
+    Livewire::actingAs(userWithPermissions('admin.settings.view', 'admin.settings.update'))
+        ->test(SettingsScreen::class)
+        ->set('values.general.session_timeout_minutes', '45')
+        ->set('values.general.require_2fa_roles', ['finance_manager'])
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertDispatched('toast', type: 'success');
+
+    expect(Settings::get('general.session_timeout_minutes'))->toBe(45)
+        ->and(Settings::get('general.require_2fa_roles'))->toBe(['finance_manager']);
+});
+
+test('invalid values show on their fields', function () {
+    Livewire::actingAs(userWithPermissions('admin.settings.view', 'admin.settings.update'))
+        ->test(SettingsScreen::class)
+        ->set('values.general.session_timeout_minutes', 'soon')
+        ->set('values.general.require_2fa_roles', ['not_a_role'])
+        ->call('save')
+        ->assertHasErrors(['values.general.session_timeout_minutes', 'values.general.require_2fa_roles.0']);
+});
+
+test('switching tabs saves only that group', function () {
+    Livewire::actingAs(userWithPermissions('admin.settings.view', 'admin.settings.update'))
+        ->test(SettingsScreen::class)
+        ->set('group', 'notifications')
+        ->set('values.notifications.sms_enabled', true)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(Settings::get('notifications.sms_enabled'))->toBeTrue();
+});
+
+test('saving without update permission is forbidden', function () {
+    Livewire::actingAs(userWithPermissions('admin.settings.view'))->test(SettingsScreen::class)->call('save')->assertForbidden();
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/SettingsScreenTest.php`
+Expected: FAIL with "Route [admin.settings.edit] not defined".
+
+- [ ] **Step 3: Write the action**
+
+`app/Modules/Foundation/Actions/UpdateSettings.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Actions;
+
+use App\Modules\Foundation\Models\Setting;
+use App\Support\Settings\SettingsRepository;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Saves one settings group (docs/01 §5.7). Each value is validated by its declared type.
+ */
+class UpdateSettings
+{
+    public function __construct(private SettingsRepository $settings) {}
+
+    /**
+     * @param  array<string, mixed>  $values  short key => value
+     *
+     * @throws ValidationException
+     */
+    public function handle(string $group, array $values): void
+    {
+        $types = Setting::query()->where('group', $group)->pluck('type', 'key');
+        $rules = [];
+
+        foreach (array_keys($values) as $key) {
+            $type = $types[$key] ?? null;
+
+            $rules[$key] = match (true) {
+                $type === null => [fn (string $attribute, mixed $value, \Closure $fail) => $fail(__('Unknown setting.'))],
+                $type === 'int' => ['required', 'integer'],
+                $type === 'decimal' => ['required', 'numeric'],
+                $type === 'bool' => ['boolean'],
+                $type === 'json' => ['nullable', 'json'],
+                $type === 'roles' => ['array'],
+                str_starts_with($type, 'fk:') => ['nullable', 'integer', Rule::exists(substr($type, 3), 'id')],
+                default => ['nullable', 'string', 'max:255'],
+            };
+
+            if ($type === 'roles') {
+                $rules[$key.'.*'] = ['string', Rule::exists('roles', 'code')];
+            }
+        }
+
+        $validated = Validator::make($values, $rules)->validate();
+
+        DB::transaction(function () use ($group, $validated, $types): void {
+            foreach ($validated as $key => $value) {
+                if (($types[$key] ?? null) === 'json' && is_string($value)) {
+                    $value = json_decode($value, true);
+                }
+
+                $this->settings->set($group.'.'.$key, $value);
+            }
+        });
+    }
+}
+```
+
+- [ ] **Step 4: Write the component**
+
+`app/Modules/Foundation/Livewire/Admin/Settings.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Livewire\Admin;
+
+use App\Modules\Foundation\Actions\UpdateSettings;
+use App\Modules\Foundation\Models\Role;
+use App\Modules\Foundation\Models\Setting;
+use App\Support\Facades\Lookup;
+use Illuminate\Contracts\View\View;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
+use Livewire\Component;
+
+#[Title('Settings')]
+class Settings extends Component
+{
+    #[Url(except: 'general')]
+    public string $group = 'general';
+
+    /** @var array<string, array<string, mixed>> */
+    public array $values = [];
+
+    public function mount(): void
+    {
+        $this->authorize('admin.settings.view');
+
+        foreach (Setting::query()->orderBy('id')->get() as $setting) {
+            $this->values[$setting->group][$setting->key] = $setting->type === 'json'
+                ? json_encode($setting->value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+                : $setting->value;
+        }
+
+        if (! array_key_exists($this->group, $this->values)) {
+            $this->group = (string) array_key_first($this->values);
+        }
+    }
+
+    public function save(UpdateSettings $updateSettings): void
+    {
+        $this->authorize('admin.settings.update');
+
+        try {
+            $updateSettings->handle($this->group, $this->values[$this->group] ?? []);
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(
+                collect($exception->errors())->mapWithKeys(fn (array $messages, string $key): array => ["values.{$this->group}.{$key}" => $messages])->all(),
+            );
+        }
+
+        $this->dispatch('toast', type: 'success', description: __('Settings saved.'));
+    }
+
+    public function render(): View
+    {
+        $settings = Setting::query()->orderBy('id')->get();
+
+        return view('livewire.admin.settings', [
+            'groups' => $settings->pluck('group')->unique()->values(),
+            'fields' => $settings->where('group', $this->group)->values(),
+            'roles' => Role::query()->where('is_active', true)->orderBy('name')->get(['code', 'name']),
+            'lookupOptions' => fn (string $table, mixed $current) => Lookup::options($table, is_numeric($current) ? (int) $current : null),
+            'readOnly' => ! auth()->user()->can('admin.settings.update'),
+        ]);
+    }
+}
+```
+
+- [ ] **Step 5: Write the view and route**
+
+`resources/views/livewire/admin/settings.blade.php`:
+
+```blade
+<div class="flex flex-col gap-4">
+    <div class="hidden md:block">
+        <x-ui.tabs-list variant="underline">
+            @foreach ($groups as $tab)
+                <button type="button" wire:click="$set('group', '{{ $tab }}')"
+                    @class(['px-3 py-2 text-sm capitalize', 'border-b-2 border-primary font-medium' => $tab === $group, 'text-muted-foreground' => $tab !== $group])>
+                    {{ __(ucfirst($tab)) }}
+                </button>
+            @endforeach
+        </x-ui.tabs-list>
+    </div>
+    <div class="overflow-x-auto md:hidden">
+        <x-ui.segmented-control name="settings-group" wire:model.live="group" :value="$group"
+            :options="$groups->mapWithKeys(fn ($tab) => [$tab => __(ucfirst($tab))])->all()" class="h-11" />
+    </div>
+
+    <x-shell.form-page wire:submit="save" :submit-label="$readOnly ? null : __('Save :group settings', ['group' => __($group)])">
+        <fieldset @disabled($readOnly) class="flex flex-col gap-6" wire:key="group-{{ $group }}">
+            @foreach ($fields as $setting)
+                @php($model = "values.{$group}.{$setting->key}")
+                @php($id = "setting-{$setting->key}")
+                @if ($setting->type === 'bool')
+                    <x-ui.field orientation="horizontal" class="min-h-11 items-center">
+                        <x-ui.switch :id="$id" wire:model="{{ $model }}" :checked="(bool) data_get($values, $group.'.'.$setting->key)" />
+                        <x-ui.field-label :for="$id">{{ __($setting->label) }}</x-ui.field-label>
+                    </x-ui.field>
+                @else
+                    <x-ui.field>
+                        <x-ui.field-label :for="$id">{{ __($setting->label) }}</x-ui.field-label>
+                        @if ($setting->type === 'roles')
+                            <div class="flex flex-col gap-1">
+                                @foreach ($roles as $role)
+                                    <label class="flex min-h-11 items-center gap-3 text-sm md:min-h-8">
+                                        <x-ui.checkbox native wire:model="{{ $model }}" value="{{ $role->code }}" />
+                                        {{ $role->name }}
+                                    </label>
+                                @endforeach
+                            </div>
+                        @elseif ($setting->type === 'json')
+                            <x-ui.textarea :id="$id" wire:model="{{ $model }}" rows="4" class="font-mono text-base md:text-sm" />
+                        @elseif (str_starts_with($setting->type, 'fk:'))
+                            <x-ui.select native :id="$id" wire:model="{{ $model }}" class="h-11 text-base md:h-9 md:text-sm">
+                                <option value="">{{ __('None') }}</option>
+                                @foreach ($lookupOptions(substr($setting->type, 3), data_get($values, $group.'.'.$setting->key)) as $option)
+                                    <option value="{{ $option->id }}">{{ $option->name }}</option>
+                                @endforeach
+                            </x-ui.select>
+                        @else
+                            <x-ui.input :id="$id" wire:model="{{ $model }}"
+                                :type="$setting->type === 'int' ? 'number' : 'text'"
+                                :inputmode="match ($setting->type) { 'int' => 'numeric', 'decimal' => 'decimal', default => null }"
+                                class="h-11 text-base md:h-9 md:text-sm" />
+                        @endif
+                        @if ($setting->help)
+                            <x-ui.field-description>{{ __($setting->help) }}</x-ui.field-description>
+                        @endif
+                        <x-ui.field-error :messages="$errors->get($model)" />
+                        <x-ui.field-error :messages="collect($errors->get($model.'.*'))->flatten()->all()" />
+                    </x-ui.field>
+                @endif
+            @endforeach
+        </fieldset>
+    </x-shell.form-page>
+</div>
+```
+
+The desktop tab strip reuses `x-ui.tabs-list` only for its styling, with plain buttons that set `group`. This keeps the active tab in the component, so the URL and "save this tab" stay in step. If `x-ui.tabs-list` renders nothing outside `x-ui.tabs`, replace it with a `<div role="tablist" class="flex gap-1 border-b">`.
+
+In `routes/modules/foundation.php`, add `use App\Modules\Foundation\Livewire\Admin\Settings;` and, inside the group:
+
+```php
+    Route::livewire('settings', Settings::class)->middleware('can:admin.settings.view')->name('settings.edit');
+```
+
+- [ ] **Step 6: Run the tests to see them pass**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/SettingsScreenTest.php tests/Feature/Foundation/SettingsTest.php`
+Expected: PASS.
+
+- [ ] **Step 7: Commit (per file)**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add app/Modules/Foundation/Actions/UpdateSettings.php && git commit -m "Add action to save a settings group with typed validation"
+git add app/Modules/Foundation/Livewire/Admin/Settings.php && git commit -m "Add settings screen component"
+git add resources/views/livewire/admin/settings.blade.php && git commit -m "Add settings view with tabs and typed fields"
+git add routes/modules/foundation.php && git commit -m "Add settings route"
+git add tests/Feature/Foundation/Admin/SettingsScreenTest.php && git commit -m "Test settings screen"
+```
+
+---
+
+### Task 15: Number sequences screen
+
+**Files:**
+- Create: `app/Modules/Foundation/Actions/UpdateSequenceFormat.php`, `app/Modules/Foundation/Actions/IncreaseSequenceNumber.php`
+- Create: `app/Modules/Foundation/Livewire/Admin/Sequences.php`, `resources/views/livewire/admin/sequences.blade.php`
+- Modify: `app/Support/NumberSequenceService.php` (public `preview()`, shared token building)
+- Modify: `app/Modules/Foundation/Models/NumberSequenceFormat.php` (`sequences()` relation)
+- Modify: `routes/modules/foundation.php`
+- Test: `tests/Feature/Foundation/Admin/SequencesTest.php`
+
+**Interfaces:**
+- Produces:
+  - `NumberSequenceService::preview(string $format, int $number, array $context = []): string` renders the tokens without touching the database.
+  - `NumberSequenceFormat::sequences(): HasMany` relates on `document_type`.
+  - `UpdateSequenceFormat::handle(NumberSequenceFormat $definition, string $format): void`. It also rewrites `format` on every existing counter of that type, because the service renders from the counter row.
+  - `IncreaseSequenceNumber::handle(NumberSequence $sequence, int $nextNumber): void` (FD-BR-07, checked under `lockForUpdate`). Errors use the keys `format` and `next_number`.
+  - Route `admin.sequences.index` (`admin/sequences`, `can:admin.sequences.view`).
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Foundation/Admin/SequencesTest.php`:
+
+```php
+<?php
+
+use App\Models\User;
+use App\Modules\Foundation\Actions\IncreaseSequenceNumber;
+use App\Modules\Foundation\Actions\UpdateSequenceFormat;
+use App\Modules\Foundation\Livewire\Admin\Sequences;
+use App\Modules\Foundation\Models\NumberSequence;
+use App\Modules\Foundation\Models\NumberSequenceFormat;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->definition = NumberSequenceFormat::query()->create(['document_type' => 'invoice', 'format' => 'INV-{yy}-{seq:5}', 'reset_policy' => 'fiscal_year']);
+    $this->counter = NumberSequence::query()->create(['document_type' => 'invoice', 'scope_key' => 'fy:27', 'format' => 'INV-{yy}-{seq:5}', 'next_number' => 10, 'reset_policy' => 'fiscal_year']);
+});
+
+test('a format must contain a seq token and only known tokens', function () {
+    expectValidationError(fn () => app(UpdateSequenceFormat::class)->handle($this->definition, 'INV-{yy}'), 'format');
+    expectValidationError(fn () => app(UpdateSequenceFormat::class)->handle($this->definition, 'INV-{month}-{seq:5}'), 'format');
+    expectValidationError(fn () => app(UpdateSequenceFormat::class)->handle($this->definition, 'INV-{seq:0}'), 'format');
+});
+
+test('a new format is applied to the definition and its counters', function () {
+    app(UpdateSequenceFormat::class)->handle($this->definition, 'SI-{yyyy}-{seq:6}');
+
+    expect($this->definition->fresh()->format)->toBe('SI-{yyyy}-{seq:6}')
+        ->and($this->counter->fresh()->format)->toBe('SI-{yyyy}-{seq:6}');
+});
+
+test('the next number can only increase (FD-BR-07)', function () {
+    expectValidationError(fn () => app(IncreaseSequenceNumber::class)->handle($this->counter, 10), 'next_number');
+    expectValidationError(fn () => app(IncreaseSequenceNumber::class)->handle($this->counter, 3), 'next_number');
+
+    app(IncreaseSequenceNumber::class)->handle($this->counter, 25);
+    expect($this->counter->fresh()->next_number)->toBe(25);
+});
+
+test('the screen needs admin.sequences.view and shows a sample number', function () {
+    $this->actingAs(User::factory()->create())->get(route('admin.sequences.index'))->assertForbidden();
+
+    $this->actingAs(userWithPermissions('admin.sequences.view'))
+        ->get(route('admin.sequences.index'))
+        ->assertOk()
+        ->assertSee('INV-{yy}-{seq:5}')
+        ->assertSee('00010');
+});
+
+test('editing from the screen needs admin.sequences.update', function () {
+    Livewire::actingAs(userWithPermissions('admin.sequences.view'))
+        ->test(Sequences::class)
+        ->call('editFormat', $this->definition->id)
+        ->assertForbidden();
+
+    Livewire::actingAs(userWithPermissions('admin.sequences.view', 'admin.sequences.update'))
+        ->test(Sequences::class)
+        ->call('editCounter', $this->counter->id)
+        ->set('nextNumber', 5)
+        ->call('saveCounter')
+        ->assertHasErrors(['nextNumber']);
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/SequencesTest.php`
+Expected: FAIL with "Class ...UpdateSequenceFormat not found".
+
+- [ ] **Step 3: Expose a preview on the service**
+
+In `app/Support/NumberSequenceService.php`, move the token building out of `next()` into a private method and add `preview()`:
+
+```php
+    /**
+     * Render a format for display (e.g. the admin screen) without issuing a number.
+     *
+     * @param  array{date?: CarbonInterface|string, bl_prefix?: string, branch?: string}  $context
+     */
+    public function preview(string $format, int $number, array $context = []): string
+    {
+        return $this->render($format, $number, $this->tokens($context));
+    }
+
+    /**
+     * @param  array{date?: CarbonInterface|string, bl_prefix?: string, branch?: string}  $context
+     * @return array{yy: string, yyyy: string, bl_prefix: string, branch: string}
+     */
+    private function tokens(array $context): array
+    {
+        $fiscalYear = FiscalYear::for(
+            CarbonImmutable::parse($context['date'] ?? now()),
+            CompanyProfile::fiscalYearStartMonth(),
+        );
+
+        return [
+            'yy' => $fiscalYear->shortCode(),
+            'yyyy' => $fiscalYear->longCode(),
+            'bl_prefix' => $context['bl_prefix'] ?? '',
+            'branch' => $context['branch'] ?? '',
+        ];
+    }
+```
+
+In `next()`, replace the `$fiscalYear = …;` and `$tokens = [ … ];` statements with `$tokens = $this->tokens($context);`. Run `php artisan test --compact tests/Feature/Foundation/NumberSequenceTest.php` and expect PASS (no behaviour change).
+
+In `NumberSequenceFormat`, add (with `use Illuminate\Database\Eloquent\Relations\HasMany;`):
+
+```php
+    /**
+     * @return HasMany<NumberSequence, $this>
+     */
+    public function sequences(): HasMany
+    {
+        return $this->hasMany(NumberSequence::class, 'document_type', 'document_type')->orderBy('scope_key');
+    }
+```
+
+- [ ] **Step 4: Write the actions**
+
+`app/Modules/Foundation/Actions/UpdateSequenceFormat.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Actions;
+
+use App\Modules\Foundation\Models\NumberSequence;
+use App\Modules\Foundation\Models\NumberSequenceFormat;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class UpdateSequenceFormat
+{
+    private const TOKEN = '/\{([^}]*)\}/';
+
+    private const ALLOWED = '/^(seq:[1-9]|yy|yyyy|bl_prefix|branch)$/';
+
+    /**
+     * @throws ValidationException
+     */
+    public function handle(NumberSequenceFormat $definition, string $format): void
+    {
+        $format = trim($format);
+        preg_match_all(self::TOKEN, $format, $matches);
+        $tokens = $matches[1];
+
+        $error = match (true) {
+            $format === '' || mb_strlen($format) > 80 => __('The format must be 1 to 80 characters.'),
+            ! in_array(true, array_map(fn (string $token): bool => str_starts_with($token, 'seq:'), $tokens), true) => __('The format must contain a {seq:N} token.'),
+            array_filter($tokens, fn (string $token): bool => preg_match(self::ALLOWED, $token) !== 1) !== [] => __('Only {seq:N}, {yy}, {yyyy}, {bl_prefix} and {branch} tokens are allowed (N from 1 to 9).'),
+            default => null,
+        };
+
+        if ($error !== null) {
+            throw ValidationException::withMessages(['format' => $error]);
+        }
+
+        DB::transaction(function () use ($definition, $format): void {
+            $definition->update(['format' => $format]);
+            NumberSequence::query()->where('document_type', $definition->document_type)->update(['format' => $format]);
+        });
+    }
+}
+```
+
+`app/Modules/Foundation/Actions/IncreaseSequenceNumber.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Actions;
+
+use App\Modules\Foundation\Models\NumberSequence;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * FD-BR-07: next_number can only increase. Checked again under the row lock so a document
+ * issued in the meantime cannot make the new value a step backwards.
+ */
+class IncreaseSequenceNumber
+{
+    /**
+     * @throws ValidationException
+     */
+    public function handle(NumberSequence $sequence, int $nextNumber): void
+    {
+        DB::transaction(function () use ($sequence, $nextNumber): void {
+            $locked = NumberSequence::query()->whereKey($sequence->id)->lockForUpdate()->firstOrFail();
+
+            if ($nextNumber <= $locked->next_number) {
+                throw ValidationException::withMessages([
+                    'next_number' => __('The next number can only increase (it is :current now).', ['current' => $locked->next_number]),
+                ]);
+            }
+
+            $locked->update(['next_number' => $nextNumber]);
+        });
+    }
+}
+```
+
+- [ ] **Step 5: Write the component, view and route**
+
+`app/Modules/Foundation/Livewire/Admin/Sequences.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Livewire\Admin;
+
+use App\Modules\Foundation\Actions\IncreaseSequenceNumber;
+use App\Modules\Foundation\Actions\UpdateSequenceFormat;
+use App\Modules\Foundation\Models\NumberSequence;
+use App\Modules\Foundation\Models\NumberSequenceFormat;
+use App\Support\NumberSequenceService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+#[Title('Number sequences')]
+class Sequences extends Component
+{
+    public ?int $formatId = null;
+
+    public string $format = '';
+
+    public ?int $counterId = null;
+
+    public ?int $nextNumber = null;
+
+    public function mount(): void
+    {
+        $this->authorize('admin.sequences.view');
+    }
+
+    public function editFormat(int $id): void
+    {
+        $this->authorize('admin.sequences.update');
+
+        $definition = NumberSequenceFormat::query()->findOrFail($id);
+        $this->formatId = $definition->id;
+        $this->format = $definition->format;
+        $this->resetErrorBag();
+        $this->dispatch('open-sheet-sequence-format');
+    }
+
+    public function saveFormat(UpdateSequenceFormat $updateSequenceFormat): void
+    {
+        $this->authorize('admin.sequences.update');
+
+        $updateSequenceFormat->handle(NumberSequenceFormat::query()->findOrFail($this->formatId), $this->format);
+
+        $this->dispatch('close-sheet-sequence-format');
+        $this->dispatch('toast', type: 'success', description: __('Format saved.'));
+    }
+
+    public function editCounter(int $id): void
+    {
+        $this->authorize('admin.sequences.update');
+
+        $counter = NumberSequence::query()->findOrFail($id);
+        $this->counterId = $counter->id;
+        $this->nextNumber = $counter->next_number;
+        $this->resetErrorBag();
+        $this->dispatch('open-sheet-sequence-counter');
+    }
+
+    public function saveCounter(IncreaseSequenceNumber $increaseSequenceNumber): void
+    {
+        $this->authorize('admin.sequences.update');
+        $this->validate(['nextNumber' => ['required', 'integer', 'min:1']]);
+
+        try {
+            $increaseSequenceNumber->handle(NumberSequence::query()->findOrFail($this->counterId), (int) $this->nextNumber);
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(['nextNumber' => $exception->errors()['next_number'] ?? []]);
+        }
+
+        $this->dispatch('close-sheet-sequence-counter');
+        $this->dispatch('toast', type: 'success', description: __('Next number updated.'));
+    }
+
+    public function render(NumberSequenceService $numbers): View
+    {
+        return view('livewire.admin.sequences', [
+            'definitions' => NumberSequenceFormat::query()->with('sequences')->orderBy('document_type')->get(),
+            'sample' => fn (string $format, int $number): string => $numbers->preview($format, $number, ['bl_prefix' => 'BL', 'branch' => 'HO']),
+            'counter' => $this->counterId !== null ? NumberSequence::query()->find($this->counterId) : null,
+        ]);
+    }
+}
+```
+
+`saveFormat` lets the Action's `format` error reach the `format` property directly. `saveCounter` maps `next_number` to the `nextNumber` property.
+
+`resources/views/livewire/admin/sequences.blade.php`:
+
+```blade
+<div class="flex flex-col gap-3">
+    @foreach ($definitions as $definition)
+        <x-ui.card class="gap-3 py-4" wire:key="definition-{{ $definition->id }}">
+            <x-ui.card-header class="flex flex-row items-start justify-between gap-2 px-4">
+                <div class="min-w-0">
+                    <x-ui.card-title class="text-base">{{ \Illuminate\Support\Str::headline($definition->document_type) }}</x-ui.card-title>
+                    <x-ui.card-description class="font-mono text-sm">{{ $definition->format }}</x-ui.card-description>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        {{ $definition->reset_policy === 'fiscal_year' ? __('Resets every fiscal year') : __('Never resets') }}
+                        @if ($definition->scope_by) · {{ __('Separate per :scope', ['scope' => str_replace('_', ' ', $definition->scope_by)]) }} @endif
+                    </p>
+                </div>
+                @can('admin.sequences.update')
+                    <x-ui.button variant="ghost" size="icon" class="size-11 md:size-9" wire:click="editFormat({{ $definition->id }})" :aria-label="__('Edit format')"><x-lucide-pencil /></x-ui.button>
+                @endcan
+            </x-ui.card-header>
+            <x-ui.card-content class="flex flex-col gap-1 px-4">
+                @forelse ($definition->sequences as $sequence)
+                    <div class="flex min-h-11 items-center gap-2 border-t pt-1 text-sm" wire:key="counter-{{ $sequence->id }}">
+                        <span class="w-24 shrink-0 font-mono text-muted-foreground">{{ $sequence->scope_key === '' ? __('global') : $sequence->scope_key }}</span>
+                        <span class="flex-1 font-mono">{{ $sample($sequence->format, $sequence->next_number) }}</span>
+                        @can('admin.sequences.update')
+                            <x-ui.button variant="outline" size="sm" class="h-11 md:h-8" wire:click="editCounter({{ $sequence->id }})">{{ __('Next: :n', ['n' => $sequence->next_number]) }}</x-ui.button>
+                        @else
+                            <span class="text-muted-foreground">{{ __('Next: :n', ['n' => $sequence->next_number]) }}</span>
+                        @endcan
+                    </div>
+                @empty
+                    <p class="text-sm text-muted-foreground">{{ __('Sample: :sample (no numbers issued yet)', ['sample' => $sample($definition->format, 1)]) }}</p>
+                @endforelse
+            </x-ui.card-content>
+        </x-ui.card>
+    @endforeach
+
+    <x-shell.sheet id="sequence-format" :title="__('Edit format')">
+        <form wire:submit="saveFormat" id="sequence-format-form" class="flex flex-col gap-3 pb-2">
+            <x-ui.field>
+                <x-ui.field-label for="format">{{ __('Format') }}</x-ui.field-label>
+                <x-ui.input id="format" wire:model.live.debounce.300ms="format" autocapitalize="none" class="h-11 font-mono text-base md:h-9 md:text-sm" />
+                <x-ui.field-description>{{ __('Tokens: {seq:N}, {yy}, {yyyy}, {bl_prefix}, {branch}') }}</x-ui.field-description>
+                <x-ui.field-error :messages="$errors->get('format')" />
+            </x-ui.field>
+            <p class="text-sm">{{ __('Sample') }}: <span class="font-mono">{{ $sample($format, 1) }}</span></p>
+        </form>
+        <x-slot:footer>
+            <x-ui.button type="submit" form="sequence-format-form">{{ __('Save') }}</x-ui.button>
+        </x-slot:footer>
+    </x-shell.sheet>
+
+    <x-shell.sheet id="sequence-counter" :title="__('Change next number')" :description="$counter ? __(':type · :scope', ['type' => $counter->document_type, 'scope' => $counter->scope_key ?: __('global')]) : null">
+        <form wire:submit="saveCounter" id="sequence-counter-form" class="flex flex-col gap-3 pb-2">
+            <x-ui.alert>
+                <x-lucide-triangle-alert />
+                <x-ui.alert-description>{{ __('The next number can only go up. Skipped numbers are never reused.') }}</x-ui.alert-description>
+            </x-ui.alert>
+            <x-ui.field>
+                <x-ui.field-label for="nextNumber">{{ __('Next number') }}</x-ui.field-label>
+                <x-ui.input id="nextNumber" type="number" inputmode="numeric" wire:model="nextNumber" class="h-11 text-base md:h-9 md:text-sm" />
+                <x-ui.field-error :messages="$errors->get('nextNumber')" />
+            </x-ui.field>
+        </form>
+        <x-slot:footer>
+            <x-ui.button type="submit" form="sequence-counter-form">{{ __('Save') }}</x-ui.button>
+        </x-slot:footer>
+    </x-shell.sheet>
+</div>
+```
+
+In `routes/modules/foundation.php`, add `use App\Modules\Foundation\Livewire\Admin\Sequences;` and, inside the group:
+
+```php
+    Route::livewire('sequences', Sequences::class)->middleware('can:admin.sequences.view')->name('sequences.index');
+```
+
+- [ ] **Step 6: Run the tests to see them pass**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/SequencesTest.php tests/Feature/Foundation/NumberSequenceTest.php`
+Expected: PASS.
+
+- [ ] **Step 7: Commit (per file)**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add app/Support/NumberSequenceService.php && git commit -m "Add number format preview to the sequence service"
+git add app/Modules/Foundation/Models/NumberSequenceFormat.php && git commit -m "Relate number formats to their counters"
+git add app/Modules/Foundation/Actions/UpdateSequenceFormat.php && git commit -m "Add action to change a number format" -m "Validates tokens and updates every counter of that document type."
+git add app/Modules/Foundation/Actions/IncreaseSequenceNumber.php && git commit -m "Only allow sequence numbers to increase" -m "FD-BR-07, re-checked under the row lock."
+git add app/Modules/Foundation/Livewire/Admin/Sequences.php && git commit -m "Add number sequences screen component"
+git add resources/views/livewire/admin/sequences.blade.php && git commit -m "Add number sequences view with edit sheets"
+git add routes/modules/foundation.php && git commit -m "Add number sequences route"
+git add tests/Feature/Foundation/Admin/SequencesTest.php && git commit -m "Test number sequence editing rules"
+```
+
+---
+
+### Task 16: Audit log screen
+
+**Files:**
+- Create: `app/Modules/Foundation/Livewire/Admin/AuditLog.php`, `resources/views/livewire/admin/audit-log.blade.php`
+- Modify: `routes/modules/foundation.php`
+- Test: `tests/Feature/Foundation/Admin/AuditLogScreenTest.php`
+
+**Interfaces:**
+- Consumes: `WithListing`, `ListingExport`, `x-shell.list`, `x-shell.sheet`.
+- Produces:
+  - Route `admin.audit.index` (`admin/audit`, `can:admin.audit.view`).
+  - Filters `user` (username), `type` (morph alias), `record` (id), `event`, `from`, `to` (dates).
+  - Methods `show(int $id)` (opens the `audit-entry` sheet) and `export()` (needs `admin.audit.export`).
+- The spec allows an "expandable row" on desktop. This plan uses the same right-side sheet on desktop and the bottom sheet on mobile, so one change view serves both.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Foundation/Admin/AuditLogScreenTest.php`:
+
+```php
+<?php
+
+use App\Models\User;
+use App\Modules\Foundation\Livewire\Admin\AuditLog as AuditLogScreen;
+use App\Modules\Foundation\Models\AuditLog;
+use App\Support\AuditTrail\AuditTrail;
+use Livewire\Livewire;
+use Maatwebsite\Excel\Facades\Excel;
+
+beforeEach(function () {
+    $this->subject = User::factory()->create(['username' => 'subject1']);
+    AuditTrail::record($this->subject, 'updated', ['phone' => '01711111111'], ['phone' => '01822222222']);
+});
+
+test('the audit log needs admin.audit.view', function () {
+    $this->actingAs(User::factory()->create())->get(route('admin.audit.index'))->assertForbidden();
+    $this->actingAs(userWithPermissions('admin.audit.view'))->get(route('admin.audit.index'))->assertOk();
+});
+
+test('filters narrow by record type, record id, event and date', function () {
+    Livewire::actingAs(userWithPermissions('admin.audit.view'))
+        ->test(AuditLogScreen::class)
+        ->set('filters.type', 'user')
+        ->set('filters.record', (string) $this->subject->id)
+        ->set('filters.event', 'updated')
+        ->assertSee('user #'.$this->subject->id)
+        ->set('filters.from', now()->addDay()->toDateString())
+        ->assertDontSee('user #'.$this->subject->id);
+});
+
+test('an entry shows each changed field old and new (FD-AC-06 view)', function () {
+    $entry = AuditLog::query()->where('event', 'updated')->latest('id')->firstOrFail();
+
+    Livewire::actingAs(userWithPermissions('admin.audit.view'))
+        ->test(AuditLogScreen::class)
+        ->call('show', $entry->id)
+        ->assertDispatched('open-sheet-audit-entry')
+        ->assertSee('01711111111')
+        ->assertSee('01822222222');
+});
+
+test('exporting needs admin.audit.export', function () {
+    Excel::fake();
+    Excel::matchByRegex();
+
+    Livewire::actingAs(userWithPermissions('admin.audit.view'))->test(AuditLogScreen::class)->call('export')->assertForbidden();
+
+    Livewire::actingAs(userWithPermissions('admin.audit.view', 'admin.audit.export'))->test(AuditLogScreen::class)->call('export');
+    Excel::assertDownloaded('/^audit-log-\d{8}-\d{6}\.xlsx$/');
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/AuditLogScreenTest.php`
+Expected: FAIL with "Route [admin.audit.index] not defined".
+
+- [ ] **Step 3: Write the component**
+
+`app/Modules/Foundation/Livewire/Admin/AuditLog.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Livewire\Admin;
+
+use App\Modules\Foundation\Models\AuditLog as AuditEntry;
+use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithListing;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+#[Title('Audit log')]
+class AuditLog extends Component
+{
+    use WithListing;
+
+    public ?int $selectedId = null;
+
+    public function mount(): void
+    {
+        $this->authorize('admin.audit.view');
+    }
+
+    public function show(int $id): void
+    {
+        $this->authorize('admin.audit.view');
+
+        $this->selectedId = AuditEntry::query()->findOrFail($id)->id;
+        $this->dispatch('open-sheet-audit-entry');
+    }
+
+    public function export(): BinaryFileResponse
+    {
+        $this->authorize('admin.audit.export');
+
+        return ListingExport::download('audit-log', $this->filteredQuery(), [
+            'When' => fn (AuditEntry $entry): string => $entry->created_at->format('d-M-Y H:i:s'),
+            'User' => 'user.username',
+            'Event' => 'event',
+            'Record type' => 'auditable_type',
+            'Record id' => 'auditable_id',
+            'Old values' => fn (AuditEntry $entry): string => (string) json_encode($entry->old_values, JSON_UNESCAPED_UNICODE),
+            'New values' => fn (AuditEntry $entry): string => (string) json_encode($entry->new_values, JSON_UNESCAPED_UNICODE),
+            'IP' => 'ip_address',
+        ]);
+    }
+
+    /**
+     * @return Builder<AuditEntry>
+     */
+    protected function listingQuery(): Builder
+    {
+        return AuditEntry::query()->with('user:id,name,username')->latest('id');
+    }
+
+    protected function searchColumns(): array
+    {
+        return ['auditable_type', 'event'];
+    }
+
+    protected function sortColumns(): array
+    {
+        return ['created_at' => 'created_at'];
+    }
+
+    protected function applyFilters(Builder $query): void
+    {
+        $filters = $this->filters;
+
+        if (filled($filters['user'] ?? null)) {
+            $query->whereHas('user', fn (Builder $users) => $users->where('username', Str::lower(trim($filters['user']))));
+        }
+
+        if (filled($filters['type'] ?? null)) {
+            $query->where('auditable_type', $filters['type']);
+        }
+
+        if (filled($filters['record'] ?? null) && ctype_digit((string) $filters['record'])) {
+            $query->where('auditable_id', (int) $filters['record']);
+        }
+
+        if (filled($filters['event'] ?? null)) {
+            $query->where('event', $filters['event']);
+        }
+
+        if (filled($filters['from'] ?? null)) {
+            $query->whereDate('created_at', '>=', $filters['from']);
+        }
+
+        if (filled($filters['to'] ?? null)) {
+            $query->whereDate('created_at', '<=', $filters['to']);
+        }
+    }
+
+    public function render(): View
+    {
+        return view('livewire.admin.audit-log', [
+            'rows' => $this->paginatedRows(),
+            'mobileRows' => $this->mobileRows(),
+            'types' => AuditEntry::query()->distinct()->orderBy('auditable_type')->pluck('auditable_type'),
+            'events' => AuditEntry::query()->distinct()->orderBy('event')->pluck('event'),
+            'selected' => $this->selectedId !== null ? AuditEntry::query()->with('user')->find($this->selectedId) : null,
+        ]);
+    }
+}
+```
+
+- [ ] **Step 4: Write the view and route**
+
+`resources/views/livewire/admin/audit-log.blade.php`:
+
+```blade
+<div>
+    <x-shell.list
+        :search-placeholder="__('Search record type or event')"
+        :exportable="auth()->user()->can('admin.audit.export')"
+        :has-more="$this->hasMoreRows"
+        :active-filters="count(array_filter($filters, 'filled'))"
+    >
+        <x-slot:filters>
+            <x-ui.field>
+                <x-ui.field-label for="filter-user">{{ __('Username') }}</x-ui.field-label>
+                <x-ui.input id="filter-user" wire:model.live.debounce.300ms="filters.user" autocapitalize="none" class="h-11 text-base md:h-9 md:text-sm" />
+            </x-ui.field>
+            <x-ui.field>
+                <x-ui.field-label for="filter-type">{{ __('Record type') }}</x-ui.field-label>
+                <x-ui.select native id="filter-type" wire:model.live="filters.type" class="h-11 md:h-9">
+                    <option value="">{{ __('All types') }}</option>
+                    @foreach ($types as $type)
+                        <option value="{{ $type }}">{{ $type }}</option>
+                    @endforeach
+                </x-ui.select>
+            </x-ui.field>
+            <x-ui.field>
+                <x-ui.field-label for="filter-record">{{ __('Record id') }}</x-ui.field-label>
+                <x-ui.input id="filter-record" type="number" inputmode="numeric" wire:model.live.debounce.300ms="filters.record" class="h-11 text-base md:h-9 md:text-sm" />
+            </x-ui.field>
+            <x-ui.field>
+                <x-ui.field-label for="filter-event">{{ __('Event') }}</x-ui.field-label>
+                <x-ui.select native id="filter-event" wire:model.live="filters.event" class="h-11 md:h-9">
+                    <option value="">{{ __('All events') }}</option>
+                    @foreach ($events as $event)
+                        <option value="{{ $event }}">{{ str_replace('_', ' ', $event) }}</option>
+                    @endforeach
+                </x-ui.select>
+            </x-ui.field>
+            <div class="grid grid-cols-2 gap-2">
+                <x-ui.field>
+                    <x-ui.field-label for="filter-from">{{ __('From') }}</x-ui.field-label>
+                    <x-ui.input id="filter-from" type="date" wire:model.live="filters.from" class="h-11 text-base md:h-9 md:text-sm" />
+                </x-ui.field>
+                <x-ui.field>
+                    <x-ui.field-label for="filter-to">{{ __('To') }}</x-ui.field-label>
+                    <x-ui.input id="filter-to" type="date" wire:model.live="filters.to" class="h-11 text-base md:h-9 md:text-sm" />
+                </x-ui.field>
+            </div>
+        </x-slot:filters>
+
+        <x-slot:desktop>
+            <x-ui.table>
+                <x-ui.table-header>
+                    <x-ui.table-row>
+                        <x-ui.table-head><x-shell.sort-header key="created_at" :label="__('When')" :$sort :$direction /></x-ui.table-head>
+                        <x-ui.table-head>{{ __('User') }}</x-ui.table-head>
+                        <x-ui.table-head>{{ __('Event') }}</x-ui.table-head>
+                        <x-ui.table-head>{{ __('Record') }}</x-ui.table-head>
+                        <x-ui.table-head class="w-10"><span class="sr-only">{{ __('Changes') }}</span></x-ui.table-head>
+                    </x-ui.table-row>
+                </x-ui.table-header>
+                <x-ui.table-body>
+                    @forelse ($rows as $entry)
+                        <x-ui.table-row wire:key="audit-{{ $entry->id }}">
+                            <x-ui.table-cell class="whitespace-nowrap">{{ $entry->created_at->format('d-M-Y H:i') }}</x-ui.table-cell>
+                            <x-ui.table-cell>{{ $entry->user?->username ?? __('system') }}</x-ui.table-cell>
+                            <x-ui.table-cell><x-ui.badge variant="secondary">{{ str_replace('_', ' ', $entry->event) }}</x-ui.badge></x-ui.table-cell>
+                            <x-ui.table-cell class="font-mono text-sm">{{ $entry->auditable_type }} #{{ $entry->auditable_id }}</x-ui.table-cell>
+                            <x-ui.table-cell>
+                                <x-ui.button variant="ghost" size="icon" wire:click="show({{ $entry->id }})" :aria-label="__('View changes')"><x-lucide-eye /></x-ui.button>
+                            </x-ui.table-cell>
+                        </x-ui.table-row>
+                    @empty
+                        <x-ui.table-row>
+                            <x-ui.table-cell colspan="5" class="py-10 text-center text-muted-foreground">{{ __('No entries found.') }}</x-ui.table-cell>
+                        </x-ui.table-row>
+                    @endforelse
+                </x-ui.table-body>
+            </x-ui.table>
+            <div class="mt-4">{{ $rows->links() }}</div>
+        </x-slot:desktop>
+
+        <x-slot:mobile>
+            @forelse ($mobileRows as $entry)
+                <button type="button" wire:click="show({{ $entry->id }})" wire:key="m-audit-{{ $entry->id }}" class="w-full text-start">
+                    <x-ui.item variant="outline" class="min-h-16 active:bg-accent">
+                        <x-ui.item-content>
+                            <x-ui.item-title class="text-base">{{ $entry->auditable_type }} #{{ $entry->auditable_id }}</x-ui.item-title>
+                            <x-ui.item-description class="text-sm">{{ $entry->user?->username ?? __('system') }} · {{ $entry->created_at->format('d-M-Y H:i') }}</x-ui.item-description>
+                        </x-ui.item-content>
+                        <x-ui.badge variant="secondary">{{ str_replace('_', ' ', $entry->event) }}</x-ui.badge>
+                        <x-lucide-chevron-right class="size-4 text-muted-foreground" />
+                    </x-ui.item>
+                </button>
+            @empty
+                <p class="py-10 text-center text-sm text-muted-foreground">{{ __('No entries found.') }}</p>
+            @endforelse
+        </x-slot:mobile>
+    </x-shell.list>
+
+    <x-shell.sheet id="audit-entry" :title="$selected ? $selected->auditable_type.' #'.$selected->auditable_id : null"
+        :description="$selected ? str_replace('_', ' ', $selected->event).' · '.($selected->user?->username ?? __('system')).' · '.$selected->created_at->format('d-M-Y H:i:s') : null">
+        @if ($selected)
+            @php($fields = collect(array_keys([...($selected->old_values ?? []), ...($selected->new_values ?? [])])))
+            @php($show = fn ($value) => is_scalar($value) || $value === null ? (string) ($value ?? '—') : json_encode($value, JSON_UNESCAPED_UNICODE))
+            <div class="flex flex-col gap-3 pb-4">
+                @forelse ($fields as $field)
+                    <div class="rounded-md border p-3 text-sm">
+                        <p class="font-medium">{{ $field }}</p>
+                        <p class="break-all text-destructive line-through">{{ $show($selected->old_values[$field] ?? null) }}</p>
+                        <p class="break-all text-success">{{ $show($selected->new_values[$field] ?? null) }}</p>
+                    </div>
+                @empty
+                    <p class="text-sm text-muted-foreground">{{ __('No field changes recorded for this event.') }}</p>
+                @endforelse
+                <p class="text-sm text-muted-foreground">{{ $selected->ip_address }} · {{ \Illuminate\Support\Str::limit((string) $selected->user_agent, 80) }}</p>
+            </div>
+        @endif
+    </x-shell.sheet>
+</div>
+```
+
+In `routes/modules/foundation.php`, add `use App\Modules\Foundation\Livewire\Admin\AuditLog;` and, inside the group:
+
+```php
+    Route::livewire('audit', AuditLog::class)->middleware('can:admin.audit.view')->name('audit.index');
+```
+
+- [ ] **Step 5: Run the tests to see them pass**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/AuditLogScreenTest.php`
+Expected: PASS.
+
+- [ ] **Step 6: Commit (per file)**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add app/Modules/Foundation/Livewire/Admin/AuditLog.php && git commit -m "Add audit log screen component with filters and export"
+git add resources/views/livewire/admin/audit-log.blade.php && git commit -m "Add audit log view with change sheet"
+git add routes/modules/foundation.php && git commit -m "Add audit log route"
+git add tests/Feature/Foundation/Admin/AuditLogScreenTest.php && git commit -m "Test audit log screen"
+```
+
+---
+
+### Task 17: Login history screen
+
+**Files:**
+- Create: `app/Modules/Foundation/Livewire/Admin/LoginHistory.php`, `resources/views/livewire/admin/login-history.blade.php`
+- Modify: `routes/modules/foundation.php`
+- Test: `tests/Feature/Foundation/Admin/LoginHistoryScreenTest.php`
+
+**Interfaces:**
+- Produces:
+  - Route `admin.login-history.index` (`admin/login-history`, `can:admin.login_history.view`).
+  - Filters `user` (username), `result` (`1` succeeded / `0` failed), `from`, `to`.
+  - `export()`, which needs only view permission (doc 01 §10).
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Foundation/Admin/LoginHistoryScreenTest.php`:
+
+```php
+<?php
+
+use App\Models\User;
+use App\Modules\Foundation\Livewire\Admin\LoginHistory as LoginHistoryScreen;
+use App\Modules\Foundation\Models\LoginHistory;
+use Livewire\Livewire;
+use Maatwebsite\Excel\Facades\Excel;
+
+beforeEach(function () {
+    LoginHistory::query()->create(['username_attempted' => 'goodlogin', 'succeeded' => true, 'ip_address' => '10.0.0.1']);
+    LoginHistory::query()->create(['username_attempted' => 'badlogin', 'succeeded' => false, 'ip_address' => '10.0.0.2']);
+});
+
+test('login history needs admin.login_history.view', function () {
+    $this->actingAs(User::factory()->create())->get(route('admin.login-history.index'))->assertForbidden();
+    $this->actingAs(userWithPermissions('admin.login_history.view'))->get(route('admin.login-history.index'))->assertOk();
+});
+
+test('results and usernames filter the rows', function () {
+    Livewire::actingAs(userWithPermissions('admin.login_history.view'))
+        ->test(LoginHistoryScreen::class)
+        ->set('filters.result', '0')
+        ->assertSee('badlogin')
+        ->assertDontSee('goodlogin')
+        ->set('filters.result', '')
+        ->set('filters.user', 'GOODLOGIN')
+        ->assertSee('goodlogin')
+        ->assertDontSee('badlogin');
+});
+
+test('login history exports to excel', function () {
+    Excel::fake();
+    Excel::matchByRegex();
+
+    Livewire::actingAs(userWithPermissions('admin.login_history.view'))->test(LoginHistoryScreen::class)->call('export');
+
+    Excel::assertDownloaded('/^login-history-\d{8}-\d{6}\.xlsx$/');
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/LoginHistoryScreenTest.php`
+Expected: FAIL with "Route [admin.login-history.index] not defined".
+
+- [ ] **Step 3: Write the component**
+
+`app/Modules/Foundation/Livewire/Admin/LoginHistory.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Livewire\Admin;
+
+use App\Modules\Foundation\Models\LoginHistory as LoginEntry;
+use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithListing;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+#[Title('Login history')]
+class LoginHistory extends Component
+{
+    use WithListing;
+
+    public function mount(): void
+    {
+        $this->authorize('admin.login_history.view');
+    }
+
+    public function export(): BinaryFileResponse
+    {
+        $this->authorize('admin.login_history.view');
+
+        return ListingExport::download('login-history', $this->filteredQuery(), [
+            'When' => fn (LoginEntry $entry): string => $entry->created_at->format('d-M-Y H:i:s'),
+            'Username attempted' => 'username_attempted',
+            'User' => 'user.name',
+            'Result' => fn (LoginEntry $entry): string => $entry->succeeded ? 'Success' : 'Failed',
+            'IP' => 'ip_address',
+            'User agent' => 'user_agent',
+        ]);
+    }
+
+    /**
+     * @return Builder<LoginEntry>
+     */
+    protected function listingQuery(): Builder
+    {
+        return LoginEntry::query()->with('user:id,name')->latest('id');
+    }
+
+    protected function searchColumns(): array
+    {
+        return ['username_attempted', 'ip_address'];
+    }
+
+    protected function sortColumns(): array
+    {
+        return ['created_at' => 'created_at'];
+    }
+
+    protected function applyFilters(Builder $query): void
+    {
+        $filters = $this->filters;
+
+        if (filled($filters['user'] ?? null)) {
+            $query->where('username_attempted', Str::lower(trim($filters['user'])));
+        }
+
+        if (($filters['result'] ?? '') !== '') {
+            $query->where('succeeded', $filters['result'] === '1');
+        }
+
+        if (filled($filters['from'] ?? null)) {
+            $query->whereDate('created_at', '>=', $filters['from']);
+        }
+
+        if (filled($filters['to'] ?? null)) {
+            $query->whereDate('created_at', '<=', $filters['to']);
+        }
+    }
+
+    public function render(): View
+    {
+        return view('livewire.admin.login-history', [
+            'rows' => $this->paginatedRows(),
+            'mobileRows' => $this->mobileRows(),
+        ]);
+    }
+}
+```
+
+- [ ] **Step 4: Write the view and route**
+
+`resources/views/livewire/admin/login-history.blade.php`:
+
+```blade
+<div>
+    <x-shell.list
+        :search-placeholder="__('Search username or IP')"
+        exportable
+        :has-more="$this->hasMoreRows"
+        :active-filters="count(array_filter($filters, 'filled'))"
+    >
+        <x-slot:filters>
+            <x-ui.field>
+                <x-ui.field-label for="filter-user">{{ __('Username') }}</x-ui.field-label>
+                <x-ui.input id="filter-user" wire:model.live.debounce.300ms="filters.user" autocapitalize="none" class="h-11 text-base md:h-9 md:text-sm" />
+            </x-ui.field>
+            <x-ui.field>
+                <x-ui.field-label for="filter-result">{{ __('Result') }}</x-ui.field-label>
+                <x-ui.select native id="filter-result" wire:model.live="filters.result" class="h-11 md:h-9">
+                    <option value="">{{ __('All') }}</option>
+                    <option value="1">{{ __('Succeeded') }}</option>
+                    <option value="0">{{ __('Failed') }}</option>
+                </x-ui.select>
+            </x-ui.field>
+            <div class="grid grid-cols-2 gap-2">
+                <x-ui.field>
+                    <x-ui.field-label for="filter-from">{{ __('From') }}</x-ui.field-label>
+                    <x-ui.input id="filter-from" type="date" wire:model.live="filters.from" class="h-11 text-base md:h-9 md:text-sm" />
+                </x-ui.field>
+                <x-ui.field>
+                    <x-ui.field-label for="filter-to">{{ __('To') }}</x-ui.field-label>
+                    <x-ui.input id="filter-to" type="date" wire:model.live="filters.to" class="h-11 text-base md:h-9 md:text-sm" />
+                </x-ui.field>
+            </div>
+        </x-slot:filters>
+
+        <x-slot:desktop>
+            <x-ui.table>
+                <x-ui.table-header>
+                    <x-ui.table-row>
+                        <x-ui.table-head><x-shell.sort-header key="created_at" :label="__('When')" :$sort :$direction /></x-ui.table-head>
+                        <x-ui.table-head>{{ __('Username attempted') }}</x-ui.table-head>
+                        <x-ui.table-head>{{ __('User') }}</x-ui.table-head>
+                        <x-ui.table-head>{{ __('Result') }}</x-ui.table-head>
+                        <x-ui.table-head>{{ __('IP') }}</x-ui.table-head>
+                        <x-ui.table-head>{{ __('Device') }}</x-ui.table-head>
+                    </x-ui.table-row>
+                </x-ui.table-header>
+                <x-ui.table-body>
+                    @forelse ($rows as $entry)
+                        <x-ui.table-row wire:key="login-{{ $entry->id }}">
+                            <x-ui.table-cell class="whitespace-nowrap">{{ $entry->created_at->format('d-M-Y H:i') }}</x-ui.table-cell>
+                            <x-ui.table-cell>{{ $entry->username_attempted }}</x-ui.table-cell>
+                            <x-ui.table-cell>{{ $entry->user?->name ?? '—' }}</x-ui.table-cell>
+                            <x-ui.table-cell>
+                                <x-ui.badge :tone="$entry->succeeded ? 'success' : 'danger'">{{ $entry->succeeded ? __('Success') : __('Failed') }}</x-ui.badge>
+                            </x-ui.table-cell>
+                            <x-ui.table-cell class="font-mono text-sm">{{ $entry->ip_address }}</x-ui.table-cell>
+                            <x-ui.table-cell class="max-w-64 truncate text-sm text-muted-foreground" title="{{ $entry->user_agent }}">{{ \Illuminate\Support\Str::limit((string) $entry->user_agent, 40) }}</x-ui.table-cell>
+                        </x-ui.table-row>
+                    @empty
+                        <x-ui.table-row>
+                            <x-ui.table-cell colspan="6" class="py-10 text-center text-muted-foreground">{{ __('No sign-in attempts found.') }}</x-ui.table-cell>
+                        </x-ui.table-row>
+                    @endforelse
+                </x-ui.table-body>
+            </x-ui.table>
+            <div class="mt-4">{{ $rows->links() }}</div>
+        </x-slot:desktop>
+
+        <x-slot:mobile>
+            @forelse ($mobileRows as $entry)
+                <x-ui.item variant="outline" class="min-h-16" wire:key="m-login-{{ $entry->id }}">
+                    <x-ui.item-content>
+                        <x-ui.item-title class="text-base">{{ $entry->username_attempted }}</x-ui.item-title>
+                        <x-ui.item-description class="text-sm">{{ $entry->created_at->format('d-M-Y H:i') }} · {{ $entry->ip_address }}</x-ui.item-description>
+                    </x-ui.item-content>
+                    <x-ui.badge :tone="$entry->succeeded ? 'success' : 'danger'">{{ $entry->succeeded ? __('Success') : __('Failed') }}</x-ui.badge>
+                </x-ui.item>
+            @empty
+                <p class="py-10 text-center text-sm text-muted-foreground">{{ __('No sign-in attempts found.') }}</p>
+            @endforelse
+        </x-slot:mobile>
+    </x-shell.list>
+</div>
+```
+
+These rows have no detail screen, so they show no chevron.
+
+In `routes/modules/foundation.php`, add `use App\Modules\Foundation\Livewire\Admin\LoginHistory;` and, inside the group:
+
+```php
+    Route::livewire('login-history', LoginHistory::class)->middleware('can:admin.login_history.view')->name('login-history.index');
+```
+
+- [ ] **Step 5: Run the tests to see them pass**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/LoginHistoryScreenTest.php`
+Expected: PASS.
+
+- [ ] **Step 6: Commit (per file)**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add app/Modules/Foundation/Livewire/Admin/LoginHistory.php && git commit -m "Add login history screen component with filters and export"
+git add resources/views/livewire/admin/login-history.blade.php && git commit -m "Add login history view"
+git add routes/modules/foundation.php && git commit -m "Add login history route"
+git add tests/Feature/Foundation/Admin/LoginHistoryScreenTest.php && git commit -m "Test login history screen"
+```
+
+---
+
+### Task 18: Two-factor authentication: enable, challenge, enforce (spec D7)
+
+**Files:**
+- Modify: `config/fortify.php`, `app/Providers/FortifyServiceProvider.php`
+- Modify: `app/Models/User.php` (`TwoFactorAuthenticatable`, QR label)
+- Modify: `database/factories/UserFactory.php` (`withTwoFactor()`)
+- Create: `resources/views/pages/auth/two-factor-challenge.blade.php`
+- Create: `app/Modules/Foundation/Services/TwoFactorPolicy.php`
+- Create: `app/Http/Middleware/EnsureTwoFactorEnabled.php`; modify `bootstrap/app.php`
+- Create: `app/Modules/Foundation/Livewire/Profile/TwoFactor.php`, `resources/views/livewire/profile/two-factor.blade.php`
+- Create: `app/Modules/Foundation/Livewire/Profile/TwoFactorSetup.php`, `resources/views/livewire/profile/two-factor-setup.blade.php`
+- Modify: `routes/modules/foundation.php`
+- Test: `tests/Feature/Foundation/Admin/TwoFactorTest.php`
+
+**Interfaces:**
+- Produces:
+  - `TwoFactorPolicy::requires(User $user): bool`: true when any of the user's active roles is listed in `general.require_2fa_roles`.
+  - `EnsureTwoFactorEnabled` middleware (in the `app` group after `EnsurePasswordChanged`). It redirects to `two-factor.setup` and lets `two-factor.setup`, `password.change` and `logout` through. Task 20 adds the impersonation bypass.
+  - `<livewire:… Profile\TwoFactor :forced="bool">` panel with methods `enable()`, `confirm()`, `regenerateRecoveryCodes()`, `disable()`. Disabling requires `current_password` and is refused while `TwoFactorPolicy::requires()`.
+  - Route `two-factor.setup` (`two-factor/setup`, `app` group).
+  - `User::twoFactorQrCodeUrl()` labels the QR code with `username`.
+  - `UserFactory::withTwoFactor()` creates a user with confirmed 2FA.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Foundation/Admin/TwoFactorTest.php`:
+
+```php
+<?php
+
+use App\Models\User;
+use App\Modules\Foundation\Livewire\Profile\TwoFactor;
+use App\Support\Facades\Settings;
+use Database\Seeders\Foundation\SettingSeeder;
+use Illuminate\Support\Facades\Hash;
+use Livewire\Livewire;
+use PragmaRX\Google2FA\Google2FA;
+
+beforeEach(function () {
+    $this->seed(SettingSeeder::class);
+    ensureRole('finance_manager');
+});
+
+function financeManager(): User
+{
+    $user = User::factory()->create(['username' => 'fm1', 'password' => Hash::make('password')]);
+    $user->syncRoles(['finance_manager']);
+
+    return $user;
+}
+
+test('users in a required role without 2FA are sent to set it up', function () {
+    Settings::set('general.require_2fa_roles', ['finance_manager']);
+
+    $this->actingAs(financeManager())->get(route('dashboard'))->assertRedirect(route('two-factor.setup'));
+    $this->get(route('two-factor.setup'))->assertOk();
+});
+
+test('nobody is forced while the role list is empty', function () {
+    $this->actingAs(financeManager())->get(route('dashboard'))->assertOk();
+});
+
+test('users who already use 2FA are not redirected', function () {
+    Settings::set('general.require_2fa_roles', ['finance_manager']);
+    $user = User::factory()->withTwoFactor()->create();
+    $user->syncRoles(['finance_manager']);
+
+    $this->actingAs($user)->get(route('dashboard'))->assertOk();
+});
+
+test('login asks for the code when 2FA is on', function () {
+    $user = User::factory()->withTwoFactor()->create(['username' => 'otpuser', 'password' => Hash::make('password')]);
+
+    $this->post(route('login.store'), ['login' => 'otpuser', 'password' => 'password'])
+        ->assertRedirect(route('two-factor.login'));
+
+    $this->assertGuest();
+});
+
+test('enabling and confirming 2FA from the panel, with the QR labelled by username', function () {
+    $user = financeManager();
+
+    $component = Livewire::actingAs($user)->test(TwoFactor::class)->call('enable');
+
+    $user->refresh();
+    expect($user->two_factor_secret)->not->toBeNull()
+        ->and(urldecode($user->twoFactorQrCodeUrl()))->toContain('fm1');
+
+    $component->set('code', '000000')->call('confirm')->assertHasErrors(['code']);
+
+    $code = app(Google2FA::class)->getCurrentOtp(decrypt($user->two_factor_secret));
+    $component->set('code', $code)->call('confirm')->assertHasNoErrors();
+
+    expect($user->fresh()->two_factor_confirmed_at)->not->toBeNull();
+});
+
+test('2FA cannot be turned off while a role requires it', function () {
+    Settings::set('general.require_2fa_roles', ['finance_manager']);
+    $user = User::factory()->withTwoFactor()->create(['password' => Hash::make('password')]);
+    $user->syncRoles(['finance_manager']);
+
+    Livewire::actingAs($user)->test(TwoFactor::class)
+        ->set('current_password', 'password')
+        ->call('disable')
+        ->assertDispatched('toast', type: 'error');
+
+    expect($user->fresh()->two_factor_secret)->not->toBeNull();
+});
+
+test('turning 2FA off needs the current password', function () {
+    $user = User::factory()->withTwoFactor()->create(['password' => Hash::make('password')]);
+
+    Livewire::actingAs($user)->test(TwoFactor::class)
+        ->set('current_password', 'wrong')
+        ->call('disable')
+        ->assertHasErrors(['current_password']);
+
+    Livewire::actingAs($user)->test(TwoFactor::class)
+        ->set('current_password', 'password')
+        ->call('disable')
+        ->assertHasNoErrors();
+
+    expect($user->fresh()->two_factor_secret)->toBeNull();
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/TwoFactorTest.php`
+Expected: FAIL with "Route [two-factor.setup] not defined" (and `withTwoFactor()` returning `null`).
+
+- [ ] **Step 3: Turn on the Fortify feature and challenge view**
+
+In `config/fortify.php`, set:
+
+```php
+    'features' => [
+        Features::resetPasswords(),
+        Features::twoFactorAuthentication([
+            'confirm' => true,
+            'confirmPassword' => true,
+        ]),
+    ],
+```
+
+In `FortifyServiceProvider::configureViews()`, add:
+
+```php
+        Fortify::twoFactorChallengeView(fn () => view('pages::auth.two-factor-challenge'));
+```
+
+`resources/views/pages/auth/two-factor-challenge.blade.php`:
+
+```blade
+<x-layouts::auth :title="__('Two-factor code')">
+    <div class="flex flex-col gap-6" x-data="{ recovery: {{ $errors->has('recovery_code') ? 'true' : 'false' }} }">
+        <x-auth-header :title="__('Two-factor authentication')" :description="__('Enter the 6-digit code from your authenticator app, or one of your recovery codes.')" />
+
+        <form method="POST" action="{{ route('two-factor.login.store') }}" class="flex flex-col gap-6">
+            @csrf
+
+            <x-ui.field x-show="! recovery">
+                <x-ui.field-label for="code">{{ __('Code') }}</x-ui.field-label>
+                <x-ui.input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus x-bind:disabled="recovery" class="h-11 text-base tracking-widest" :aria-invalid="$errors->has('code') ? 'true' : null" />
+                <x-ui.field-error :messages="$errors->get('code')" />
+            </x-ui.field>
+
+            <x-ui.field x-show="recovery" x-cloak>
+                <x-ui.field-label for="recovery_code">{{ __('Recovery code') }}</x-ui.field-label>
+                <x-ui.input id="recovery_code" name="recovery_code" autocomplete="off" x-bind:disabled="! recovery" class="h-11 text-base" :aria-invalid="$errors->has('recovery_code') ? 'true' : null" />
+                <x-ui.field-error :messages="$errors->get('recovery_code')" />
+            </x-ui.field>
+
+            <x-ui.button type="submit" class="h-11 w-full">{{ __('Continue') }}</x-ui.button>
+        </form>
+
+        <x-ui.button variant="link" class="h-11" x-on:click="recovery = ! recovery">
+            <span x-show="! recovery">{{ __('Use a recovery code') }}</span>
+            <span x-show="recovery" x-cloak>{{ __('Use an authentication code') }}</span>
+        </x-ui.button>
+    </div>
+</x-layouts::auth>
+```
+
+- [ ] **Step 4: Update `User` and the factory**
+
+In `app/Models/User.php`:
+- add `use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;`, `use Laravel\Fortify\Fortify;` and `use Laravel\Fortify\TwoFactorAuthenticatable;`;
+- add `TwoFactorAuthenticatable` to the `use` list in the class;
+- add:
+
+```php
+    /**
+     * Label the authenticator entry with the username. Fortify's default reads the `login`
+     * form field name as a column, which does not exist (Fortify::username() is 'login').
+     */
+    public function twoFactorQrCodeUrl(): string
+    {
+        return app(TwoFactorAuthenticationProvider::class)->qrCodeUrl(
+            (string) config('app.name'),
+            $this->username,
+            Fortify::currentEncrypter()->decrypt($this->two_factor_secret),
+        );
+    }
+```
+
+In `database/factories/UserFactory.php`, replace the empty `withTwoFactor()` with:
+
+```php
+    /**
+     * Indicate that the model has two-factor authentication configured.
+     */
+    public function withTwoFactor(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'two_factor_secret' => encrypt(app(\PragmaRX\Google2FA\Google2FA::class)->generateSecretKey()),
+            'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1', 'recovery-code-2'])),
+            'two_factor_confirmed_at' => now(),
+        ]);
+    }
+```
+
+- [ ] **Step 5: Write the policy and middleware**
+
+`app/Modules/Foundation/Services/TwoFactorPolicy.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Services;
+
+use App\Models\User;
+use App\Support\Facades\Settings;
+
+/**
+ * Decides whether a user must use 2FA (docs/01 §5.1, setting general.require_2fa_roles).
+ */
+final class TwoFactorPolicy
+{
+    public function __construct(private PermissionRegistrar $registrar) {}
+
+    public function requires(User $user): bool
+    {
+        $required = array_map(strval(...), (array) Settings::get('general.require_2fa_roles', []));
+
+        return $required !== [] && array_intersect($required, $this->registrar->rolesFor($user)) !== [];
+    }
+}
+```
+
+`app/Http/Middleware/EnsureTwoFactorEnabled.php`:
+
+```php
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Modules\Foundation\Services\TwoFactorPolicy;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+/**
+ * Sends users whose role requires 2FA to the setup page until they have confirmed it.
+ */
+class EnsureTwoFactorEnabled
+{
+    public function __construct(private TwoFactorPolicy $policy) {}
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        $user = $request->user();
+
+        if ($user !== null
+            && ! $request->routeIs('two-factor.setup', 'password.change', 'logout')
+            && ! $user->hasEnabledTwoFactorAuthentication()
+            && $this->policy->requires($user)) {
+            return redirect()->route('two-factor.setup');
+        }
+
+        return $next($request);
+    }
+}
+```
+
+In `bootstrap/app.php`, add `use App\Http\Middleware\EnsureTwoFactorEnabled;` and append `EnsureTwoFactorEnabled::class` to the `app` group after `EnsurePasswordChanged::class`.
+
+- [ ] **Step 6: Write the 2FA panel**
+
+`app/Modules/Foundation/Livewire/Profile/TwoFactor.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Livewire\Profile;
+
+use App\Models\User;
+use App\Modules\Foundation\Services\TwoFactorPolicy;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use Laravel\Fortify\Actions\ConfirmTwoFactorAuthentication;
+use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
+use Laravel\Fortify\Actions\EnableTwoFactorAuthentication;
+use Laravel\Fortify\Actions\GenerateNewRecoveryCodes;
+use Livewire\Component;
+
+/**
+ * Self-service 2FA: enable → scan → confirm → recovery codes; regenerate; disable.
+ * Used on the profile page and, with forced=true, on the forced setup page.
+ */
+class TwoFactor extends Component
+{
+    public bool $forced = false;
+
+    public string $code = '';
+
+    public string $current_password = '';
+
+    public bool $showingRecoveryCodes = false;
+
+    public function enable(EnableTwoFactorAuthentication $enable): void
+    {
+        $enable($this->user());
+        $this->showingRecoveryCodes = false;
+    }
+
+    public function confirm(ConfirmTwoFactorAuthentication $confirm): void
+    {
+        $this->validate(['code' => ['required', 'string']]);
+
+        try {
+            $confirm($this->user(), $this->code);
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(['code' => $exception->errors()['code'] ?? [__('The code is invalid.')]]);
+        }
+
+        $this->reset('code');
+        $this->showingRecoveryCodes = true;
+        $this->dispatch('toast', type: 'success', description: __('Two-factor authentication is on.'));
+    }
+
+    public function regenerateRecoveryCodes(GenerateNewRecoveryCodes $generate): void
+    {
+        $generate($this->user());
+        $this->showingRecoveryCodes = true;
+    }
+
+    public function disable(DisableTwoFactorAuthentication $disable, TwoFactorPolicy $policy): void
+    {
+        $this->validate(['current_password' => ['required', 'string', 'current_password']]);
+        $this->reset('current_password');
+
+        if ($policy->requires($this->user())) {
+            $this->dispatch('toast', type: 'error', description: __('Your role requires two-factor authentication.'));
+
+            return;
+        }
+
+        $disable($this->user());
+        $this->showingRecoveryCodes = false;
+        $this->dispatch('toast', type: 'success', description: __('Two-factor authentication is off.'));
+    }
+
+    public function render(): View
+    {
+        $user = $this->user()->refresh();
+        $pending = $user->two_factor_secret !== null && $user->two_factor_confirmed_at === null;
+
+        return view('livewire.profile.two-factor', [
+            'enabled' => $user->hasEnabledTwoFactorAuthentication(),
+            'pending' => $pending,
+            'qrSvg' => $pending ? $user->twoFactorQrCodeSvg() : null,
+            'setupKey' => $pending ? decrypt((string) $user->two_factor_secret) : null,
+            'recoveryCodes' => $this->showingRecoveryCodes && $user->two_factor_recovery_codes !== null ? $user->recoveryCodes() : [],
+        ]);
+    }
+
+    private function user(): User
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return $user;
+    }
+}
+```
+
+`resources/views/livewire/profile/two-factor.blade.php`:
+
+```blade
+<div class="flex flex-col gap-4">
+    @if ($enabled)
+        <x-ui.alert>
+            <x-lucide-shield-check />
+            <x-ui.alert-title>{{ __('Two-factor authentication is on') }}</x-ui.alert-title>
+            <x-ui.alert-description>{{ __('You will be asked for a code from your authenticator app when you sign in.') }}</x-ui.alert-description>
+        </x-ui.alert>
+    @elseif ($pending)
+        <p class="text-sm">{{ __('Scan this QR code with Google Authenticator, Microsoft Authenticator or a similar app, then enter the 6-digit code it shows.') }}</p>
+        <div class="flex justify-center rounded-md border bg-white p-4 [&_svg]:size-48">{!! $qrSvg !!}</div>
+        <p class="text-sm text-muted-foreground">{{ __('Or enter this key:') }} <span class="font-mono break-all">{{ $setupKey }}</span></p>
+        <form wire:submit="confirm" class="flex flex-col gap-3">
+            <x-ui.field>
+                <x-ui.field-label for="code">{{ __('Code') }}</x-ui.field-label>
+                <x-ui.input id="code" wire:model="code" inputmode="numeric" autocomplete="one-time-code" class="h-11 text-base tracking-widest" :aria-invalid="$errors->has('code') ? 'true' : null" />
+                <x-ui.field-error :messages="$errors->get('code')" />
+            </x-ui.field>
+            <x-ui.button type="submit" class="h-11 md:h-9 md:self-start">{{ __('Confirm') }}</x-ui.button>
+        </form>
+    @else
+        <p class="text-sm text-muted-foreground">{{ __('Add a second step to sign-in: a code from an authenticator app on your phone.') }}</p>
+        <x-ui.button class="h-11 md:h-9 md:self-start" wire:click="enable">{{ __('Turn on two-factor authentication') }}</x-ui.button>
+    @endif
+
+    @if ($recoveryCodes !== [])
+        <div class="flex flex-col gap-2 rounded-md border p-4">
+            <p class="text-sm font-medium">{{ __('Recovery codes') }}</p>
+            <p class="text-sm text-muted-foreground">{{ __('Store these somewhere safe. Each one signs you in once if you lose your phone.') }}</p>
+            <ul class="grid grid-cols-1 gap-1 font-mono text-sm sm:grid-cols-2">
+                @foreach ($recoveryCodes as $recoveryCode)
+                    <li>{{ $recoveryCode }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @if ($enabled)
+        <div class="flex flex-col gap-3 md:flex-row md:items-end">
+            <x-ui.button variant="outline" class="h-11 md:h-9" wire:click="regenerateRecoveryCodes">{{ __('New recovery codes') }}</x-ui.button>
+            @if ($forced)
+                <x-ui.button class="h-11 md:h-9" :href="route('dashboard')">{{ __('Continue') }}</x-ui.button>
+            @else
+                <form wire:submit="disable" class="flex flex-col gap-2 md:flex-row md:items-end">
+                    <x-ui.field>
+                        <x-ui.field-label for="tf-current-password">{{ __('Current password to turn off') }}</x-ui.field-label>
+                        <x-ui.input id="tf-current-password" type="password" wire:model="current_password" autocomplete="current-password" class="h-11 text-base md:h-9 md:text-sm" />
+                        <x-ui.field-error :messages="$errors->get('current_password')" />
+                    </x-ui.field>
+                    <x-ui.button type="submit" variant="destructive" class="h-11 md:h-9">{{ __('Turn off') }}</x-ui.button>
+                </form>
+            @endif
+        </div>
+    @endif
+</div>
+```
+
+The forced "Continue" link uses a full page load, not `wire:navigate`, so the app shell re-renders after setup.
+
+- [ ] **Step 7: Write the forced setup page and route**
+
+`app/Modules/Foundation/Livewire/Profile/TwoFactorSetup.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Livewire\Profile;
+
+use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+#[Title('Set up two-factor authentication')]
+#[Layout('layouts::auth')]
+class TwoFactorSetup extends Component
+{
+    public function render(): View
+    {
+        return view('livewire.profile.two-factor-setup');
+    }
+}
+```
+
+`resources/views/livewire/profile/two-factor-setup.blade.php`:
+
+```blade
+<div class="flex flex-col gap-6">
+    <x-auth-header :title="__('Set up two-factor authentication')" :description="__('Your role requires a code from an authenticator app at sign-in. Set it up to continue.')" />
+
+    <livewire:foundation.profile.two-factor :forced="true" />
+
+    <form method="POST" action="{{ route('logout') }}" class="text-center">
+        @csrf
+        <x-ui.button type="submit" variant="link">{{ __('Log out') }}</x-ui.button>
+    </form>
+</div>
+```
+
+Register the module's class components under a stable tag name so Blade can render nested ones. In `FoundationServiceProvider::boot()`, add `Livewire::component('foundation.profile.two-factor', \App\Modules\Foundation\Livewire\Profile\TwoFactor::class);`. `Livewire` is already imported.
+
+In `routes/modules/foundation.php`, add `use App\Modules\Foundation\Livewire\Profile;`. Then, outside the admin group, add:
+
+```php
+Route::middleware('app')->group(function () {
+    Route::livewire('two-factor/setup', Profile\TwoFactorSetup::class)->name('two-factor.setup');
+});
+```
+
+- [ ] **Step 8: Run the tests to see them pass**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/TwoFactorTest.php tests/Feature/Auth`
+Expected: PASS. If an existing auth test asserts that login lands on the dashboard for a factory user, it still passes, because factory users have no 2FA unless `withTwoFactor()` is used.
+
+- [ ] **Step 9: Commit (per file)**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add config/fortify.php && git commit -m "Enable Fortify two-factor authentication with confirmation"
+git add app/Providers/FortifyServiceProvider.php && git commit -m "Register the two-factor challenge view"
+git add resources/views/pages/auth/two-factor-challenge.blade.php && git commit -m "Add two-factor challenge page"
+git add app/Models/User.php && git commit -m "Use Fortify 2FA on users and label the QR code with the username" -m "Fortify::username() is the login form field, not a column."
+git add database/factories/UserFactory.php && git commit -m "Make the withTwoFactor factory state work"
+git add app/Modules/Foundation/Services/TwoFactorPolicy.php && git commit -m "Add policy for roles that must use 2FA"
+git add app/Http/Middleware/EnsureTwoFactorEnabled.php && git commit -m "Redirect users who must use 2FA to its setup page"
+git add bootstrap/app.php && git commit -m "Enforce 2FA setup in the app middleware group"
+git add app/Modules/Foundation/Livewire/Profile/TwoFactor.php && git commit -m "Add self-service two-factor panel"
+git add resources/views/livewire/profile/two-factor.blade.php && git commit -m "Add two-factor panel view"
+git add app/Modules/Foundation/Livewire/Profile/TwoFactorSetup.php && git commit -m "Add forced two-factor setup page"
+git add resources/views/livewire/profile/two-factor-setup.blade.php && git commit -m "Add forced two-factor setup view"
+git add app/Modules/Foundation/FoundationServiceProvider.php && git commit -m "Register the two-factor panel component name"
+git add routes/modules/foundation.php && git commit -m "Add two-factor setup route"
+git add tests/Feature/Foundation/Admin/TwoFactorTest.php && git commit -m "Test 2FA setup, challenge and enforcement"
+```
+
+---
+
+### Task 19: Profile page (details, password, 2FA, notifications)
+
+**Files:**
+- Create: `app/Modules/Foundation/Actions/UpdateProfile.php`
+- Create: `app/Modules/Foundation/Livewire/Profile/Edit.php`, `resources/views/livewire/profile/edit.blade.php`
+- Modify: `routes/modules/foundation.php`, `routes/settings.php`
+- Modify: `resources/views/components/desktop-user-menu.blade.php`, `resources/views/components/shell/mobile-bottom-nav.blade.php`
+- Delete: `resources/views/pages/settings/⚡profile.blade.php`, `resources/views/pages/settings/⚡security.blade.php`, `resources/views/pages/settings/layout.blade.php`, `resources/views/partials/settings-heading.blade.php` (replaced by the profile page)
+- Rewrite in place: `tests/Feature/Settings/ProfileUpdateTest.php`, `tests/Feature/Settings/SecurityTest.php`
+
+**Interfaces:**
+- Consumes: `ChangePassword` (existing), `SaveNotificationPreferences` and `NotificationPreference::matrixFor()` (Task 4), the `foundation.profile.two-factor` panel (Task 18).
+- Produces:
+  - `UpdateProfile::handle(User $user, array $input, ?UploadedFile $avatar = null): User`. Input keys are `name` and `phone`. The avatar is stored on the `public` disk under `avatars/`, and the old file is deleted.
+  - Route `profile.edit` (`/profile`). `settings`, `settings/profile` and `settings/security` redirect to it, and `security.edit` is removed.
+  - Tabs via `#[Url] $tab`: `details`, `password`, `two-factor`, `notifications`.
+
+- [ ] **Step 1: Rewrite the settings tests for the new page**
+
+Replace `tests/Feature/Settings/ProfileUpdateTest.php`:
+
+```php
+<?php
+
+use App\Models\User;
+use App\Modules\Foundation\Livewire\Profile\Edit;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
+
+test('profile page is displayed', function () {
+    $this->actingAs(User::factory()->create())->get(route('profile.edit'))->assertOk();
+});
+
+test('old settings urls redirect to the profile', function () {
+    $this->actingAs(User::factory()->create());
+
+    $this->get('/settings')->assertRedirect('/profile');
+    $this->get('/settings/profile')->assertRedirect('/profile');
+    $this->get('/settings/security')->assertRedirect('/profile?tab=password');
+});
+
+test('name and phone can be updated', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)->test(Edit::class)
+        ->set('name', 'Test User')
+        ->set('phone', '+8801912345678')
+        ->call('saveDetails')
+        ->assertHasNoErrors();
+
+    expect($user->fresh()->name)->toBe('Test User')->and($user->fresh()->phone)->toBe('01912345678');
+});
+
+test('an avatar can be uploaded and replaces the old one', function () {
+    Storage::fake('public');
+    $user = User::factory()->create();
+    $component = Livewire::actingAs($user)->test(Edit::class);
+
+    $component->set('avatar', UploadedFile::fake()->image('me.png', 100, 100))->call('saveDetails')->assertHasNoErrors();
+    $first = $user->fresh()->avatar_path;
+
+    $component->set('avatar', UploadedFile::fake()->image('me2.jpg', 100, 100))->call('saveDetails')->assertHasNoErrors();
+    Storage::disk('public')->assertMissing($first);
+    Storage::disk('public')->assertExists($user->fresh()->avatar_path);
+});
+
+test('the profile page does not offer account deletion', function () {
+    $this->actingAs(User::factory()->create());
+
+    $this->get(route('profile.edit'))->assertDontSee(__('Delete account'));
+});
+```
+
+Replace `tests/Feature/Settings/SecurityTest.php`:
+
+```php
+<?php
+
+use App\Models\User;
+use App\Modules\Foundation\Livewire\Profile\Edit;
+use App\Modules\Foundation\Models\NotificationPreference;
+use App\Support\Facades\Settings;
+use Database\Seeders\Foundation\SettingSeeder;
+use Illuminate\Support\Facades\Hash;
+use Livewire\Livewire;
+
+test('password can be updated', function () {
+    $user = User::factory()->create(['password' => Hash::make('password')]);
+
+    Livewire::actingAs($user)->test(Edit::class)
+        ->set('current_password', 'password')
+        ->set('password', 'new-password')
+        ->set('password_confirmation', 'new-password')
+        ->call('savePassword')
+        ->assertHasNoErrors();
+
+    expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
+});
+
+test('correct password must be provided to update password', function () {
+    $user = User::factory()->create(['password' => Hash::make('password')]);
+
+    Livewire::actingAs($user)->test(Edit::class)
+        ->set('current_password', 'wrong-password')
+        ->set('password', 'new-password')
+        ->set('password_confirmation', 'new-password')
+        ->call('savePassword')
+        ->assertHasErrors(['current_password']);
+});
+
+test('the new password follows the minimum length setting', function () {
+    $this->seed(SettingSeeder::class);
+    Settings::set('general.password_min_length', 12);
+    $user = User::factory()->create(['password' => Hash::make('password')]);
+
+    Livewire::actingAs($user)->test(Edit::class)
+        ->set('current_password', 'password')
+        ->set('password', 'elevenchars')
+        ->set('password_confirmation', 'elevenchars')
+        ->call('savePassword')
+        ->assertHasErrors(['password']);
+});
+
+test('the two-factor tab renders the 2FA panel', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.edit', ['tab' => 'two-factor']))
+        ->assertOk()
+        ->assertSee(__('Turn on two-factor authentication'));
+});
+
+test('notification preferences are saved from the profile', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)->test(Edit::class)
+        ->set('notifications.security__login_new_ip.mail', false)
+        ->call('saveNotifications')
+        ->assertHasNoErrors();
+
+    expect(NotificationPreference::matrixFor($user)['security.login_new_ip']['mail'])->toBeFalse();
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `php artisan test --compact tests/Feature/Settings`
+Expected: FAIL with "Class ...Profile\Edit not found".
+
+- [ ] **Step 3: Write the action**
+
+`app/Modules/Foundation/Actions/UpdateProfile.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Actions;
+
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Self-service profile edit (docs/01 §5.13). Username and email stay admin-managed.
+ */
+class UpdateProfile
+{
+    /**
+     * @param  array{name?: mixed, phone?: mixed}  $input
+     *
+     * @throws ValidationException
+     */
+    public function handle(User $user, array $input, ?UploadedFile $avatar = null): User
+    {
+        $phone = (string) preg_replace('/[\s\-()]/', '', (string) ($input['phone'] ?? ''));
+
+        /** @var array{name: string, phone: ?string} $data */
+        $data = Validator::make(['name' => $input['name'] ?? '', 'phone' => $phone === '' ? null : $phone, 'avatar' => $avatar], [
+            'name' => ['required', 'string', 'max:120'],
+            'phone' => ['nullable', 'string', 'regex:/^(?:\+?880|0)1[3-9]\d{8}$/'],
+            'avatar' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:1024'],
+        ])->validate();
+
+        $oldAvatar = $user->avatar_path;
+        $user->fill(['name' => $data['name'], 'phone' => $data['phone']]);
+
+        if ($avatar !== null) {
+            $user->avatar_path = (string) $avatar->store('avatars', 'public');
+        }
+
+        $user->save();
+
+        if ($avatar !== null && $oldAvatar !== null) {
+            Storage::disk('public')->delete($oldAvatar);
+        }
+
+        return $user;
+    }
+}
+```
+
+- [ ] **Step 4: Write the component**
+
+`app/Modules/Foundation/Livewire/Profile/Edit.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Livewire\Profile;
+
+use App\Models\User;
+use App\Modules\Foundation\Actions\ChangePassword;
+use App\Modules\Foundation\Actions\SaveNotificationPreferences;
+use App\Modules\Foundation\Actions\UpdateProfile;
+use App\Modules\Foundation\Models\NotificationPreference;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
+use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+
+#[Title('Profile')]
+class Edit extends Component
+{
+    use WithFileUploads;
+
+    public const TABS = ['details', 'password', 'two-factor', 'notifications'];
+
+    #[Url(except: 'details')]
+    public string $tab = 'details';
+
+    public string $name = '';
+
+    public string $phone = '';
+
+    /** @var UploadedFile|null */
+    public $avatar = null;
+
+    public string $current_password = '';
+
+    public string $password = '';
+
+    public string $password_confirmation = '';
+
+    /**
+     * Notification key (dots replaced by "__", so wire:model paths stay intact) → channel → enabled.
+     *
+     * @var array<string, array<string, bool>>
+     */
+    public array $notifications = [];
+
+    public function mount(): void
+    {
+        if (! in_array($this->tab, self::TABS, true)) {
+            $this->tab = 'details';
+        }
+
+        $user = $this->user();
+        $this->name = $user->name;
+        $this->phone = (string) $user->phone;
+
+        foreach (NotificationPreference::matrixFor($user) as $key => $channels) {
+            $this->notifications[str_replace('.', '__', $key)] = $channels;
+        }
+    }
+
+    public function saveDetails(UpdateProfile $updateProfile): void
+    {
+        $updateProfile->handle($this->user(), ['name' => $this->name, 'phone' => $this->phone], $this->avatar instanceof UploadedFile ? $this->avatar : null);
+
+        $this->reset('avatar');
+        $this->dispatch('toast', type: 'success', description: __('Profile saved.'));
+    }
+
+    public function savePassword(ChangePassword $changePassword): void
+    {
+        $this->validate([
+            'current_password' => ['required', 'string', 'current_password'],
+            'password' => ['required', 'string', 'confirmed', 'different:current_password', Password::default()],
+        ]);
+
+        $changePassword->handle($this->user(), $this->password);
+
+        $this->reset('current_password', 'password', 'password_confirmation');
+        $this->dispatch('toast', type: 'success', description: __('Password updated.'));
+    }
+
+    public function saveNotifications(SaveNotificationPreferences $savePreferences): void
+    {
+        $matrix = [];
+
+        foreach ($this->notifications as $key => $channels) {
+            $matrix[str_replace('__', '.', $key)] = array_map(fn (mixed $enabled): bool => (bool) $enabled, $channels);
+        }
+
+        $savePreferences->handle($this->user(), $matrix);
+        $this->dispatch('toast', type: 'success', description: __('Notification preferences saved.'));
+    }
+
+    public function render(): View
+    {
+        return view('livewire.profile.edit', [
+            'user' => $this->user(),
+            'notificationKeys' => config('notifications.keys', []),
+        ]);
+    }
+
+    private function user(): User
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return $user;
+    }
+}
+```
+
+- [ ] **Step 5: Write the view**
+
+`resources/views/livewire/profile/edit.blade.php`:
+
+```blade
+@php($tabs = ['details' => __('Details'), 'password' => __('Password'), 'two-factor' => __('Two-factor'), 'notifications' => __('Notifications')])
+
+<div class="flex flex-col gap-4">
+    <div class="flex items-center gap-3">
+        <x-ui.avatar class="size-14">
+            @if ($user->avatar_path)
+                <x-ui.avatar-image :src="\Illuminate\Support\Facades\Storage::disk('public')->url($user->avatar_path)" :alt="$user->name" />
+            @endif
+            <x-ui.avatar-fallback>{{ $user->initials() }}</x-ui.avatar-fallback>
+        </x-ui.avatar>
+        <div class="min-w-0">
+            <p class="truncate text-base font-semibold">{{ $user->name }}</p>
+            <p class="truncate text-sm text-muted-foreground">{{ '@'.$user->username }} @if ($user->email) · {{ $user->email }} @endif</p>
+        </div>
+    </div>
+
+    <div role="tablist" class="hidden gap-1 border-b md:flex">
+        @foreach ($tabs as $key => $label)
+            <button type="button" role="tab" aria-selected="{{ $tab === $key ? 'true' : 'false' }}" wire:click="$set('tab', '{{ $key }}')"
+                @class(['px-3 py-2 text-sm', 'border-b-2 border-primary font-medium' => $tab === $key, 'text-muted-foreground' => $tab !== $key])>{{ $label }}</button>
+        @endforeach
+    </div>
+    <div class="overflow-x-auto md:hidden">
+        <x-ui.segmented-control name="profile-tab" wire:model.live="tab" :value="$tab" :options="$tabs" class="h-11" />
+    </div>
+
+    <div class="max-w-xl">
+        @if ($tab === 'details')
+            <form wire:submit="saveDetails" class="flex flex-col gap-6">
+                <x-ui.field>
+                    <x-ui.field-label for="name">{{ __('Name') }}</x-ui.field-label>
+                    <x-ui.input id="name" wire:model="name" autocomplete="name" class="h-11 text-base md:h-9 md:text-sm" />
+                    <x-ui.field-error :messages="$errors->get('name')" />
+                </x-ui.field>
+                <x-ui.field>
+                    <x-ui.field-label for="phone">{{ __('Phone') }}</x-ui.field-label>
+                    <x-ui.input id="phone" type="tel" inputmode="tel" wire:model="phone" placeholder="01XXXXXXXXX" class="h-11 text-base md:h-9 md:text-sm" />
+                    <x-ui.field-error :messages="$errors->get('phone')" />
+                </x-ui.field>
+                <x-ui.field>
+                    <x-ui.field-label for="avatar">{{ __('Photo (PNG or JPG, up to 1 MB)') }}</x-ui.field-label>
+                    <x-ui.input id="avatar" type="file" wire:model="avatar" accept="image/png,image/jpeg" class="h-11 md:h-9" />
+                    <x-ui.field-error :messages="$errors->get('avatar')" />
+                </x-ui.field>
+                <x-ui.button type="submit" class="h-11 md:h-9 md:self-start">{{ __('Save') }}</x-ui.button>
+            </form>
+        @elseif ($tab === 'password')
+            <form wire:submit="savePassword" class="flex flex-col gap-6">
+                <x-ui.field>
+                    <x-ui.field-label for="current_password">{{ __('Current password') }}</x-ui.field-label>
+                    <x-ui.input id="current_password" type="password" wire:model="current_password" autocomplete="current-password" class="h-11 text-base md:h-9 md:text-sm" />
+                    <x-ui.field-error :messages="$errors->get('current_password')" />
+                </x-ui.field>
+                <x-ui.field>
+                    <x-ui.field-label for="password">{{ __('New password') }}</x-ui.field-label>
+                    <x-ui.input id="password" type="password" wire:model="password" autocomplete="new-password" class="h-11 text-base md:h-9 md:text-sm" />
+                    <x-ui.field-error :messages="$errors->get('password')" />
+                </x-ui.field>
+                <x-ui.field>
+                    <x-ui.field-label for="password_confirmation">{{ __('Confirm new password') }}</x-ui.field-label>
+                    <x-ui.input id="password_confirmation" type="password" wire:model="password_confirmation" autocomplete="new-password" class="h-11 text-base md:h-9 md:text-sm" />
+                </x-ui.field>
+                <x-ui.button type="submit" class="h-11 md:h-9 md:self-start">{{ __('Update password') }}</x-ui.button>
+            </form>
+        @elseif ($tab === 'two-factor')
+            <livewire:foundation.profile.two-factor :key="'two-factor-panel'" />
+        @else
+            <form wire:submit="saveNotifications" class="flex flex-col gap-4">
+                @foreach ($notificationKeys as $key => $definition)
+                    @php($field = str_replace('.', '__', $key))
+                    <div class="flex flex-col gap-1 border-b pb-3">
+                        <p class="text-sm font-medium">{{ __($definition['label']) }}</p>
+                        @foreach ($definition['channels'] as $channel)
+                            <label class="flex min-h-11 items-center gap-3 text-sm">
+                                <x-ui.switch wire:model="notifications.{{ $field }}.{{ $channel }}" :checked="(bool) ($notifications[$field][$channel] ?? true)" />
+                                {{ __(match ($channel) { 'mail' => 'Email', 'sms' => 'SMS', default => 'In-app' }) }}
+                            </label>
+                        @endforeach
+                    </div>
+                @endforeach
+                <x-ui.button type="submit" class="h-11 md:h-9 md:self-start">{{ __('Save preferences') }}</x-ui.button>
+            </form>
+        @endif
+    </div>
+</div>
+```
+
+- [ ] **Step 6: Wire the routes and links, and remove the old pages**
+
+In `routes/modules/foundation.php`, extend the non-admin `app` group from Task 18:
+
+```php
+Route::middleware('app')->group(function () {
+    Route::livewire('profile', Profile\Edit::class)->name('profile.edit');
+    Route::livewire('two-factor/setup', Profile\TwoFactorSetup::class)->name('two-factor.setup');
+});
+```
+
+Replace `routes/settings.php`:
+
+```php
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+/*
+| The starter's settings pages were folded into /profile (docs/01 §5.13). Old links redirect.
+*/
+
+Route::middleware('app')->group(function () {
+    Route::redirect('settings', '/profile');
+    Route::redirect('settings/profile', '/profile');
+    Route::redirect('settings/security', '/profile?tab=password');
+});
+```
+
+In `resources/views/components/desktop-user-menu.blade.php`, change the `Settings` menu item to `<x-lucide-circle-user /> {{ __('Profile') }}`. The href stays `route('profile.edit')`.
+
+In `resources/views/components/shell/mobile-bottom-nav.blade.php`:
+- change the More sheet's Settings item label and icon to Profile (`circle-user`);
+- change `request()->routeIs('profile.*', 'security.*')` to `request()->routeIs('profile.*')`.
+
+Delete the replaced starter pages:
+
+```bash
+git rm "resources/views/pages/settings/⚡profile.blade.php" "resources/views/pages/settings/⚡security.blade.php" resources/views/pages/settings/layout.blade.php resources/views/partials/settings-heading.blade.php
+```
+
+Then check nothing still references them: `grep -rn "pages::settings\|settings-heading\|security.edit" app resources routes tests` should print nothing.
+
+- [ ] **Step 7: Run the tests to see them pass**
+
+Run: `php artisan test --compact tests/Feature/Settings tests/Feature/Foundation/AppShellTest.php tests/Feature/Auth`
+Expected: PASS.
+
+- [ ] **Step 8: Commit (per file)**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add app/Modules/Foundation/Actions/UpdateProfile.php && git commit -m "Add self-service profile update action"
+git add app/Modules/Foundation/Livewire/Profile/Edit.php && git commit -m "Add profile page with details, password, 2FA and notifications"
+git add resources/views/livewire/profile/edit.blade.php && git commit -m "Add profile view with tabs and segmented control"
+git add routes/modules/foundation.php && git commit -m "Add profile route"
+git add routes/settings.php && git commit -m "Redirect old settings urls to the profile"
+git add resources/views/components/desktop-user-menu.blade.php && git commit -m "Link the desktop user menu to the profile"
+git add resources/views/components/shell/mobile-bottom-nav.blade.php && git commit -m "Link the mobile More sheet to the profile"
+git commit -m "Remove starter settings pages replaced by the profile"
+git add tests/Feature/Settings/ProfileUpdateTest.php && git commit -m "Point profile tests at the new profile page"
+git add tests/Feature/Settings/SecurityTest.php && git commit -m "Point security tests at the profile password, 2FA and notification tabs"
+```
+
+---
+
+### Task 20: Impersonation (FD-BR-10, spec D8)
+
+**Files:**
+- Create: `app/Modules/Foundation/Actions/StartImpersonation.php`, `app/Modules/Foundation/Actions/StopImpersonation.php`
+- Create: `app/Http/Middleware/HandleImpersonation.php`
+- Create: `resources/views/components/shell/impersonation-banner.blade.php`
+- Modify: `bootstrap/app.php`, `app/Modules/Foundation/FoundationServiceProvider.php` (persistent middleware)
+- Modify: `app/Http/Middleware/EnsurePasswordChanged.php`, `app/Http/Middleware/EnsureTwoFactorEnabled.php`
+- Modify: `app/Modules/Foundation/Listeners/RecordAuthenticationAudit.php`
+- Modify: `resources/views/layouts/app/sidebar.blade.php`
+- Modify: `app/Modules/Foundation/Livewire/Admin/Users/Index.php`, `resources/views/livewire/admin/users/index.blade.php`
+- Modify: `routes/modules/foundation.php`
+- Test: `tests/Feature/Foundation/Admin/ImpersonationTest.php`
+
+**Interfaces:**
+- Produces:
+  - `HandleImpersonation::SESSION_KEY = 'impersonator_id'`.
+  - `StartImpersonation::handle(User $impersonator, User $target): void` (errors on key `user`).
+  - `StopImpersonation::handle(): ?User` returns the restored impersonator.
+  - Route `impersonation.stop` (POST `/impersonation/stop`).
+  - `Users\Index::impersonate(int $userId)`.
+  - Audit events `impersonation_started` and `impersonation_ended`, recorded on the target user with `new_values = ['impersonator_id' => …, 'user_id' => …]` and the impersonator as actor.
+- **While impersonating:**
+  - no `login` audit row is written, and no login history (the switch never goes through `AuthenticateUser`);
+  - the password-change and 2FA middleware pass through;
+  - `admin.users.*` and `admin.roles.*` return 403.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/Foundation/Admin/ImpersonationTest.php`:
+
+```php
+<?php
+
+use App\Http\Middleware\HandleImpersonation;
+use App\Models\User;
+use App\Modules\Foundation\Actions\StartImpersonation;
+use App\Modules\Foundation\Livewire\Admin\Users\Index;
+use App\Modules\Foundation\Models\AuditLog;
+use App\Modules\Foundation\Models\LoginHistory;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->admin = superAdmin();
+    $this->target = User::factory()->create(['name' => 'Target Person']);
+});
+
+test('only super admins can impersonate, and never themselves, super admins or inactive users', function () {
+    $this->actingAs($this->admin);
+    $plain = userWithPermissions('admin.users.impersonate');
+
+    expectValidationError(fn () => app(StartImpersonation::class)->handle($plain, $this->target), 'user');
+    expectValidationError(fn () => app(StartImpersonation::class)->handle($this->admin, $this->admin), 'user');
+    expectValidationError(fn () => app(StartImpersonation::class)->handle($this->admin, superAdmin()), 'user');
+    expectValidationError(fn () => app(StartImpersonation::class)->handle($this->admin, User::factory()->inactive()->create()), 'user');
+});
+
+test('starting switches the user, audits both ids and writes no login rows', function () {
+    $this->actingAs($this->admin);
+
+    app(StartImpersonation::class)->handle($this->admin, $this->target);
+
+    expect(Auth::id())->toBe($this->target->id)
+        ->and(session(HandleImpersonation::SESSION_KEY))->toBe($this->admin->id)
+        ->and(AuditLog::query()->where('event', 'impersonation_started')->first()?->new_values)->toBe(['impersonator_id' => $this->admin->id, 'user_id' => $this->target->id])
+        ->and(AuditLog::query()->where('event', 'login')->where('auditable_id', $this->target->id)->exists())->toBeFalse()
+        ->and(LoginHistory::query()->count())->toBe(0);
+});
+
+test('the banner shows and the forced password change is skipped while impersonating', function () {
+    $this->target->forceFill(['must_change_password' => true])->save();
+
+    $this->actingAs($this->target)
+        ->withSession([HandleImpersonation::SESSION_KEY => $this->admin->id])
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="impersonation-banner"', false)
+        ->assertSee('Target Person');
+});
+
+test('user and role admin is blocked while impersonating', function () {
+    createPermissions('admin.users.view');
+    $this->target->syncDirectPermissions(['admin.users.view']);
+
+    $this->actingAs($this->target)
+        ->withSession([HandleImpersonation::SESSION_KEY => $this->admin->id])
+        ->get(route('admin.users.index'))
+        ->assertForbidden();
+});
+
+test('stopping restores the super admin and audits the end', function () {
+    $this->actingAs($this->target)
+        ->withSession([HandleImpersonation::SESSION_KEY => $this->admin->id])
+        ->post(route('impersonation.stop'))
+        ->assertRedirect(route('admin.users.index'));
+
+    expect(Auth::id())->toBe($this->admin->id)
+        ->and(session()->has(HandleImpersonation::SESSION_KEY))->toBeFalse()
+        ->and(AuditLog::query()->where('event', 'impersonation_ended')->where('user_id', $this->admin->id)->exists())->toBeTrue();
+});
+
+test('super admins start impersonation from the users list', function () {
+    Livewire::actingAs($this->admin)
+        ->test(Index::class)
+        ->call('impersonate', $this->target->id)
+        ->assertRedirect(route('dashboard'));
+
+    expect(Auth::id())->toBe($this->target->id);
+});
+```
+
+- [ ] **Step 2: Run the tests to see them fail**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/ImpersonationTest.php`
+Expected: FAIL with "Class ...HandleImpersonation not found".
+
+- [ ] **Step 3: Write the middleware and actions**
+
+`app/Http/Middleware/HandleImpersonation.php`:
+
+```php
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+/**
+ * While a super admin is signed in as someone else (FD-BR-10), user and role administration
+ * is off limits so the session cannot be used to escalate the impersonated account.
+ */
+class HandleImpersonation
+{
+    public const SESSION_KEY = 'impersonator_id';
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        if ($request->hasSession()
+            && $request->session()->has(self::SESSION_KEY)
+            && $request->routeIs('admin.users.*', 'admin.roles.*')) {
+            abort(403, __('Return to your own account to manage users and roles.'));
+        }
+
+        return $next($request);
+    }
+}
+```
+
+`app/Modules/Foundation/Actions/StartImpersonation.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Actions;
+
+use App\Http\Middleware\HandleImpersonation;
+use App\Models\User;
+use App\Modules\Foundation\Models\Role;
+use App\Support\AuditTrail\AuditTrail;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+
+class StartImpersonation
+{
+    /**
+     * @throws ValidationException
+     */
+    public function handle(User $impersonator, User $target): void
+    {
+        $error = match (true) {
+            ! $impersonator->hasRole(Role::SUPER_ADMIN) => __('Only super admins can sign in as another user.'),
+            session()->has(HandleImpersonation::SESSION_KEY) => __('Return to your own account first.'),
+            $target->is($impersonator) => __('You are already signed in as yourself.'),
+            $target->hasRole(Role::SUPER_ADMIN) => __('Super admins cannot be impersonated.'),
+            ! $target->is_active => __('Inactive users cannot be impersonated.'),
+            default => null,
+        };
+
+        if ($error !== null) {
+            throw ValidationException::withMessages(['user' => $error]);
+        }
+
+        AuditTrail::record($target, 'impersonation_started', null, ['impersonator_id' => $impersonator->id, 'user_id' => $target->id], $impersonator);
+
+        session()->put(HandleImpersonation::SESSION_KEY, $impersonator->id);
+        Auth::guard('web')->login($target);
+    }
+}
+```
+
+`app/Modules/Foundation/Actions/StopImpersonation.php`:
+
+```php
+<?php
+
+namespace App\Modules\Foundation\Actions;
+
+use App\Http\Middleware\HandleImpersonation;
+use App\Models\User;
+use App\Support\AuditTrail\AuditTrail;
+use Illuminate\Support\Facades\Auth;
+
+class StopImpersonation
+{
+    /**
+     * Sign back in as the impersonator. The session key is removed only after the switch, so
+     * the Login listener still treats the switch as part of impersonation and skips its audit.
+     */
+    public function handle(): ?User
+    {
+        $impersonatorId = session(HandleImpersonation::SESSION_KEY);
+        $target = Auth::user();
+
+        if ($impersonatorId === null || ! $target instanceof User) {
+            return null;
+        }
+
+        $impersonator = User::query()->find($impersonatorId);
+
+        if ($impersonator === null) {
+            Auth::guard('web')->logout();
+            session()->forget(HandleImpersonation::SESSION_KEY);
+
+            return null;
+        }
+
+        AuditTrail::record($target, 'impersonation_ended', null, ['impersonator_id' => $impersonator->id, 'user_id' => $target->id], $impersonator);
+
+        Auth::guard('web')->login($impersonator);
+        session()->forget(HandleImpersonation::SESSION_KEY);
+
+        return $impersonator;
+    }
+}
+```
+
+- [ ] **Step 4: Skip login audits and forced pages while impersonating**
+
+In `RecordAuthenticationAudit::handleLogin()`, add as the first statement (with `use App\Http\Middleware\HandleImpersonation;`):
+
+```php
+        if (app()->bound('session') && session()->has(HandleImpersonation::SESSION_KEY)) {
+            return;
+        }
+```
+
+In `EnsurePasswordChanged::handle()`, change the condition to:
+
+```php
+        if ($request->user()?->must_change_password
+            && ! $request->session()->has(HandleImpersonation::SESSION_KEY)
+            && ! $request->routeIs('password.change', 'logout')) {
+```
+
+In `EnsureTwoFactorEnabled::handle()`, add `&& ! $request->session()->has(HandleImpersonation::SESSION_KEY)` to the condition.
+
+In `bootstrap/app.php`, add `HandleImpersonation::class` to the `app` group right after `EnsureUserIsActive::class`, with the `use` import. In `FoundationServiceProvider::boot()`, add `HandleImpersonation::class` to the `Livewire::addPersistentMiddleware([...])` list so Livewire requests from user and role pages are blocked too.
+
+- [ ] **Step 5: Add the banner, the stop route and the list action**
+
+`resources/views/components/shell/impersonation-banner.blade.php`:
+
+```blade
+@php($impersonator = \App\Models\User::query()->find(session(\App\Http\Middleware\HandleImpersonation::SESSION_KEY)))
+
+@if ($impersonator)
+    <div data-test="impersonation-banner" role="status" class="flex flex-wrap items-center gap-2 bg-warning px-4 py-2 text-sm text-warning-foreground">
+        <x-lucide-venetian-mask class="size-4 shrink-0" />
+        <span class="flex-1">{{ __('Signed in as :name', ['name' => auth()->user()->name]) }}</span>
+        <form method="POST" action="{{ route('impersonation.stop') }}">
+            @csrf
+            <x-ui.button type="submit" size="sm" variant="outline" class="h-11 bg-background md:h-8">{{ __('Return to :name', ['name' => $impersonator->name]) }}</x-ui.button>
+        </form>
+    </div>
+@endif
+```
+
+Check `ls vendor/mallardduck/blade-lucide-icons/resources/svg/icons/venetian-mask.svg`. If it's missing, use `user-round-cog`.
+
+In `resources/views/layouts/app/sidebar.blade.php`, add the banner as the first child inside `<x-ui.sidebar-inset …>`. It sits under the fixed mobile top bar because the inset already pads for it:
+
+```blade
+                @if (session()->has(\App\Http\Middleware\HandleImpersonation::SESSION_KEY))
+                    <x-shell.impersonation-banner />
+                @endif
+```
+
+In `routes/modules/foundation.php`, add `use App\Modules\Foundation\Actions\StopImpersonation;`. Inside the non-admin `app` group, add:
+
+```php
+    Route::post('impersonation/stop', function (StopImpersonation $stopImpersonation) {
+        $stopImpersonation->handle();
+
+        return redirect()->route('admin.users.index');
+    })->name('impersonation.stop');
+```
+
+In `Users\Index`, add (with `use App\Modules\Foundation\Actions\StartImpersonation;`):
+
+```php
+    public function impersonate(int $userId, StartImpersonation $startImpersonation): void
+    {
+        $this->authorize('admin.users.impersonate');
+
+        try {
+            $startImpersonation->handle($this->actor(), User::query()->findOrFail($userId));
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', description: (string) collect($exception->errors())->flatten()->first());
+
+            return;
+        }
+
+        $this->redirect(route('dashboard'));
+    }
+```
+
+The redirect is a full page load (no `navigate`), so the shell and banner re-render for the new user.
+
+In `resources/views/livewire/admin/users/index.blade.php`, add an Impersonate action in both the desktop dropdown and the mobile sheet. It shows only when `auth()->user()->hasRole(\App\Modules\Foundation\Models\Role::SUPER_ADMIN)` and the row is active and isn't the current user:
+
+```blade
+@if (auth()->user()->hasRole(\App\Modules\Foundation\Models\Role::SUPER_ADMIN) && $user->is_active && ! $user->is(auth()->user()))
+    <x-ui.dropdown-menu-item wire:click="impersonate({{ $user->id }})">{{ __('Sign in as') }}</x-ui.dropdown-menu-item>
+@endif
+```
+
+In the sheet, use the `$actionUser` variable and an `h-11` outline button with `<x-lucide-log-in />`.
+
+- [ ] **Step 6: Run the tests to see them pass**
+
+Run: `php artisan test --compact tests/Feature/Foundation/Admin/ImpersonationTest.php tests/Feature/Foundation/Admin/UsersScreenTest.php tests/Feature/Auth`
+Expected: PASS.
+
+- [ ] **Step 7: Commit (per file)**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add app/Http/Middleware/HandleImpersonation.php && git commit -m "Block user and role admin while impersonating"
+git add app/Modules/Foundation/Actions/StartImpersonation.php && git commit -m "Add start impersonation action" -m "Super admins only; never self, other super admins or inactive users. Audited with both ids."
+git add app/Modules/Foundation/Actions/StopImpersonation.php && git commit -m "Add stop impersonation action"
+git add app/Modules/Foundation/Listeners/RecordAuthenticationAudit.php && git commit -m "Skip login audit for impersonation switches"
+git add app/Http/Middleware/EnsurePasswordChanged.php && git commit -m "Skip forced password change while impersonating"
+git add app/Http/Middleware/EnsureTwoFactorEnabled.php && git commit -m "Skip forced 2FA setup while impersonating"
+git add bootstrap/app.php && git commit -m "Add impersonation guard to the app middleware group"
+git add app/Modules/Foundation/FoundationServiceProvider.php && git commit -m "Apply impersonation guard to Livewire requests"
+git add resources/views/components/shell/impersonation-banner.blade.php && git commit -m "Add impersonation banner"
+git add resources/views/layouts/app/sidebar.blade.php && git commit -m "Show the impersonation banner in the app shell"
+git add routes/modules/foundation.php && git commit -m "Add stop impersonation route"
+git add app/Modules/Foundation/Livewire/Admin/Users/Index.php && git commit -m "Let super admins sign in as a user from the list"
+git add resources/views/livewire/admin/users/index.blade.php && git commit -m "Add sign-in-as action to the users list"
+git add tests/Feature/Foundation/Admin/ImpersonationTest.php && git commit -m "Test impersonation rules, banner and audit"
+```
+
+---
+
+### Task 21: Final checks and spec touch-ups
+
+**Files:**
+- Modify: `docs/superpowers/specs/2026-10-06-admin-screens-design.md` (record deviations, mark done)
+
+- [ ] **Step 1: Format and static analysis**
+
+Run: `vendor/bin/pint --format agent`. Expected: no changes. If anything changes, commit it per file.
+Run: `vendor/bin/phpstan analyse --memory-limit=1G`. Expected: no errors. Fix any reported errors, commit per file, and re-run.
+
+- [ ] **Step 2: Full SQLite suite**
+
+Run: `php artisan test --compact`
+Expected: everything passes. The MySQL concurrency test is skipped.
+
+- [ ] **Step 3: Fresh seed, re-seed and assets**
+
+Run: `php artisan migrate:fresh --seed`, then `php artisan db:seed`. Expected: both succeed, and the second run adds no duplicate rows. Spot-check with the Boost `database-query` tool: `select count(*) from locations` stays the same after the re-seed.
+Run: `php artisan storage:link` (it's fine if the link already exists) and `npm run build`. Expected: the build succeeds.
+
+- [ ] **Step 4: Record deviations in the spec**
+
+In the spec, record these deviations:
+- **§4.3:** the `exported` audit row is recorded on the acting user, with `export` and `rows` in `new_values`.
+- **§5.2:** the mobile matrix uses checkbox rows, because `x-ui.switch` cannot bind to arrays.
+- **§5.8:** each entry opens in a sheet on both desktop and mobile.
+- **§5.3:** delete confirmation is `wire:confirm` inside the edit sheet.
+- **§5.10:** turning 2FA off needs the current password.
+- **Permissions:** `admin.locations.deactivate` was added.
+
+Change **Status** to "Done, <date>. Plan: `docs/superpowers/plans/2026-10-06-admin-screens.md`." and commit:
+
+```bash
+git add docs/superpowers/specs/2026-10-06-admin-screens-design.md && git commit -m "Record admin screens deviations and mark the spec done"
+```
+
+- [ ] **Step 5: Hand over**
+
+Ask the user to:
+- run `php artisan test --compact` themselves;
+- check these screens at 390×844 and at desktop width (no browser runs unless they ask): Users list and form, Roles list and form, Master data, Branches, Locations, Company, Settings, Number sequences, Audit log, Login history, Profile (all four tabs), Two-factor setup, the 2FA challenge, and the impersonation banner;
+- review `database/seeders/Foundation/data/locations.php` against the official list.
