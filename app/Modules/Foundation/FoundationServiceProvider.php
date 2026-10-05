@@ -27,7 +27,7 @@ class FoundationServiceProvider extends ServiceProvider
     {
         $this->app->singleton(LookupRegistry::class, fn (): LookupRegistry => new LookupRegistry(config('lookups', [])));
         $this->app->singleton(SettingsRepository::class);
-        $this->app->singleton(PermissionRegistrar::class);
+        $this->app->scoped(PermissionRegistrar::class);
         $this->app->singleton(Navigation::class, fn (): Navigation => new Navigation(config('navigation.groups', [])));
     }
 
