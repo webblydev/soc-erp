@@ -13,7 +13,7 @@
                     </x-ui.avatar>
                     <div class="grid flex-1 text-start text-sm leading-tight">
                         <span class="truncate font-medium">{{ auth()->user()->name }}</span>
-                        <span class="truncate text-xs">{{ auth()->user()->email }}</span>
+                        <span class="truncate text-xs">{{ auth()->user()->email ?? auth()->user()->username }}</span>
                     </div>
                     <x-lucide-chevrons-up-down class="ms-auto size-4" />
                 </x-ui.sidebar-menu-button>
@@ -27,7 +27,7 @@
                         </x-ui.avatar>
                         <div class="grid flex-1 text-start text-sm leading-tight">
                             <span class="truncate font-medium">{{ auth()->user()->name }}</span>
-                            <span class="truncate text-xs">{{ auth()->user()->email }}</span>
+                            <span class="truncate text-xs">{{ auth()->user()->email ?? auth()->user()->username }}</span>
                         </div>
                     </div>
                 </x-ui.dropdown-menu-label>
