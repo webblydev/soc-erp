@@ -2,6 +2,7 @@
 
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -22,7 +23,7 @@ pest()->extend(TestCase::class)
     ->in('Feature');
 
 pest()->extend(TestCase::class)
-    ->use(Illuminate\Foundation\Testing\DatabaseMigrations::class)
+    ->use(DatabaseMigrations::class)
     ->in('Isolated');
 
 /*
