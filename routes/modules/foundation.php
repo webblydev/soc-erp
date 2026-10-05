@@ -9,6 +9,7 @@ use App\Modules\Foundation\Livewire\Admin\Roles;
 use App\Modules\Foundation\Livewire\Admin\Sequences;
 use App\Modules\Foundation\Livewire\Admin\Settings;
 use App\Modules\Foundation\Livewire\Admin\Users;
+use App\Modules\Foundation\Livewire\Profile;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,4 +35,8 @@ Route::middleware('app')->prefix('admin')->name('admin.')->group(function () {
     Route::livewire('audit', AuditLog::class)->middleware('can:admin.audit.view')->name('audit.index');
     Route::livewire('login-history', LoginHistory::class)->middleware('can:admin.login_history.view')->name('login-history.index');
     Route::redirect('branches', '/admin/master-data/branches')->middleware('can:admin.branches.view')->name('branches.index');
+});
+
+Route::middleware('app')->group(function () {
+    Route::livewire('two-factor/setup', Profile\TwoFactorSetup::class)->name('two-factor.setup');
 });
