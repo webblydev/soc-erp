@@ -4,6 +4,7 @@ namespace App\Modules\Foundation\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Default number format per document type (docs/00 §5).
@@ -15,4 +16,13 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $scope_by business_line|branch
  */
 #[Fillable(['document_type', 'format', 'reset_policy', 'scope_by'])]
-class NumberSequenceFormat extends Model {}
+class NumberSequenceFormat extends Model
+{
+    /**
+     * @return HasMany<NumberSequence, $this>
+     */
+    public function sequences(): HasMany
+    {
+        return $this->hasMany(NumberSequence::class, 'document_type', 'document_type')->orderBy('scope_key');
+    }
+}
