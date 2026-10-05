@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\AuditTrail\Auditable;
+use App\Support\AuditTrail\TracksAuthors;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -41,7 +43,7 @@ use Illuminate\Support\Str;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes;
+    use Auditable, HasFactory, Notifiable, SoftDeletes, TracksAuthors;
 
     /**
      * Get the attributes that should be cast.
@@ -56,6 +58,20 @@ class User extends Authenticatable
             'must_change_password' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
             'last_login_at' => 'datetime',
+        ];
+    }
+
+    /**
+     * Attributes never written to the audit log.
+     *
+     * @return list<string>
+     */
+    public function auditExcludedAttributes(): array
+    {
+        return [
+            'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes',
+            'last_login_at', 'last_login_ip', 'created_at', 'updated_at', 'deleted_at',
+            'created_by', 'updated_by',
         ];
     }
 
