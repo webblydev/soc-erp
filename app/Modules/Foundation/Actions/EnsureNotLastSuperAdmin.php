@@ -14,6 +14,32 @@ use Illuminate\Validation\ValidationException;
 class EnsureNotLastSuperAdmin
 {
     /**
+     * Lock the active super admin rows so concurrent deactivations serialise. Call inside a transaction.
+     */
+    public function lockActiveSuperAdmins(): void
+    {
+        User::query()
+            ->where('is_active', true)
+            ->whereHas('roles', fn (Builder $query) => $query->where('code', Role::SUPER_ADMIN))
+            ->lockForUpdate()
+            ->pluck('id');
+    }
+
+    /**
+     * Only a super admin may change an account that holds super_admin.
+     *
+     * @throws ValidationException
+     */
+    public function ensureActorMayChange(User $user, User $actor): void
+    {
+        if ($user->hasRole(Role::SUPER_ADMIN) && ! $actor->hasRole(Role::SUPER_ADMIN)) {
+            throw ValidationException::withMessages([
+                'user' => __('Only a super admin can change a super admin account.'),
+            ]);
+        }
+    }
+
+    /**
      * @throws ValidationException
      */
     public function handle(User $user): void
