@@ -65,3 +65,23 @@ test('exporting needs admin.audit.export', function () {
     Livewire::actingAs(userWithPermissions('admin.audit.view', 'admin.audit.export'))->test(AuditLogScreen::class)->call('export');
     Excel::assertDownloaded('/^audit-log-\d{8}-\d{6}\.xlsx$/');
 });
+
+test('array-valued filters are ignored instead of failing', function () {
+    Livewire::actingAs(userWithPermissions('admin.audit.view'))
+        ->test(AuditLogScreen::class)
+        ->set('filters.user', ['x'])
+        ->set('filters.type', ['x'])
+        ->set('filters.event', ['x'])
+        ->assertOk()
+        ->assertSee('user #'.$this->subject->id);
+});
+
+test('the change sheet renders booleans as true and false', function () {
+    AuditTrail::record($this->subject, 'updated', ['is_active' => true], ['is_active' => false]);
+    $entry = AuditLog::query()->latest('id')->firstOrFail();
+
+    Livewire::actingAs(userWithPermissions('admin.audit.view'))
+        ->test(AuditLogScreen::class)
+        ->call('show', $entry->id)
+        ->assertSeeInOrder(['is_active', 'true', 'false']);
+});
