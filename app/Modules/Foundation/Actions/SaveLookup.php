@@ -26,6 +26,8 @@ class SaveLookup
      */
     public function handle(string $table, array $input, ?Model $row = null): Model
     {
+        $input = array_map(fn (mixed $value): mixed => $value === '' ? null : $value, $input);
+
         $entry = $this->registry->get($table);
         $row ??= $this->registry->modelFor($table);
 
