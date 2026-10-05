@@ -6,6 +6,7 @@ use App\Modules\Foundation\Actions\SaveRole;
 use App\Modules\Foundation\Livewire\Admin\Roles\Form;
 use App\Modules\Foundation\Livewire\Admin\Roles\Index;
 use App\Modules\Foundation\Models\Role;
+use App\Modules\Foundation\Services\PermissionRegistrar;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -144,4 +145,24 @@ test('saving the read-only super admin role from the form is refused', function 
         ->set('name', 'Boss')
         ->call('save')
         ->assertHasErrors('role');
+});
+
+test('matrix toggles re-authorize when the permission is revoked after mount', function () {
+    $user = userWithPermissions('admin.roles.create');
+    $component = Livewire::actingAs($user)->test(Form::class);
+
+    $user->syncDirectPermissions([]);
+    app(PermissionRegistrar::class)->forget($user);
+
+    $component->call('toggleResource', 'admin', 'users')->assertForbidden();
+});
+
+test('matrix column toggles re-authorize when the permission is revoked after mount', function () {
+    $user = userWithPermissions('admin.roles.create');
+    $component = Livewire::actingAs($user)->test(Form::class);
+
+    $user->syncDirectPermissions([]);
+    app(PermissionRegistrar::class)->forget($user);
+
+    $component->call('toggleAction', 'admin', 'view')->assertForbidden();
 });
