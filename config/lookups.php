@@ -29,8 +29,8 @@ return [
         'model' => Currency::class,
         'permission' => 'admin.master_data',
         'extra_fields' => [
-            'symbol' => ['type' => 'text', 'label' => 'Symbol'],
-            'decimal_places' => ['type' => 'number', 'label' => 'Decimal places'],
+            'symbol' => ['type' => 'text', 'label' => 'Symbol', 'required' => true],
+            'decimal_places' => ['type' => 'number', 'label' => 'Decimal places', 'required' => true],
             'is_base' => ['type' => 'bool', 'label' => 'Base currency'],
         ],
         'single_flags' => ['is_base'],

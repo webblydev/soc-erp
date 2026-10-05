@@ -12,7 +12,7 @@ use InvalidArgumentException;
 use stdClass;
 
 /**
- * @phpstan-type LookupEntry array{label: string, module: string, model: class-string<Model>, permission: string, extra_fields: array<string, array{type: string, label: string}>, single_flags?: list<string>}
+ * @phpstan-type LookupEntry array{label: string, module: string, model: class-string<Model>, permission: string, extra_fields: array<string, array{type: string, label: string, required?: bool}>, single_flags?: list<string>}
  */
 final class LookupRegistry
 {
