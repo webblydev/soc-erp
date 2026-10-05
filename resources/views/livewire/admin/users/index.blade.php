@@ -115,12 +115,12 @@
                         <x-ui.item-content class="min-w-0">
                             <x-ui.item-title class="flex items-center gap-2 text-base">
                                 <span class="truncate">{{ $user->name }}</span>
-                                <span @class(['size-2 shrink-0 rounded-full', 'bg-success' => $user->is_active, 'bg-muted-foreground' => ! $user->is_active])></span>
+                                <x-ui.badge :tone="$user->is_active ? 'success' : 'neutral'" class="text-sm">{{ $user->is_active ? __('Active') : __('Inactive') }}</x-ui.badge>
                             </x-ui.item-title>
                             <x-ui.item-description class="text-sm">{{ '@'.$user->username }}</x-ui.item-description>
                             <div class="mt-1 flex flex-wrap gap-1">
                                 @foreach ($user->roles as $role)
-                                    <x-ui.badge variant="secondary">{{ $role->name }}</x-ui.badge>
+                                    <x-ui.badge variant="secondary" class="text-sm">{{ $role->name }}</x-ui.badge>
                                 @endforeach
                             </div>
                         </x-ui.item-content>
