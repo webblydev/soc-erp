@@ -11,14 +11,16 @@
     "require": {
         "php": "^8.3",
         "anousss007/blatui": "^1.34",
+        "brick/money": "^0.15.2",
+        "carlos-meneses/laravel-mpdf": "^2.1",
         "gehrisandro/tailwind-merge-laravel": "^1.4",
         "laravel/chisel": "^0.1.0",
         "laravel/fortify": "^1.37.2",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "livewire/blaze": "^1.0",
-        "livewire/flux": "^2.13.1",
         "livewire/livewire": "^4.1",
+        "maatwebsite/excel": "^4.0",
         "mallardduck/blade-lucide-icons": "^2.0"
     },
     "require-dev": {
