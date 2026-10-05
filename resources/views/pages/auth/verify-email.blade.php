@@ -1,28 +1,30 @@
 <x-layouts::auth :title="__('Email verification')">
-    <div class="mt-4 flex flex-col gap-6">
-        <flux:text class="text-center">
+    <div class="flex flex-col gap-6">
+        <x-ui.typography variant="muted" class="text-center">
             {{ __('Please verify your email address by clicking on the link we just emailed to you.') }}
-        </flux:text>
+        </x-ui.typography>
 
         @if (session('status') == 'verification-link-sent')
-            <flux:text class="text-center font-medium !dark:text-green-400 !text-green-600">
-                {{ __('A new verification link has been sent to the email address you provided during registration.') }}
-            </flux:text>
+            <x-ui.alert>
+                <x-ui.alert-description>
+                    {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+                </x-ui.alert-description>
+            </x-ui.alert>
         @endif
 
-        <div class="flex flex-col items-center justify-between space-y-3">
-            <form method="POST" action="{{ route('verification.send') }}">
+        <div class="flex flex-col items-center gap-3">
+            <form method="POST" action="{{ route('verification.send') }}" class="w-full">
                 @csrf
-                <flux:button type="submit" variant="primary" class="w-full">
+                <x-ui.button type="submit" class="w-full">
                     {{ __('Resend verification email') }}
-                </flux:button>
+                </x-ui.button>
             </form>
 
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <flux:button variant="ghost" type="submit" class="text-sm cursor-pointer" data-test="logout-button">
+                <x-ui.button variant="ghost" type="submit" data-test="logout-button">
                     {{ __('Log out') }}
-                </flux:button>
+                </x-ui.button>
             </form>
         </div>
     </div>
