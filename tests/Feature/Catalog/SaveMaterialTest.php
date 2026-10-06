@@ -40,3 +40,9 @@ test('the rate cannot be negative and the name is at most 200 characters', funct
     expectValidationError(fn () => app(SaveMaterial::class)->handle(materialInput(['standard_rate' => '-1'])), 'standard_rate');
     expectValidationError(fn () => app(SaveMaterial::class)->handle(materialInput(['name' => str_repeat('a', 201)])), 'name');
 });
+
+test('a deleted material keeps its code reserved', function () {
+    Material::factory()->create(['code' => 'CEM-OPC'])->delete();
+
+    expectValidationError(fn () => app(SaveMaterial::class)->handle(materialInput()), 'code');
+});
