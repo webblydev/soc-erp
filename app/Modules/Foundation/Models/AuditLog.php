@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int|null $user_id
+ * @property int|null $impersonator_id
  * @property string $event
  * @property string $auditable_type
  * @property int $auditable_id
@@ -22,7 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $user_agent
  * @property Carbon $created_at
  */
-#[Fillable(['user_id', 'event', 'auditable_type', 'auditable_id', 'old_values', 'new_values', 'url', 'ip_address', 'user_agent'])]
+#[Fillable(['user_id', 'impersonator_id', 'event', 'auditable_type', 'auditable_id', 'old_values', 'new_values', 'url', 'ip_address', 'user_agent'])]
 class AuditLog extends Model
 {
     public const UPDATED_AT = null;
@@ -53,5 +54,29 @@ class AuditLog extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The super admin who was signed in as the user when the entry was written.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function impersonator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'impersonator_id');
+    }
+
+    /**
+     * Who acted: the username, "via" the impersonator when there was one.
+     */
+    public function actorLabel(): string
+    {
+        $label = $this->user?->username ?? __('system');
+
+        if ($this->impersonator_id !== null) {
+            $label .= ' '.__('via :username', ['username' => $this->impersonator?->username ?? '#'.$this->impersonator_id]);
+        }
+
+        return $label;
     }
 }
