@@ -2,16 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('app')->group(function () {
-    Route::redirect('settings', 'settings/profile');
-
-    Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
-});
+/*
+| The starter's settings pages were folded into /profile (docs/01 §5.13). Old links redirect.
+*/
 
 Route::middleware('app')->group(function () {
-    Route::livewire('settings/security', 'pages::settings.security')
-        ->middleware([
-            'password.confirm',
-        ])
-        ->name('security.edit');
+    Route::redirect('settings', '/profile');
+    Route::redirect('settings/profile', '/profile');
+    Route::redirect('settings/security', '/profile?tab=password');
 });
