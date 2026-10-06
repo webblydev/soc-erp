@@ -4,11 +4,12 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Service;
 use App\Modules\Crm\Livewire\Leads\Index;
 use App\Modules\Crm\Models\CrmActivity;
+use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Models\LeadStatus;
 use App\Support\Facades\Settings;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 
 beforeEach(fn () => Model::preventLazyLoading());
@@ -116,4 +117,17 @@ test('export needs crm.leads.export', function () {
     createPermissions('crm.leads.export');
     $this->me->syncDirectPermissions(['crm.leads.view_own', 'crm.leads.export']);
     Livewire::actingAs($this->me)->test(Index::class)->call('export')->assertFileDownloaded();
+});
+
+test('bulk delete soft-deletes open leads and skips converted ones', function () {
+    $open = Lead::factory()->create();
+    $converted = Lead::factory()->converted(Customer::factory()->create())->create();
+
+    Livewire::actingAs(userWithPermissions('crm.leads.view_all', 'crm.leads.delete'))->test(Index::class)
+        ->set('filters.state', 'all')
+        ->set('selected', [(string) $open->id, (string) $converted->id])
+        ->call('deleteSelected')
+        ->assertDispatched('toast', type: 'warning', description: '1 deleted, 1 skipped. Converted leads cannot be deleted.');
+
+    expect($open->fresh()->trashed())->toBeTrue()->and($converted->fresh()->trashed())->toBeFalse();
 });
