@@ -3,22 +3,41 @@
         :search-placeholder="__('Search roles')"
         :create-url="auth()->user()->can('admin.roles.create') ? route('admin.roles.create') : null"
         :create-label="__('New role')"
+        exportable
         :has-more="$this->hasMoreRows"
     >
         <x-slot:desktop>
-            <x-ui.table>
+            <x-shell.bulk-bar exportable :deletable="auth()->user()->can('admin.roles.delete')" />
+
+            <x-ui.table variant="bordered">
                 <x-ui.table-header>
                     <x-ui.table-row>
+                        <x-shell.select-all :ids="$rows->pluck('id')" />
+                        <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="name" :label="__('Name')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head>{{ __('Code') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="users" :label="__('Users')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head>{{ __('Status') }}</x-ui.table-head>
-                        <x-ui.table-head class="text-end">{{ __('Actions') }}</x-ui.table-head>
                     </x-ui.table-row>
                 </x-ui.table-header>
                 <x-ui.table-body>
                     @forelse ($rows as $role)
                         <x-ui.table-row wire:key="role-{{ $role->id }}">
+                            <x-shell.select-row :id="$role->id" :label="$role->name" />
+                            <x-shell.row-menu>
+                                @can('admin.roles.update')
+                                    @if ($role->code === \App\Modules\Foundation\Models\Role::SUPER_ADMIN)
+                                        <x-shell.row-menu-item icon="eye" :href="route('admin.roles.edit', $role)">{{ __('View') }}</x-shell.row-menu-item>
+                                    @else
+                                        <x-shell.row-menu-item icon="pencil" :href="route('admin.roles.edit', $role)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                    @endif
+                                @endcan
+                                @if (! $role->is_system)
+                                    @can('admin.roles.delete')
+                                        <x-shell.row-menu-item icon="trash-2" destructive wire:click="confirmDelete({{ $role->id }})">{{ __('Delete') }}</x-shell.row-menu-item>
+                                    @endcan
+                                @endif
+                            </x-shell.row-menu>
                             <x-ui.table-cell class="font-medium">
                                 <a href="{{ route('admin.roles.edit', $role) }}" wire:navigate class="hover:underline">{{ $role->name }}</a>
                                 @if ($role->is_system)
@@ -30,22 +49,10 @@
                             <x-ui.table-cell>
                                 <x-ui.badge :tone="$role->is_active ? 'success' : 'neutral'">{{ $role->is_active ? __('Active') : __('Inactive') }}</x-ui.badge>
                             </x-ui.table-cell>
-                            <x-ui.table-cell>
-                                <div data-test="row-actions" class="flex items-center justify-end gap-1">
-                                    @can('admin.roles.update')
-                                        <x-shell.row-action :icon="$role->code === \App\Modules\Foundation\Models\Role::SUPER_ADMIN ? 'eye' : 'pencil'" :label="$role->code === \App\Modules\Foundation\Models\Role::SUPER_ADMIN ? __('View') : __('Edit')" :href="route('admin.roles.edit', $role)" />
-                                    @endcan
-                                    @if (! $role->is_system)
-                                        @can('admin.roles.delete')
-                                            <x-shell.row-action icon="trash-2" :label="__('Delete')" destructive wire:click="confirmDelete({{ $role->id }})" />
-                                        @endcan
-                                    @endif
-                                </div>
-                            </x-ui.table-cell>
                         </x-ui.table-row>
                     @empty
                         <x-ui.table-row>
-                            <x-ui.table-cell colspan="5" class="py-10 text-center text-muted-foreground">{{ __('No roles found.') }}</x-ui.table-cell>
+                            <x-ui.table-cell colspan="6" class="py-10 text-center text-muted-foreground">{{ __('No roles found.') }}</x-ui.table-cell>
                         </x-ui.table-row>
                     @endforelse
                 </x-ui.table-body>
