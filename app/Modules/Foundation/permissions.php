@@ -10,7 +10,7 @@ $collaborate = ['attachments.upload', 'attachments.delete_own', 'notes.create', 
 return [
     'permissions' => [
         'admin' => [
-            'users' => ['view', 'create', 'update', 'deactivate', 'reset_password', 'impersonate'],
+            'users' => ['view', 'create', 'update', 'deactivate', 'delete', 'reset_password', 'impersonate'],
             'roles' => ['view', 'create', 'update', 'delete'],
             'settings' => ['view', 'update'],
             'company' => ['view', 'update'],
