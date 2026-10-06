@@ -1,8 +1,18 @@
 {{--
     One icon action in a desktop table's Actions column. The label is the tooltip and the
-    accessible name. Other attributes (wire:click, wire:confirm, disabled …) go to the button.
+    accessible name. Other attributes (wire:click, disabled …) go to the button. A wire:confirm
+    text asks in the page-wide x-shell.confirm-action dialog before running wire:click.
 --}}
 @props(['icon', 'label', 'href' => null, 'destructive' => false])
+
+@php
+    if ($attributes->has('wire:confirm') && $attributes->has('wire:click')) {
+        $confirm = ['title' => $attributes->get('wire:confirm'), 'confirmLabel' => $label];
+        $attributes = $attributes->except(['wire:confirm', 'wire:click'])->merge([
+            'x-on:click' => '$dispatch(\'confirm-action\', { ...'.Js::from($confirm).', confirm: () => $wire.'.$attributes->get('wire:click').' })',
+        ]);
+    }
+@endphp
 
 <x-ui.tooltip>
     <x-ui.tooltip-trigger>
