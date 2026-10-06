@@ -17,7 +17,9 @@ use App\Modules\Hrm\Models\EmploymentEventType;
 use App\Modules\Hrm\Models\ExitReason;
 use App\Modules\Hrm\Models\Gender;
 use App\Modules\Hrm\Models\MaritalStatus;
+use App\Modules\Hrm\Policies\EmployeePolicy;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -47,6 +49,8 @@ class HrmServiceProvider extends ServiceProvider
             'employee_education' => EmployeeEducation::class,
             'employee_experience' => EmployeeExperience::class,
         ]);
+
+        Gate::policy(Employee::class, EmployeePolicy::class);
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Hrm\\Livewire');
     }
