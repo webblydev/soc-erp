@@ -5,6 +5,7 @@ use App\Modules\Foundation\Models\CompanyProfile;
 use App\Modules\Foundation\Models\Currency;
 use App\Support\Facades\Lookup;
 use App\Support\Lookups\LookupRegistry;
+use Illuminate\Support\Facades\Blade;
 
 test('options return active rows ordered by sort order then name', function () {
     Branch::factory()->create(['code' => 'B', 'name' => 'Beta', 'sort_order' => 2]);
@@ -21,6 +22,21 @@ test('options include an inactive row that an existing record still references',
 
     expect(Lookup::options('branches', $inactive->id)->pluck('code')->all())
         ->toContain('OLD', 'NEW');
+});
+
+test('the lookup select renders active options, the held inactive one and the placeholder', function () {
+    $held = Branch::factory()->create(['code' => 'OLD', 'name' => 'Old Office', 'is_active' => false]);
+    Branch::factory()->create(['code' => 'DHK', 'name' => 'Dhaka Office']);
+    Branch::factory()->create(['code' => 'CTG', 'name' => 'Chittagong Office', 'is_active' => false]);
+
+    $html = Blade::render('<x-lookup-select table="branches" :include="$held" placeholder="No branch" show-code id="branch" />', ['held' => (string) $held->id]);
+
+    expect($html)
+        ->toContain('<option value="">No branch</option>')
+        ->toContain('DHK — Dhaka Office')
+        ->toContain('OLD — Old Office')
+        ->toContain('id="branch"')
+        ->not->toContain('Chittagong Office');
 });
 
 test('unregistered lookup tables are rejected', function () {
