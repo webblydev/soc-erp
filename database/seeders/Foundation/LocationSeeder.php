@@ -6,6 +6,9 @@ use App\Modules\Foundation\Models\Location;
 use App\Modules\Foundation\Models\LocationLevel;
 use Illuminate\Database\Seeder;
 
+/**
+ * Bangladesh divisions, districts and thanas (docs/01 §4) plus the v1 areas (legacy seed spec L4).
+ */
 class LocationSeeder extends Seeder
 {
     public function run(): void
@@ -26,6 +29,28 @@ class LocationSeeder extends Seeder
                 foreach ($thanas as $thanaName) {
                     $this->place($district, $thanaName, (int) $levels[LocationLevel::THANA]);
                 }
+            }
+        }
+
+        $this->placeLegacyAreas($levels->all());
+    }
+
+    /**
+     * The v1 areas (data/legacy_areas.php): each path is walked from the division down, and
+     * missing thana / area nodes are created at the level of their depth.
+     *
+     * @param  array<string, int>  $levels
+     */
+    private function placeLegacyAreas(array $levels): void
+    {
+        /** @var array<int, list<string>|null> $areas */
+        $areas = require database_path('seeders/Foundation/data/legacy_areas.php');
+
+        foreach (array_filter($areas) as $path) {
+            $parent = null;
+
+            foreach ($path as $depth => $name) {
+                $parent = $this->place($parent, $name, (int) $levels[LocationLevel::ORDER[$depth]]);
             }
         }
     }
