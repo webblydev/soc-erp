@@ -133,7 +133,7 @@
                             <div class="flex min-h-24 flex-col gap-2" wire:sort="moveLead" wire:sort:group="pipeline" wire:sort:group-id="{{ $column['id'] }}">
                                 @foreach ($column['leads'] as $lead)
                                     <x-ui.card class="cursor-grab gap-1 p-3 active:cursor-grabbing" wire:key="card-{{ $lead->id }}" wire:sort:item="{{ $lead->id }}">
-                                        <a href="{{ route('crm.leads.show', $lead) }}" wire:navigate class="font-medium hover:underline">{{ $lead->name }}</a>
+                                        <a data-detail-modal href="{{ route('crm.leads.show', $lead) }}" wire:navigate class="font-medium hover:underline">{{ $lead->name }}</a>
                                         @if ($lead->company_name)<p class="text-sm text-muted-foreground">{{ $lead->company_name }}</p>@endif
                                         <p class="text-sm tabular-nums">{{ $lead->phone }}</p>
                                         <div class="flex flex-wrap gap-1">
@@ -156,35 +156,33 @@
                     @endforeach
                 </div>
             @else
-                @if ($selected !== [])
-                    <div class="mb-3 flex flex-wrap items-center gap-2 rounded-md border bg-muted/50 p-2">
-                        <span class="text-sm font-medium">{{ trans_choice(':count selected|:count selected', count($selected)) }}</span>
-                        @can('crm.leads.assign')
-                            <x-ui.select native wire:model="bulkAssigneeId" class="w-48" :aria-label="__('Assign to')">
-                                <option value="">{{ __('Unassigned') }}</option>
-                                @foreach ($assignees as $assignee)
-                                    <option value="{{ $assignee->id }}">{{ $assignee->name }}</option>
-                                @endforeach
-                            </x-ui.select>
-                            <x-ui.button size="sm" variant="outline" wire:click="bulkAssign">{{ __('Assign') }}</x-ui.button>
+                <x-shell.bulk-bar :exportable="$user->can('crm.leads.export')" :deletable="$user->can('crm.leads.delete')">
+                    @can('crm.leads.assign')
+                        <x-ui.select native wire:model="bulkAssigneeId" class="h-8 w-48" :aria-label="__('Assign to')">
+                            <option value="">{{ __('Unassigned') }}</option>
+                            @foreach ($assignees as $assignee)
+                                <option value="{{ $assignee->id }}">{{ $assignee->name }}</option>
+                            @endforeach
+                        </x-ui.select>
+                        <x-ui.button size="sm" variant="outline" wire:click="bulkAssign">{{ __('Assign') }}</x-ui.button>
+                    @endcan
+                    @can('crm.leads.update')
+                        <x-ui.select native wire:model="bulkStatusId" class="h-8 w-48" :aria-label="__('New status')">
+                            <option value="">{{ __('Choose status…') }}</option>
+                            @foreach ($openStatuses as $status)
+                                <option value="{{ $status->id }}">{{ $status->name }}</option>
+                            @endforeach
+                        </x-ui.select>
+                        <x-ui.button size="sm" variant="outline" wire:click="bulkChangeStatus">{{ __('Change status') }}</x-ui.button>
                         @endcan
-                        @can('crm.leads.update')
-                            <x-ui.select native wire:model="bulkStatusId" class="w-48" :aria-label="__('New status')">
-                                <option value="">{{ __('Choose status…') }}</option>
-                                @foreach ($openStatuses as $status)
-                                    <option value="{{ $status->id }}">{{ $status->name }}</option>
-                                @endforeach
-                            </x-ui.select>
-                            <x-ui.button size="sm" variant="outline" wire:click="bulkChangeStatus">{{ __('Change status') }}</x-ui.button>
-                        @endcan
-                    </div>
-                @endif
+                </x-shell.bulk-bar>
 
                 <div class="overflow-x-auto">
-                    <x-ui.table>
+                    <x-ui.table variant="bordered">
                         <x-ui.table-header>
                             <x-ui.table-row>
-                                <x-ui.table-head class="w-8"><span class="sr-only">{{ __('Select') }}</span></x-ui.table-head>
+                                <x-shell.select-all :ids="$rows->pluck('id')" />
+                                <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                                 <x-ui.table-head><x-shell.sort-header key="number" :label="__('Lead #')" :$sort :$direction /></x-ui.table-head>
                                 <x-ui.table-head><x-shell.sort-header key="date" :label="__('Date')" :$sort :$direction /></x-ui.table-head>
                                 <x-ui.table-head><x-shell.sort-header key="name" :label="__('Name')" :$sort :$direction /></x-ui.table-head>
@@ -207,11 +205,20 @@
                         <x-ui.table-body>
                             @forelse ($rows as $lead)
                                 <x-ui.table-row wire:key="lead-{{ $lead->id }}">
-                                    <x-ui.table-cell><x-ui.checkbox native wire:model.live="selected" value="{{ $lead->id }}" :aria-label="__('Select :name', ['name' => $lead->name])" /></x-ui.table-cell>
-                                    <x-ui.table-cell class="font-mono text-sm"><a href="{{ route('crm.leads.show', $lead) }}" wire:navigate class="hover:underline">{{ $lead->lead_number }}</a></x-ui.table-cell>
+                                    <x-shell.select-row :id="$lead->id" :label="$lead->name" />
+                                    <x-shell.row-menu>
+                                        <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('crm.leads.show', $lead)">{{ __('View') }}</x-shell.row-menu-item>
+                                        @can('update', $lead)
+                                            <x-shell.row-menu-item icon="pencil" :href="route('crm.leads.edit', $lead)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                        @endcan
+                                        @can('delete', $lead)
+                                            <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $lead->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $lead->name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                                        @endcan
+                                    </x-shell.row-menu>
+                                    <x-ui.table-cell class="font-mono text-sm"><a data-detail-modal href="{{ route('crm.leads.show', $lead) }}" wire:navigate class="hover:underline">{{ $lead->lead_number }}</a></x-ui.table-cell>
                                     <x-ui.table-cell class="whitespace-nowrap tabular-nums">{{ $lead->lead_date->format('d-M-Y') }}</x-ui.table-cell>
                                     <x-ui.table-cell class="font-medium">
-                                        <a href="{{ route('crm.leads.show', $lead) }}" wire:navigate class="hover:underline">{{ $lead->name }}</a>
+                                        <a data-detail-modal href="{{ route('crm.leads.show', $lead) }}" wire:navigate class="hover:underline">{{ $lead->name }}</a>
                                         @if ($isStale($lead))
                                             <x-ui.badge tone="warning" class="ms-1 text-sm">{{ __('Stale') }}</x-ui.badge>
                                         @endif
@@ -242,14 +249,14 @@
                                 </x-ui.table-row>
                             @empty
                                 <x-ui.table-row>
-                                    <x-ui.table-cell colspan="18" class="py-10 text-center text-muted-foreground">{{ __('No leads found.') }}</x-ui.table-cell>
+                                    <x-ui.table-cell colspan="19" class="py-10 text-center text-muted-foreground">{{ __('No leads found.') }}</x-ui.table-cell>
                                 </x-ui.table-row>
                             @endforelse
                         </x-ui.table-body>
                     </x-ui.table>
                 </div>
 
-                <div class="mt-4 flex items-center justify-between gap-4">
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
                     <x-ui.select native wire:model.live="perPage" class="w-36" :aria-label="__('Rows per page')">
                         @foreach (static::PER_PAGE_OPTIONS as $option)
                             <option value="{{ $option }}">{{ __(':count per page', ['count' => $option]) }}</option>
@@ -297,6 +304,4 @@
             @endforelse
         </x-slot:mobile>
     </x-shell.list>
-
-    <livewire:crm.change-status />
 </div>
