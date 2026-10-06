@@ -3,6 +3,7 @@
 use App\Http\Middleware\HandleImpersonation;
 use App\Models\User;
 use App\Modules\Foundation\Actions\StartImpersonation;
+use App\Modules\Foundation\Actions\UpdateProfile;
 use App\Modules\Foundation\Livewire\Admin\Users\Index;
 use App\Modules\Foundation\Livewire\Profile\Edit;
 use App\Modules\Foundation\Models\AuditLog;
@@ -186,4 +187,34 @@ test('the profile still shows the two-factor tab when not impersonating', functi
         ->test(Edit::class)
         ->assertSet('tab', 'two-factor')
         ->assertSee('Two-factor');
+});
+
+test('changes made while impersonating record the impersonator', function () {
+    $this->actingAs($this->target)->withSession([HandleImpersonation::SESSION_KEY => $this->admin->id]);
+
+    app(UpdateProfile::class)->handle($this->target, ['name' => 'Renamed Person', 'phone' => '']);
+
+    $entry = AuditLog::query()->where('event', 'updated')->where('auditable_id', $this->target->id)->sole();
+    expect($entry->user_id)->toBe($this->target->id)
+        ->and($entry->impersonator_id)->toBe($this->admin->id);
+});
+
+test('changes made without impersonation have no impersonator', function () {
+    $this->actingAs($this->target);
+
+    app(UpdateProfile::class)->handle($this->target, ['name' => 'Renamed Person', 'phone' => '']);
+
+    expect(AuditLog::query()->where('event', 'updated')->where('auditable_id', $this->target->id)->sole()->impersonator_id)->toBeNull();
+});
+
+test('logging out while impersonating ends the impersonation instead of logging out', function () {
+    $this->actingAs($this->target)
+        ->withSession([HandleImpersonation::SESSION_KEY => $this->admin->id])
+        ->post(route('logout'));
+
+    $ended = AuditLog::query()->where('event', 'impersonation_ended')->sole();
+    expect($ended->auditable_id)->toBe($this->target->id)
+        ->and($ended->user_id)->toBe($this->admin->id)
+        ->and($ended->new_values)->toBe(['impersonator_id' => $this->admin->id, 'user_id' => $this->target->id])
+        ->and(AuditLog::query()->where('event', 'logout')->exists())->toBeFalse();
 });
