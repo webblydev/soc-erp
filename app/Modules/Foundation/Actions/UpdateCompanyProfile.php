@@ -8,6 +8,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -38,7 +39,7 @@ class UpdateCompanyProfile
             'tin' => ['nullable', 'string', 'max:30'],
             'bin' => ['nullable', 'string', 'max:30'],
             'trade_license_no' => ['nullable', 'string', 'max:60'],
-            'base_currency_id' => ['required', 'integer', 'exists:currencies,id'],
+            'base_currency_id' => ['required', 'integer', Rule::exists('currencies', 'id')->whereNull('deleted_at')],
             'fiscal_year_start_month' => ['required', 'integer', 'between:1,12'],
             'print_footer' => ['nullable', 'string', 'max:255'],
             'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:20480'],
