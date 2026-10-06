@@ -86,6 +86,9 @@
                                                 {{ $user->is_active ? __('Deactivate') : __('Activate') }}
                                             </x-ui.dropdown-menu-item>
                                         @endcan
+                                        @if (auth()->user()->hasRole(\App\Modules\Foundation\Models\Role::SUPER_ADMIN) && $user->is_active && ! $user->is(auth()->user()))
+                                            <x-ui.dropdown-menu-item wire:click="impersonate({{ $user->id }})">{{ __('Sign in as') }}</x-ui.dropdown-menu-item>
+                                        @endif
                                     </x-ui.dropdown-menu-content>
                                 </x-ui.dropdown-menu>
                             </x-ui.table-cell>
@@ -148,6 +151,11 @@
                         <x-lucide-power /> {{ $actionUser->is_active ? __('Deactivate') : __('Activate') }}
                     </x-ui.button>
                 @endcan
+                @if (auth()->user()->hasRole(\App\Modules\Foundation\Models\Role::SUPER_ADMIN) && $actionUser->is_active && ! $actionUser->is(auth()->user()))
+                    <x-ui.button variant="outline" class="h-11 justify-start" wire:click="impersonate({{ $actionUser->id }})">
+                        <x-lucide-log-in /> {{ __('Sign in as') }}
+                    </x-ui.button>
+                @endif
             </div>
         @endif
     </x-shell.sheet>
