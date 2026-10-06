@@ -26,7 +26,7 @@
 
         @if ($step === 1)
             <x-shell.form-section :title="__('Details')">
-                <div class="grid gap-6 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <x-ui.field>
                         <x-ui.field-label for="employee_status_id">{{ __('Exit status') }} *</x-ui.field-label>
                         <x-ui.select native id="employee_status_id" wire:model="employee_status_id" class="{{ $input }}">
