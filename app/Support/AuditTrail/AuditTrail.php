@@ -2,6 +2,7 @@
 
 namespace App\Support\AuditTrail;
 
+use App\Http\Middleware\HandleImpersonation;
 use App\Models\User;
 use App\Modules\Foundation\Models\AuditLog;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,7 @@ final class AuditTrail
 
         return AuditLog::query()->create([
             'user_id' => $actor !== null ? $actor->id : Auth::id(),
+            'impersonator_id' => self::impersonatorId(),
             'event' => $event,
             'auditable_type' => $model->getMorphClass(),
             'auditable_id' => $model->getKey(),
@@ -32,6 +34,20 @@ final class AuditTrail
             'ip_address' => $request?->ip(),
             'user_agent' => $request ? Str::limit((string) $request->userAgent(), 252) : null,
         ]);
+    }
+
+    /**
+     * The super admin signed in as the current user, when the session holds one.
+     */
+    private static function impersonatorId(): ?int
+    {
+        if (! app()->bound('session')) {
+            return null;
+        }
+
+        $impersonatorId = session(HandleImpersonation::SESSION_KEY);
+
+        return is_numeric($impersonatorId) ? (int) $impersonatorId : null;
     }
 
     /**
