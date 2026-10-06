@@ -14,6 +14,7 @@ use App\Support\DataScope\HasDataScope;
 use Database\Factories\Crm\CustomerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -99,6 +100,22 @@ class Customer extends Model implements Collaborative
     public function isBlocked(): bool
     {
         return (bool) $this->status->is_blocked;
+    }
+
+    /**
+     * Activities on the customer and on its converted and referred leads (spec R17).
+     *
+     * @return Builder<CrmActivity>
+     */
+    public function timeline(): Builder
+    {
+        $leadIds = Lead::query()->select('id')
+            ->where('converted_customer_id', $this->id)
+            ->orWhere(fn (Builder $query) => $query->where('referrer_type', 'customer')->where('referrer_id', $this->id));
+
+        return CrmActivity::query()->where(fn (Builder $query) => $query
+            ->where(fn (Builder $query) => $query->where('subject_type', $this->getMorphClass())->where('subject_id', $this->id))
+            ->orWhere(fn (Builder $query) => $query->where('subject_type', (new Lead)->getMorphClass())->whereIn('subject_id', $leadIds)));
     }
 
     /**
