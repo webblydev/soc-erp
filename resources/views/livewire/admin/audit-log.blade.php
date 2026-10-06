@@ -52,7 +52,7 @@
                         <x-ui.table-head>{{ __('User') }}</x-ui.table-head>
                         <x-ui.table-head>{{ __('Event') }}</x-ui.table-head>
                         <x-ui.table-head>{{ __('Record') }}</x-ui.table-head>
-                        <x-ui.table-head class="w-10"><span class="sr-only">{{ __('Changes') }}</span></x-ui.table-head>
+                        <x-ui.table-head class="text-end">{{ __('Actions') }}</x-ui.table-head>
                     </x-ui.table-row>
                 </x-ui.table-header>
                 <x-ui.table-body>
@@ -63,7 +63,10 @@
                             <x-ui.table-cell><x-ui.badge variant="secondary" class="text-sm">{{ str_replace('_', ' ', $entry->event) }}</x-ui.badge></x-ui.table-cell>
                             <x-ui.table-cell class="font-mono text-sm">{{ $entry->auditable_type }} #{{ $entry->auditable_id }}</x-ui.table-cell>
                             <x-ui.table-cell>
-                                <x-ui.button variant="ghost" size="icon" wire:click="show({{ $entry->id }})" :aria-label="__('View changes')"><x-lucide-eye /></x-ui.button>
+                                <div data-test="row-actions" class="flex items-center justify-end gap-1">
+                                    <x-shell.row-action icon="eye" :label="__('View changes')" wire:click="show({{ $entry->id }})" />
+                                    <x-shell.row-action icon="history" :label="__('History of this record')" wire:click="showRecordHistory({{ $entry->id }})" />
+                                </div>
                             </x-ui.table-cell>
                         </x-ui.table-row>
                     @empty
