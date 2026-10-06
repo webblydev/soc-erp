@@ -334,7 +334,7 @@
         </x-slot:aside>
     </x-shell.form-screen>
 
-    <x-shell.sheet id="employment-event" :title="__('Record the change')">
+    <x-shell.sheet id="employment-event" :title="__('Record the change')" :description="__('Choose the event and date for this change.')">
         <form id="employment-event-form" wire:submit="saveWithEvent" class="flex flex-col gap-4">
             <p class="text-sm text-muted-foreground">{{ __('Department, designation and salary changes are kept in the employment history.') }}</p>
             <x-ui.field>
