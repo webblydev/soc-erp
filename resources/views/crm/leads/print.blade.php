@@ -20,7 +20,7 @@
             <span class="font-mono">{{ $lead->lead_number }}</span>
         </div>
 
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 print:grid-cols-2">
             <table class="w-full">
                 <tbody>
                     @foreach ([
