@@ -19,12 +19,7 @@
             </x-ui.field>
             <x-ui.field>
                 <x-ui.field-label for="filter-branch">{{ __('Branch') }}</x-ui.field-label>
-                <x-ui.select native id="filter-branch" wire:model.live="filters.branch" class="h-11 md:h-9">
-                    <option value="">{{ __('All branches') }}</option>
-                    @foreach ($branches as $branch)
-                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-                    @endforeach
-                </x-ui.select>
+                <x-lookup-select table="branches" :placeholder="__('All branches')" id="filter-branch" wire:model.live="filters.branch" class="h-11 md:h-9" />
             </x-ui.field>
             <x-ui.field>
                 <x-ui.field-label for="filter-active">{{ __('Status') }}</x-ui.field-label>
