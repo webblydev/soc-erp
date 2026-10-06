@@ -48,6 +48,7 @@ return [
         ['key' => 'purchases', 'label' => 'Purchases', 'icon' => 'shopping-cart', 'items' => []],
         ['key' => 'accounting', 'label' => 'Accounting', 'icon' => 'landmark', 'items' => []],
         ['key' => 'hrm', 'label' => 'HRM', 'icon' => 'id-card', 'items' => [
+            ['label' => 'Employees', 'route' => 'hrm.employees.index', 'icon' => 'id-card', 'permission' => 'hrm.employees.view_basic'],
             ['label' => 'HR setup', 'icon' => 'database', 'children' => [
                 ['label' => 'Departments', 'route' => 'admin.master-data.show', 'params' => ['table' => 'departments'], 'icon' => 'network', 'permission' => 'hrm.masters.view'],
                 ['label' => 'Designations', 'route' => 'admin.master-data.show', 'params' => ['table' => 'designations'], 'icon' => 'badge', 'permission' => 'hrm.masters.view'],
