@@ -3,6 +3,8 @@
 namespace App\Modules\Crm;
 
 use App\Models\User;
+use App\Modules\Crm\Livewire\Activities\QuickLog;
+use App\Modules\Crm\Livewire\Leads\ChangeStatus;
 use App\Modules\Crm\Models\ActivityOutcome;
 use App\Modules\Crm\Models\ActivityType;
 use App\Modules\Crm\Models\CrmActivity;
@@ -71,5 +73,7 @@ class CrmServiceProvider extends ServiceProvider
         }
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Crm\\Livewire');
+        Livewire::component('crm.change-status', ChangeStatus::class);
+        Livewire::component('crm.quick-log', QuickLog::class);
     }
 }
