@@ -22,7 +22,8 @@ class ImportUsers
         $claimedEmployees = [];
 
         foreach ($context->legacy()->table('tbl_user')->orderBy('id')->get() as $row) {
-            $username = trim((string) $row->user_name);
+            $legacyName = trim((string) $row->user_name);
+            $username = self::username($legacyName);
             $employeeId = $context->employees[(int) $row->employee_id] ?? null;
 
             // An employee belongs to the first v1 user pointing at it (users.employee_id is unique).
@@ -42,10 +43,19 @@ class ImportUsers
             }
 
             $context->users[(int) $row->id] = $existing->id;
-            $context->usernames[Str::lower($username)] = $existing->id;
+            $context->usernames[Str::lower($legacyName)] = $existing->id;
         }
 
         return $created;
+    }
+
+    /**
+     * The v1 username when the user form accepts it (letters, digits, dashes, underscores), else
+     * a slug of it: "HR & Admin" → "hr-admin".
+     */
+    public static function username(string $legacyName): string
+    {
+        return preg_match('/^[A-Za-z0-9_-]{3,60}$/', $legacyName) === 1 ? $legacyName : Str::slug($legacyName);
     }
 
     private function create(object $row, string $username, ?int $employeeId): User

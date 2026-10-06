@@ -68,3 +68,15 @@ test('re-running adds nothing but still maps the users', function () {
     expect(app(ImportUsers::class)->run($context))->toBe(0)
         ->and($context->users)->toHaveCount(5);
 });
+
+test('a v1 username the user form would refuse is turned into a slug', function () {
+    legacyRow('tbl_user', ['id' => 8, 'name' => 'HR & Admin', 'user_name' => 'HR & Admin', 'type' => 't', 'team_name' => 'c', 'status' => 'a']);
+
+    app(ImportUsers::class)->run($this->context);
+
+    $user = User::query()->where('username', 'hr-admin')->sole();
+
+    expect($this->context->users[8])->toBe($user->id)
+        ->and($this->context->usernames['hr & admin'])->toBe($user->id)
+        ->and(app(ImportUsers::class)->run($this->context))->toBe(0);
+});
