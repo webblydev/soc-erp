@@ -47,7 +47,20 @@ return [
         ['key' => 'sales', 'label' => 'Sales', 'icon' => 'receipt', 'items' => []],
         ['key' => 'purchases', 'label' => 'Purchases', 'icon' => 'shopping-cart', 'items' => []],
         ['key' => 'accounting', 'label' => 'Accounting', 'icon' => 'landmark', 'items' => []],
-        ['key' => 'hrm', 'label' => 'HRM', 'icon' => 'id-card', 'items' => []],
+        ['key' => 'hrm', 'label' => 'HRM', 'icon' => 'id-card', 'items' => [
+            ['label' => 'HR setup', 'icon' => 'database', 'children' => [
+                ['label' => 'Departments', 'route' => 'admin.master-data.show', 'params' => ['table' => 'departments'], 'icon' => 'network', 'permission' => 'hrm.masters.view'],
+                ['label' => 'Designations', 'route' => 'admin.master-data.show', 'params' => ['table' => 'designations'], 'icon' => 'badge', 'permission' => 'hrm.masters.view'],
+                ['label' => 'Employee types', 'route' => 'admin.master-data.show', 'params' => ['table' => 'employee_types'], 'icon' => 'tags', 'permission' => 'hrm.masters.view'],
+                ['label' => 'Employee statuses', 'route' => 'admin.master-data.show', 'params' => ['table' => 'employee_statuses'], 'icon' => 'tags', 'permission' => 'hrm.masters.view'],
+                ['label' => 'Genders', 'route' => 'admin.master-data.show', 'params' => ['table' => 'genders'], 'icon' => 'tags', 'permission' => 'hrm.masters.view'],
+                ['label' => 'Marital statuses', 'route' => 'admin.master-data.show', 'params' => ['table' => 'marital_statuses'], 'icon' => 'tags', 'permission' => 'hrm.masters.view'],
+                ['label' => 'Blood groups', 'route' => 'admin.master-data.show', 'params' => ['table' => 'blood_groups'], 'icon' => 'tags', 'permission' => 'hrm.masters.view'],
+                ['label' => 'Document types', 'route' => 'admin.master-data.show', 'params' => ['table' => 'employee_document_types'], 'icon' => 'tags', 'permission' => 'hrm.masters.view'],
+                ['label' => 'Employment event types', 'route' => 'admin.master-data.show', 'params' => ['table' => 'employment_event_types'], 'icon' => 'tags', 'permission' => 'hrm.masters.view'],
+                ['label' => 'Exit reasons', 'route' => 'admin.master-data.show', 'params' => ['table' => 'exit_reasons'], 'icon' => 'tags', 'permission' => 'hrm.masters.view'],
+            ]],
+        ]],
         ['key' => 'reports', 'label' => 'Reports', 'icon' => 'chart-column', 'items' => []],
         ['key' => 'admin', 'label' => 'Admin', 'icon' => 'shield', 'items' => [
             ['label' => 'User management', 'icon' => 'users', 'children' => [
