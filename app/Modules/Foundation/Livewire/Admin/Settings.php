@@ -4,7 +4,6 @@ namespace App\Modules\Foundation\Livewire\Admin;
 
 use App\Modules\Foundation\Actions\UpdateSettings;
 use App\Modules\Foundation\Models\Setting;
-use App\Support\Facades\Lookup;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
@@ -59,7 +58,6 @@ class Settings extends Component
         return view('livewire.admin.settings', [
             'groups' => $settings->pluck('group')->unique()->values(),
             'fields' => $settings->where('group', $this->group)->values(),
-            'lookupOptions' => fn (string $table, mixed $current) => Lookup::options($table, is_numeric($current) ? (int) $current : null),
             'readOnly' => ! auth()->user()->can('admin.settings.update'),
         ]);
     }
