@@ -46,7 +46,7 @@ trait WithListing
     /**
      * The base query, including eager loads and the default order.
      *
-     * @return Builder<Model>
+     * @return Builder<covariant Model>
      */
     abstract protected function listingQuery(): Builder;
 
@@ -67,7 +67,7 @@ trait WithListing
     /**
      * Apply $this->filters to the query. Override in the component.
      *
-     * @param  Builder<Model>  $query
+     * @param  Builder<covariant Model>  $query
      */
     protected function applyFilters(Builder $query): void {}
 
@@ -108,6 +108,9 @@ trait WithListing
         $this->resetListing();
     }
 
+    /**
+     * @return LengthAwarePaginator<int, Model>
+     */
     public function paginatedRows(): LengthAwarePaginator
     {
         if (! in_array($this->perPage, self::PER_PAGE_OPTIONS, true)) {
@@ -133,7 +136,7 @@ trait WithListing
     }
 
     /**
-     * @return Builder<Model>
+     * @return Builder<covariant Model>
      */
     protected function filteredQuery(): Builder
     {
