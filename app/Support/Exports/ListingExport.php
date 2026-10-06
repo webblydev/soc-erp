@@ -16,8 +16,8 @@ final class ListingExport
     /**
      * Download the rows as Excel and record who exported what (docs/01 §10).
      *
-     * @param  Builder<Model>  $query
-     * @param  array<string, string|Closure(Model): mixed>  $columns
+     * @param  Builder<covariant Model>  $query
+     * @param  array<string, string|Closure>  $columns
      */
     public static function download(string $name, Builder $query, array $columns): BinaryFileResponse
     {
