@@ -30,7 +30,7 @@ class RecordAuthenticationAudit
         $impersonatorId = app()->bound('session') ? session(HandleImpersonation::SESSION_KEY) : null;
 
         if ($event->user instanceof User && $impersonatorId !== null) {
-            $impersonator = User::query()->find($impersonatorId);
+            $impersonator = User::query()->whereKey($impersonatorId)->first();
             AuditTrail::record($event->user, 'impersonation_ended', null, ['impersonator_id' => (int) $impersonatorId, 'user_id' => $event->user->id], $impersonator);
 
             return;
