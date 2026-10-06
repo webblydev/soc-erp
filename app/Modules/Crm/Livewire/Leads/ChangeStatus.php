@@ -76,6 +76,14 @@ class ChangeStatus extends Component
         $this->resetErrorBag();
 
         $lead = $this->findLead($this->leadNumber);
+
+        if ($this->mode === 'status' && $this->statusId === 'won') {
+            $this->authorize('convert', $lead);
+            $this->redirectRoute('crm.leads.convert', $lead, navigate: true);
+
+            return;
+        }
+
         $this->authorize('changeStatus', $lead);
 
         match ($this->mode) {
@@ -106,6 +114,7 @@ class ChangeStatus extends Component
     {
         return view('livewire.crm.leads.change-status', [
             'statuses' => LeadStatus::query()->active()->open()->ordered()->get(['id', 'name']),
+            'canConvert' => $this->leadNumber !== '' && $this->actor()->can('convert', $this->findLead($this->leadNumber)),
         ]);
     }
 }

@@ -9,6 +9,9 @@
                         @foreach ($statuses as $status)
                             <option value="{{ $status->id }}">{{ $status->name }}</option>
                         @endforeach
+                        @if ($canConvert)
+                            <option value="won">{{ __('Won → convert…') }}</option>
+                        @endif
                     </x-ui.select>
                     <x-ui.field-error :messages="$errors->get('lead_status_id')" />
                 </x-ui.field>
