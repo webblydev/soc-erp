@@ -81,11 +81,7 @@
                             @endcan
                             <x-ui.table-cell class="font-mono text-sm">{{ $customer->customer_number }}</x-ui.table-cell>
                             <x-ui.table-cell class="font-medium">
-                                @can('update', $customer)
-                                    <a href="{{ route('crm.customers.edit', $customer) }}" wire:navigate class="hover:underline">{{ $customer->name }}</a>
-                                @else
-                                    {{ $customer->name }}
-                                @endcan
+                                <a href="{{ route('crm.customers.show', $customer) }}" wire:navigate class="hover:underline">{{ $customer->name }}</a>
                             </x-ui.table-cell>
                             <x-ui.table-cell>{{ $customer->company_name ?? '—' }}</x-ui.table-cell>
                             <x-ui.table-cell>{{ $customer->type->name }}</x-ui.table-cell>
@@ -115,7 +111,7 @@
         <x-slot:mobile>
             @forelse ($mobileRows as $customer)
                 <x-ui.item variant="outline" class="min-h-16 py-2 active:bg-accent" wire:key="m-customer-{{ $customer->id }}"
-                    :href="auth()->user()->can('update', $customer) ? route('crm.customers.edit', $customer) : null" wire:navigate>
+                    :href="route('crm.customers.show', $customer)" wire:navigate>
                     <x-ui.item-content class="min-w-0">
                         <x-ui.item-title class="text-base"><span class="truncate">{{ $customer->name }}</span></x-ui.item-title>
                         <x-ui.item-description class="flex items-center gap-2 text-sm">
