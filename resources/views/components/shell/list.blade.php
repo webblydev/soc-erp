@@ -5,7 +5,17 @@
     'exportable' => false,
     'hasMore' => false,
     'activeFilters' => 0,
+    'filterColumns' => 1,
 ])
+
+@php
+    // From md the filters popover can lay its fields out in 2 or 3 columns; the mobile drawer stays one column.
+    [$filterWidth, $filterLayout] = match ((int) $filterColumns) {
+        3 => ['w-[min(60rem,calc(100vw-2rem))]', 'grid grid-cols-2 items-start lg:grid-cols-3'],
+        2 => ['w-[min(40rem,calc(100vw-2rem))]', 'grid grid-cols-2 items-start'],
+        default => ['w-80', 'flex flex-col'],
+    };
+@endphp
 
 <div class="flex flex-col gap-4">
     {{-- Desktop toolbar and table --}}
@@ -23,10 +33,10 @@
                         @endif
                     </x-ui.button>
                 </x-ui.popover-trigger>
-                <x-ui.popover-content class="w-80">
-                    <div class="flex flex-col gap-4">
+                <x-ui.popover-content align="start" :class="$filterWidth.' max-h-[80dvh] overflow-y-auto'">
+                    <div class="gap-4 {{ $filterLayout }}">
                         {{ $filters }}
-                        <x-ui.button variant="ghost" size="sm" wire:click="clearFilters">{{ __('Clear filters') }}</x-ui.button>
+                        <x-ui.button variant="ghost" size="sm" class="col-span-full justify-self-start" wire:click="clearFilters">{{ __('Clear filters') }}</x-ui.button>
                     </div>
                 </x-ui.popover-content>
             </x-ui.popover>
