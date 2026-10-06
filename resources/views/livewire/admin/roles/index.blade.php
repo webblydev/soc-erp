@@ -27,9 +27,9 @@
                             <x-shell.row-menu>
                                 @can('admin.roles.update')
                                     @if ($role->code === \App\Modules\Foundation\Models\Role::SUPER_ADMIN)
-                                        <x-shell.row-menu-item icon="eye" :href="route('admin.roles.edit', $role)">{{ __('View') }}</x-shell.row-menu-item>
+                                        <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('admin.roles.edit', $role)">{{ __('View') }}</x-shell.row-menu-item>
                                     @else
-                                        <x-shell.row-menu-item icon="pencil" :href="route('admin.roles.edit', $role)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                        <x-shell.row-menu-item icon="pencil" data-detail-modal :href="route('admin.roles.edit', $role)">{{ __('Edit') }}</x-shell.row-menu-item>
                                     @endif
                                 @endcan
                                 @if (! $role->is_system)
@@ -39,7 +39,7 @@
                                 @endif
                             </x-shell.row-menu>
                             <x-ui.table-cell class="font-medium">
-                                <a href="{{ route('admin.roles.edit', $role) }}" wire:navigate class="hover:underline">{{ $role->name }}</a>
+                                <a data-detail-modal href="{{ route('admin.roles.edit', $role) }}" wire:navigate class="hover:underline">{{ $role->name }}</a>
                                 @if ($role->is_system)
                                     <x-ui.badge tone="neutral" class="ms-2">{{ __('System') }}</x-ui.badge>
                                 @endif
