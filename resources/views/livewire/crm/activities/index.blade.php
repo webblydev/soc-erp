@@ -8,7 +8,7 @@
         @if ($view === 'list')
             <x-ui.segmented-control name="activity-tab" wire:model.live="tab" :value="$tab" :options="$tabOptions" class="h-11 w-full md:h-9 md:w-auto" />
         @else
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <x-ui.button variant="outline" size="icon" class="size-11 md:size-9" wire:click="previousWeek" :aria-label="__('Previous week')"><x-lucide-chevron-left /></x-ui.button>
                 <x-ui.button variant="outline" class="h-11 md:h-9" wire:click="thisWeek">{{ __('This week') }}</x-ui.button>
                 <x-ui.button variant="outline" size="icon" class="size-11 md:size-9" wire:click="nextWeek" :aria-label="__('Next week')"><x-lucide-chevron-right /></x-ui.button>
@@ -88,6 +88,4 @@
             <x-ui.button variant="destructive" wire:click="deleteActivity">{{ __('Delete') }}</x-ui.button>
         </x-slot:footer>
     </x-shell.sheet>
-
-    <livewire:crm.quick-log />
 </div>
