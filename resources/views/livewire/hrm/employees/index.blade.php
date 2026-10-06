@@ -52,9 +52,9 @@
 
         <x-slot:desktop>
             @if ($view === 'cards')
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                     @forelse ($rows as $employee)
-                        <a href="{{ route('hrm.employees.show', $employee) }}" wire:navigate wire:key="card-{{ $employee->id }}" class="rounded-xl focus-visible:outline-2 focus-visible:outline-ring">
+                        <a data-detail-modal href="{{ route('hrm.employees.show', $employee) }}" wire:navigate wire:key="card-{{ $employee->id }}" class="rounded-xl focus-visible:outline-2 focus-visible:outline-ring">
                             <x-ui.card class="h-full flex-row items-center gap-4 p-4 transition-colors hover:bg-accent/50">
                                 <x-employee-avatar :employee="$employee" class="size-12" />
                                 <div class="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -70,9 +70,13 @@
                     @endforelse
                 </div>
             @else
-                <x-ui.table>
+                <x-shell.bulk-bar :exportable="auth()->user()->can('hrm.employees.export')" :deletable="auth()->user()->can('hrm.employees.delete')" />
+
+                <x-ui.table variant="bordered">
                     <x-ui.table-header>
                         <x-ui.table-row>
+                            <x-shell.select-all :ids="$rows->pluck('id')" />
+                            <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                             <x-ui.table-head class="w-12"><span class="sr-only">{{ __('Photo') }}</span></x-ui.table-head>
                             <x-ui.table-head><x-shell.sort-header key="code" :label="__('Code')" :$sort :$direction /></x-ui.table-head>
                             <x-ui.table-head><x-shell.sort-header key="name" :label="__('Name')" :$sort :$direction /></x-ui.table-head>
@@ -86,10 +90,20 @@
                     <x-ui.table-body>
                         @forelse ($rows as $employee)
                             <x-ui.table-row wire:key="employee-{{ $employee->id }}">
+                                <x-shell.select-row :id="$employee->id" :label="$employee->full_name" />
+                                <x-shell.row-menu>
+                                    <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('hrm.employees.show', $employee)">{{ __('View') }}</x-shell.row-menu-item>
+                                    @can('update', $employee)
+                                        <x-shell.row-menu-item icon="pencil" :href="route('hrm.employees.edit', $employee)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                    @endcan
+                                    @can('delete', $employee)
+                                        <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $employee->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $employee->full_name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                                    @endcan
+                                </x-shell.row-menu>
                                 <x-ui.table-cell><x-employee-avatar :employee="$employee" class="size-8" /></x-ui.table-cell>
                                 <x-ui.table-cell class="font-mono text-sm">{{ $employee->employee_code }}</x-ui.table-cell>
                                 <x-ui.table-cell class="font-medium">
-                                    <a href="{{ route('hrm.employees.show', $employee) }}" wire:navigate class="hover:underline">{{ $employee->full_name }}</a>
+                                    <a data-detail-modal href="{{ route('hrm.employees.show', $employee) }}" wire:navigate class="hover:underline">{{ $employee->full_name }}</a>
                                 </x-ui.table-cell>
                                 <x-ui.table-cell>{{ $employee->designation->name }}</x-ui.table-cell>
                                 <x-ui.table-cell>{{ $employee->department->name }}</x-ui.table-cell>
@@ -99,14 +113,14 @@
                             </x-ui.table-row>
                         @empty
                             <x-ui.table-row>
-                                <x-ui.table-cell colspan="8" class="py-10 text-center text-muted-foreground">{{ __('No employees found.') }}</x-ui.table-cell>
+                                <x-ui.table-cell colspan="10" class="py-10 text-center text-muted-foreground">{{ __('No employees found.') }}</x-ui.table-cell>
                             </x-ui.table-row>
                         @endforelse
                     </x-ui.table-body>
                 </x-ui.table>
             @endif
 
-            <div class="mt-4 flex items-center justify-between gap-4">
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
                 <x-ui.select native wire:model.live="perPage" class="w-36" :aria-label="__('Rows per page')">
                     @foreach (static::PER_PAGE_OPTIONS as $option)
                         <option value="{{ $option }}">{{ __(':count per page', ['count' => $option]) }}</option>
