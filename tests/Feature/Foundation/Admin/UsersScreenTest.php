@@ -226,6 +226,21 @@ test('the users table shows every permitted row action in its actions column', f
         ->assertDontSeeHtml('aria-label="Row actions"');
 });
 
+test('a row delete asks in the confirmation dialog instead of the browser prompt', function () {
+    $target = User::factory()->create(['name' => 'Rahim Uddin']);
+
+    Livewire::actingAs(userWithPermissions('admin.users.view', 'admin.users.delete'))
+        ->test(Index::class)
+        ->assertSeeHtml("confirm: () =&gt; \$wire.deleteRecord({$target->id})")
+        ->assertSee('Delete Rahim Uddin?', false)
+        ->assertDontSeeHtml('wire:confirm=');
+});
+
+test('the app layout renders the page-wide confirmation dialog', function () {
+    $this->actingAs(userWithPermissions('admin.users.view'))->get(route('admin.users.index'))
+        ->assertSee('data-test="confirm-action"', false);
+});
+
 test('bulk delete soft-deletes users but never your own account', function () {
     $actor = superAdmin();
     $other = User::factory()->create();
