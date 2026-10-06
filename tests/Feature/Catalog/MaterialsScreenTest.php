@@ -5,7 +5,11 @@ use App\Modules\Catalog\Livewire\Materials\Index;
 use App\Modules\Catalog\Models\Material;
 use App\Modules\Catalog\Models\MaterialCategory;
 use App\Modules\Catalog\Models\Unit;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
+
+beforeEach(fn () => Model::preventLazyLoading());
+afterEach(fn () => Model::preventLazyLoading(false));
 
 test('each materials route needs its permission', function () {
     $material = Material::factory()->create();
