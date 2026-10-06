@@ -6,7 +6,7 @@
         :submit-label="$service ? __('Save changes') : __('Create service')">
 
         <x-shell.form-section :title="__('Details')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="code">{{ __('Code') }} *</x-ui.field-label>
                     <x-ui.input id="code" wire:model="code" autocapitalize="characters" autocomplete="off" class="h-11 font-mono text-base md:h-9 md:text-sm" :aria-invalid="$errors->has('code') ? 'true' : null" />
@@ -43,7 +43,7 @@
         </x-shell.form-section>
 
         <x-shell.form-section :title="__('Pricing')">
-            <div class="grid gap-6 md:grid-cols-3">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <x-ui.field>
                     <x-ui.field-label for="pricing_basis_id">{{ __('Pricing basis') }} *</x-ui.field-label>
                     <x-lookup-select table="pricing_bases" :include="$service?->pricing_basis_id" :placeholder="__('Choose…')" id="pricing_basis_id" wire:model="pricing_basis_id" />
