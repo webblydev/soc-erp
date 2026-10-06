@@ -102,7 +102,7 @@ class CreateLead
         }
 
         if (Settings::get('crm.auto_assign_mode') === 'round_robin_team' && ! empty($data['sales_team_id'])) {
-            return [$this->roundRobin->pick(SalesTeam::query()->findOrFail($data['sales_team_id'])), true];
+            return [$this->roundRobin->pick(SalesTeam::query()->findOrFail((int) $data['sales_team_id'])), true];
         }
 
         return [null, false];
