@@ -11,17 +11,18 @@ use Livewire\Livewire;
 
 beforeEach(function () {
     createPermissions('admin.users.view', 'admin.users.create', 'admin.roles.view');
-    $this->actingAs(userWithPermissions('admin.roles.view', 'admin.roles.create', 'admin.roles.update', 'admin.roles.delete'));
+    $this->roleAdmin = userWithPermissions('admin.users.view', 'admin.users.create', 'admin.roles.view', 'admin.roles.create', 'admin.roles.update', 'admin.roles.delete');
+    $this->actingAs($this->roleAdmin);
 });
 
 test('saving a role syncs its permissions and takes effect immediately', function () {
-    $role = app(SaveRole::class)->handle(['name' => 'Auditor', 'code' => 'auditor', 'is_active' => true, 'permissions' => ['admin.users.view']]);
+    $role = app(SaveRole::class)->handle(['name' => 'Auditor', 'code' => 'auditor', 'is_active' => true, 'permissions' => ['admin.users.view']], $this->roleAdmin);
     $member = User::factory()->create();
     $member->syncRoles(['auditor']);
 
     expect($member->can('admin.users.view'))->toBeTrue();
 
-    app(SaveRole::class)->handle(['name' => 'Auditor', 'code' => 'auditor', 'is_active' => true, 'permissions' => ['admin.roles.view']], $role);
+    app(SaveRole::class)->handle(['name' => 'Auditor', 'code' => 'auditor', 'is_active' => true, 'permissions' => ['admin.roles.view']], $this->roleAdmin, $role);
 
     expect($member->fresh()->can('admin.users.view'))->toBeFalse()
         ->and($member->fresh()->can('admin.roles.view'))->toBeTrue();
@@ -30,16 +31,16 @@ test('saving a role syncs its permissions and takes effect immediately', functio
 test('codes are snake case and unique', function () {
     ensureRole('auditor');
 
-    expectValidationError(fn () => app(SaveRole::class)->handle(['name' => 'X', 'code' => 'Bad Code']), 'code');
-    expectValidationError(fn () => app(SaveRole::class)->handle(['name' => 'X', 'code' => 'auditor']), 'code');
+    expectValidationError(fn () => app(SaveRole::class)->handle(['name' => 'X', 'code' => 'Bad Code'], $this->roleAdmin), 'code');
+    expectValidationError(fn () => app(SaveRole::class)->handle(['name' => 'X', 'code' => 'auditor'], $this->roleAdmin), 'code');
 });
 
 test('system role codes are locked and super admin is read-only', function () {
     $system = ensureRole('viewer', ['is_system' => true]);
     $super = ensureRole(Role::SUPER_ADMIN, ['is_system' => true]);
 
-    expectValidationError(fn () => app(SaveRole::class)->handle(['name' => 'Viewer', 'code' => 'reader'], $system), 'code');
-    expectValidationError(fn () => app(SaveRole::class)->handle(['name' => 'Boss', 'code' => Role::SUPER_ADMIN], $super), 'role');
+    expectValidationError(fn () => app(SaveRole::class)->handle(['name' => 'Viewer', 'code' => 'reader'], $this->roleAdmin, $system), 'code');
+    expectValidationError(fn () => app(SaveRole::class)->handle(['name' => 'Boss', 'code' => Role::SUPER_ADMIN], $this->roleAdmin, $super), 'role');
 });
 
 test('system roles and roles in use cannot be deleted', function () {
@@ -165,4 +166,20 @@ test('matrix column toggles re-authorize when the permission is revoked after mo
     app(PermissionRegistrar::class)->forget($user);
 
     $component->call('toggleAction', 'admin', 'view')->assertForbidden();
+});
+
+test('a non super admin can only add permissions they hold to a role', function () {
+    createPermissions('sales.quotes.approve');
+
+    expectValidationError(fn () => app(SaveRole::class)->handle(['name' => 'Approver', 'code' => 'approver', 'permissions' => ['sales.quotes.approve']], $this->roleAdmin), 'permissions');
+
+    expect(Role::query()->where('code', 'approver')->exists())->toBeFalse();
+});
+
+test('a super admin can put any permission into a role', function () {
+    createPermissions('sales.quotes.approve');
+
+    $role = app(SaveRole::class)->handle(['name' => 'Approver', 'code' => 'approver', 'permissions' => ['sales.quotes.approve']], superAdmin());
+
+    expect($role->permissions()->pluck('name')->all())->toBe(['sales.quotes.approve']);
 });
