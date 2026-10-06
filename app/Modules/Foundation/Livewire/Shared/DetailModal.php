@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use ReflectionClass;
@@ -35,9 +36,10 @@ class DetailModal extends Component
     }
 
     /**
-     * Match the URL to an allowed detail route and build the page component's mount parameters.
+     * Match the URL to an allowed detail route and build the page component's mount parameters,
+     * plus the record's code, name and type for the modal header.
      *
-     * @return array{component: class-string<Component>, parameters: array<string, mixed>}
+     * @return array{component: class-string<Component>, parameters: array<string, mixed>, heading: array{code: string, name: string, type: string}|null}
      */
     private function resolve(string $url): array
     {
@@ -54,6 +56,7 @@ class DetailModal extends Component
         /** @var class-string<Component> $component */
         $component = $route->getAction('livewire_component');
         $parameters = [];
+        $record = null;
 
         foreach ((new ReflectionMethod($component, 'mount'))->getParameters() as $parameter) {
             $name = $parameter->getName();
@@ -65,6 +68,7 @@ class DetailModal extends Component
                 $model = new ($type->getName());
                 $value = $model->resolveRouteBinding($value, $route->bindingFieldFor($name))
                     ?? throw (new ModelNotFoundException)->setModel($type->getName(), [$value]);
+                $record ??= $value;
             }
 
             $parameters[$name] = $value;
@@ -78,7 +82,11 @@ class DetailModal extends Component
             }
         }
 
-        return ['component' => $component, 'parameters' => $parameters];
+        return ['component' => $component, 'parameters' => $parameters, 'heading' => $record !== null ? [
+            'code' => (string) $record->getRouteKey(),
+            'name' => (string) ($record->getAttribute('full_name') ?? $record->getAttribute('name')),
+            'type' => __(Str::headline(class_basename($record))),
+        ] : null];
     }
 
     public function render(): View
