@@ -4,6 +4,7 @@ namespace App\Modules\Foundation\Livewire\Admin;
 
 use App\Modules\Foundation\Models\AuditLog as AuditEntry;
 use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,7 +17,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 #[Title('Audit log')]
 class AuditLog extends Component
 {
-    use WithListing;
+    use WithBulkActions, WithListing;
 
     #[Locked]
     public ?int $selectedId = null;
@@ -51,7 +52,7 @@ class AuditLog extends Component
     {
         $this->authorize('admin.audit.export');
 
-        return ListingExport::download('audit-log', $this->filteredQuery(), [
+        return ListingExport::download('audit-log', $this->exportQuery(), [
             'When' => fn (AuditEntry $entry): string => $entry->created_at->format('d-M-Y H:i:s'),
             'User' => 'user.username',
             'Event' => 'event',
@@ -120,7 +121,7 @@ class AuditLog extends Component
             'mobileRows' => $this->mobileRows(),
             'types' => AuditEntry::query()->distinct()->orderBy('auditable_type')->pluck('auditable_type'),
             'events' => AuditEntry::query()->distinct()->orderBy('event')->pluck('event'),
-            'selected' => $this->selectedId !== null ? AuditEntry::query()->with(['user', 'impersonator'])->find($this->selectedId) : null,
+            'openEntry' => $this->selectedId !== null ? AuditEntry::query()->with(['user', 'impersonator'])->find($this->selectedId) : null,
         ]);
     }
 }
