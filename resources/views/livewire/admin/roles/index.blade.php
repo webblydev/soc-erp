@@ -13,7 +13,7 @@
                         <x-ui.table-head>{{ __('Code') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="users" :label="__('Users')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head>{{ __('Status') }}</x-ui.table-head>
-                        <x-ui.table-head class="w-10"><span class="sr-only">{{ __('Actions') }}</span></x-ui.table-head>
+                        <x-ui.table-head class="text-end">{{ __('Actions') }}</x-ui.table-head>
                     </x-ui.table-row>
                 </x-ui.table-header>
                 <x-ui.table-body>
@@ -31,11 +31,16 @@
                                 <x-ui.badge :tone="$role->is_active ? 'success' : 'neutral'">{{ $role->is_active ? __('Active') : __('Inactive') }}</x-ui.badge>
                             </x-ui.table-cell>
                             <x-ui.table-cell>
-                                @if (! $role->is_system)
-                                    @can('admin.roles.delete')
-                                        <x-ui.button variant="ghost" size="icon" wire:click="confirmDelete({{ $role->id }})" :aria-label="__('Delete')"><x-lucide-trash-2 /></x-ui.button>
+                                <div data-test="row-actions" class="flex items-center justify-end gap-1">
+                                    @can('admin.roles.update')
+                                        <x-shell.row-action :icon="$role->code === \App\Modules\Foundation\Models\Role::SUPER_ADMIN ? 'eye' : 'pencil'" :label="$role->code === \App\Modules\Foundation\Models\Role::SUPER_ADMIN ? __('View') : __('Edit')" :href="route('admin.roles.edit', $role)" />
                                     @endcan
-                                @endif
+                                    @if (! $role->is_system)
+                                        @can('admin.roles.delete')
+                                            <x-shell.row-action icon="trash-2" :label="__('Delete')" destructive wire:click="confirmDelete({{ $role->id }})" />
+                                        @endcan
+                                    @endif
+                                </div>
                             </x-ui.table-cell>
                         </x-ui.table-row>
                     @empty
