@@ -171,7 +171,7 @@
         @php($isSystem = $editingIsSystem)
         @php($canSave = $editingId ? $can('update') : $can('create'))
 
-        <x-shell.sheet id="lookup-row" :title="$editingId ? __('Edit row') : __('Add row')">
+        <x-shell.sheet id="lookup-row" :title="$editingId ? __('Edit row') : __('Add row')" :description="__($entry['label'])">
             <form wire:submit="save" id="lookup-row-form" class="flex flex-col gap-4 pb-2">
               <fieldset @disabled(! $canSave) class="contents">
                 <x-ui.field>
