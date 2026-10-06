@@ -9,7 +9,7 @@
 
 Provides everything the other modules stand on:
 
-- Authentication, user accounts, password policy, optional 2FA
+- Authentication, user accounts, password policy (no 2FA)
 - Roles, permissions, data scope
 - Company profile and branches
 - System settings (key/value)
@@ -78,9 +78,6 @@ Default role grants for every module's permissions are maintained in `database/s
 | avatar_path | VARCHAR(255) | yes | |
 | is_active | TINYINT(1) | no | default 1 |
 | must_change_password | TINYINT(1) | no | default 1 for new users |
-| two_factor_secret | TEXT | yes | encrypted |
-| two_factor_recovery_codes | TEXT | yes | encrypted |
-| two_factor_confirmed_at | TIMESTAMP | yes | |
 | last_login_at | TIMESTAMP | yes | |
 | last_login_ip | VARCHAR(45) | yes | |
 | remember_token | VARCHAR(100) | yes | |
@@ -193,7 +190,6 @@ Initial keys (each module adds its own — listed in their specs):
 | general.money_grouping | string | `bd` (12,34,567.00) |
 | general.session_timeout_minutes | int | 120 |
 | general.password_min_length | int | 8 |
-| general.require_2fa_roles | json | `["finance_manager","super_admin"]` |
 | notifications.email_enabled | bool | true |
 | notifications.sms_enabled | bool | false |
 | notifications.daily_digest_time | string | `09:00` |
@@ -312,7 +308,7 @@ Laravel `notifications` table (database channel) + `notification_preferences`:
 ## 5. Screens
 
 ### 5.1 Login
-Fields: Username or email*, Password*, Remember me. Rate limit 5 attempts / minute / IP+username; lockout message. If `must_change_password` → forced change screen. If role in `require_2fa_roles` and 2FA not set → forced setup.
+Fields: Username or email*, Password*, Remember me. Rate limit 5 attempts / minute / IP+username; lockout message. If `must_change_password` → forced change screen.
 
 ### 5.2 Users — list
 Columns: Name, Username, Email, Phone, Employee, Roles, Branch, Active, Last login.
@@ -360,7 +356,7 @@ Filters: user, model type, record id/number, event, date range. Columns: When, U
 Filters: user, success, date range.
 
 ### 5.13 Profile (self)
-Change name/phone/avatar, password, 2FA setup, notification preferences.
+Change name/phone/avatar, password, notification preferences.
 
 ### 5.14 Shared components
 - `<x-attachments :model>` — upload (drag-drop, multiple), list with type, version, uploader, date; download via signed URL; delete (own within 24 h or `delete_any`).
@@ -457,6 +453,9 @@ Traits:   HasRoles (User), HasDataScope, Auditable
 
 ## 13. Open Questions
 
-1. Does SOC have more than one branch/office?
-2. Is email available for all staff (needed for password reset and notifications)? If not, use SMS gateway — which provider?
-3. Which roles must use 2FA?
+1. Does SOC have more than one branch/office? (open — Head Office only is seeded until confirmed)
+
+Resolved:
+
+- Email is available for all staff; password reset and notifications use email. No SMS gateway needed for now.
+- 2FA is not required for any role and has been removed.
