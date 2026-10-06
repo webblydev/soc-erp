@@ -2,11 +2,13 @@
 
 namespace App\Modules\Foundation\Livewire\Admin\Roles;
 
+use App\Models\User;
 use App\Modules\Foundation\Actions\SaveRole;
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class Form extends Component
@@ -63,7 +65,10 @@ class Form extends Component
     {
         $this->authorizeWrite();
 
-        $saveRole->handle($this->only(['name', 'code', 'description', 'is_active', 'permissions']), $this->role);
+        /** @var User $actor */
+        $actor = Auth::user();
+
+        $saveRole->handle($this->only(['name', 'code', 'description', 'is_active', 'permissions']), $actor, $this->role);
 
         session()->flash('success', __('Role saved.'));
 
