@@ -2,6 +2,7 @@
 
 namespace App\Modules\Foundation\Actions;
 
+use App\Support\Lookups\ActiveLookup;
 use App\Support\Lookups\LookupRegistry;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Creates or edits a row in any registered lookup table (docs/01 §5.8, FD-BR-05).
+ * Creates or edits a row in any registered lookup table (docs/01 §5.8, FD-BR-05). Extra fields
+ * may add `rules`, be `unique` in their table, be stored `uppercase`, or be a `lookup` (an id
+ * from another lookup table, which must be active unless the row already holds it).
  */
 class SaveLookup
 {
@@ -34,6 +37,12 @@ class SaveLookup
         $row ??= $this->registry->modelFor($table);
         $input = $this->splitListFields($entry['extra_fields'], $input);
 
+        foreach ($entry['extra_fields'] as $field => $definition) {
+            if (($definition['uppercase'] ?? false) && is_string($input[$field] ?? null)) {
+                $input[$field] = Str::upper(trim($input[$field]));
+            }
+        }
+
         $rules = [
             'code' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9_\-]+$/', Rule::unique($table, 'code')->ignore($row->getKey())],
             'name' => ['required', 'string', 'max:120'],
@@ -50,8 +59,15 @@ class SaveLookup
                 'number' => [$presence, 'integer', 'min:0', 'max:65535'],
                 'textarea' => [$presence, 'string', 'max:2000'],
                 'list' => [$presence, 'array'],
+                'lookup' => [$presence, new ActiveLookup((string) ($definition['table'] ?? ''), $row->getAttribute($field))],
                 default => [$presence, 'string', 'max:255'],
             };
+
+            if ($definition['unique'] ?? false) {
+                $rules[$field][] = Rule::unique($table, $field)->ignore($row->getKey());
+            }
+
+            array_push($rules[$field], ...($definition['rules'] ?? []));
 
             if ($definition['type'] === 'list' && isset($definition['in'])) {
                 $allowed = (array) config($definition['in']);
@@ -102,7 +118,7 @@ class SaveLookup
     /**
      * Turn comma-separated text for `list` fields into lowercase tokens; an empty list is null.
      *
-     * @param  array<string, array{type: string, label: string, required?: bool, in?: string}>  $fields
+     * @param  array<string, array{type: string, label: string, required?: bool, in?: string, table?: string, rules?: list<mixed>, unique?: bool, uppercase?: bool}>  $fields
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
