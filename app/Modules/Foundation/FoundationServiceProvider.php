@@ -11,6 +11,7 @@ use App\Modules\Foundation\Listeners\NotifyNewIpSignIn;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
 use App\Modules\Foundation\Livewire\Notifications\Bell;
 use App\Modules\Foundation\Livewire\Shared\Attachments;
+use App\Modules\Foundation\Livewire\Shared\History;
 use App\Modules\Foundation\Livewire\Shared\Notes;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Foundation\Services\Navigation;
@@ -60,6 +61,7 @@ class FoundationServiceProvider extends ServiceProvider
 
         Livewire::component('foundation.attachments', Attachments::class);
         Livewire::component('foundation.notes', Notes::class);
+        Livewire::component('foundation.history', History::class);
         Livewire::component('foundation.notifications.bell', Bell::class);
 
         Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class, EnsurePasswordChanged::class, HandleImpersonation::class]);
