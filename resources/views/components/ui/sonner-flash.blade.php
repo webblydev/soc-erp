@@ -27,10 +27,6 @@
         'verification-link-sent' => __('A new verification link has been emailed to you.'),
         'profile-information-updated' => __('Profile updated.'),
         'password-updated' => __('Password updated.'),
-        'two-factor-authentication-enabled' => __('Two-factor authentication enabled.'),
-        'two-factor-authentication-confirmed' => __('Two-factor authentication confirmed.'),
-        'two-factor-authentication-disabled' => __('Two-factor authentication disabled.'),
-        'recovery-codes-generated' => __('Recovery codes generated.'),
         'password-confirmed' => __('Password confirmed.'),
     ];
     if (session()->has('status')) {
