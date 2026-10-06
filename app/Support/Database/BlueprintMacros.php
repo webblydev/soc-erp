@@ -22,6 +22,7 @@ final class BlueprintMacros
             $this->boolean('is_active')->default(true);
             $this->boolean('is_system')->default(false);
             $this->timestamps();
+            $this->softDeletes();
         });
 
         Blueprint::macro('auditColumns', function (): void {
