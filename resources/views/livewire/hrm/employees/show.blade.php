@@ -55,7 +55,7 @@
                 <x-ui.badge tone="neutral" class="text-sm">{{ __('Inactive') }}</x-ui.badge>
             @endunless
             @can('admin.users.update')
-                <x-ui.button size="sm" variant="ghost" class="h-11 md:h-8" wire:click="unlinkUser" wire:confirm="{{ __('Unlink this login from the employee?') }}">{{ __('Unlink') }}</x-ui.button>
+                <x-ui.button size="sm" variant="ghost" class="h-11 md:h-8" x-on:click="$dispatch('confirm-action', { title: @js(__('Unlink this login from the employee?')), description: @js(__('The login stays active but is no longer tied to this employee.')), confirmLabel: @js(__('Unlink')), confirm: () => $wire.unlinkUser() })">{{ __('Unlink') }}</x-ui.button>
             @endcan
         </div>
     @elseif ($user->can('admin.users.create') || $user->can('admin.users.update'))
