@@ -19,7 +19,14 @@
         </form>
     @else
         <p class="text-sm text-muted-foreground">{{ __('Add a second step to sign-in: a code from an authenticator app on your phone.') }}</p>
-        <x-ui.button class="h-11 md:h-9 md:self-start" wire:click="enable">{{ __('Turn on two-factor authentication') }}</x-ui.button>
+        <form wire:submit="enable" class="flex flex-col gap-3">
+            <x-ui.field>
+                <x-ui.field-label for="tf-enable-password">{{ __('Current password') }}</x-ui.field-label>
+                <x-ui.input id="tf-enable-password" type="password" wire:model="current_password" autocomplete="current-password" class="h-11 text-base md:h-9 md:text-sm" :aria-invalid="$errors->has('current_password') ? 'true' : null" />
+                <x-ui.field-error :messages="$errors->get('current_password')" />
+            </x-ui.field>
+            <x-ui.button type="submit" class="h-11 md:h-9 md:self-start">{{ __('Turn on two-factor authentication') }}</x-ui.button>
+        </form>
     @endif
 
     @if ($recoveryCodes !== [])
