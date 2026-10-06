@@ -11,6 +11,16 @@
         </x-slot:alerts>
 
         <x-shell.form-section :title="__('Profile')" :description="__('Who the person is and how to reach them.')">
+            <x-ui.field>
+                <x-ui.field-label for="employee_id">{{ __('Employee') }}</x-ui.field-label>
+                <x-ui.select native id="employee_id" wire:model.live="employee_id" class="h-11 text-base md:h-9 md:text-sm">
+                    <option value="">{{ __('Not an employee') }}</option>
+                    @foreach ($employees as $employee)
+                        <option value="{{ $employee->id }}">{{ $employee->full_name }} — {{ $employee->employee_code }}</option>
+                    @endforeach
+                </x-ui.select>
+                <x-ui.field-error :messages="$errors->get('employee_id')" />
+            </x-ui.field>
             <div class="grid gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="name">{{ __('Name') }} *</x-ui.field-label>
