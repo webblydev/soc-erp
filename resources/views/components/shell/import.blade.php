@@ -68,7 +68,7 @@
         </div>
 
         <div class="hidden md:block">
-            <x-ui.table>
+            <x-ui.table variant="bordered">
                 <x-ui.table-header>
                     <x-ui.table-row>
                         <x-ui.table-head>{{ __('Row') }}</x-ui.table-head>
@@ -121,7 +121,7 @@
             <x-ui.button class="h-11 flex-1" wire:click="confirm" :disabled="$importable === 0">{{ __('Import :count', ['count' => $importable]) }}</x-ui.button>
         </div>
     @else
-        <div class="grid gap-4 md:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
             @foreach (['created' => __('Created'), 'updated' => __('Updated'), 'failed' => __('Failed')] as $key => $label)
                 <x-ui.card>
                     <x-ui.card-content class="flex flex-col gap-1">
