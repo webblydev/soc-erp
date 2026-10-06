@@ -49,6 +49,8 @@ return [
         ['key' => 'accounting', 'label' => 'Accounting', 'icon' => 'landmark', 'items' => []],
         ['key' => 'hrm', 'label' => 'HRM', 'icon' => 'id-card', 'items' => [
             ['label' => 'Employees', 'route' => 'hrm.employees.index', 'icon' => 'id-card', 'permission' => 'hrm.employees.view_basic'],
+            ['label' => 'Org chart', 'route' => 'hrm.org-chart', 'icon' => 'network', 'permission' => 'hrm.employees.view_basic'],
+            ['label' => 'Expiring documents', 'route' => 'hrm.documents.expiring', 'icon' => 'file-clock', 'permission' => 'hrm.documents.manage'],
             ['label' => 'HR setup', 'icon' => 'database', 'children' => [
                 ['label' => 'Departments', 'route' => 'admin.master-data.show', 'params' => ['table' => 'departments'], 'icon' => 'network', 'permission' => 'hrm.masters.view'],
                 ['label' => 'Designations', 'route' => 'admin.master-data.show', 'params' => ['table' => 'designations'], 'icon' => 'badge', 'permission' => 'hrm.masters.view'],
