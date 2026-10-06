@@ -4,9 +4,11 @@ use App\Models\User;
 use App\Modules\Foundation\Actions\AddNote;
 use App\Modules\Foundation\Actions\UploadAttachment;
 use App\Modules\Foundation\Livewire\Shared\Attachments;
+use App\Modules\Foundation\Livewire\Shared\History;
 use App\Modules\Foundation\Livewire\Shared\Notes;
 use App\Modules\Foundation\Models\Attachment;
 use App\Modules\Foundation\Models\Note;
+use App\Support\AuditTrail\AuditTrail;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -22,13 +24,44 @@ test('the user form shows the attachments and notes panels when editing', functi
         ->get(route('admin.users.edit', $this->parent))
         ->assertOk()
         ->assertSeeLivewire(Attachments::class)
-        ->assertSeeLivewire(Notes::class);
+        ->assertSeeLivewire(Notes::class)
+        ->assertSeeLivewire(History::class);
 });
 
 test('the panels refuse a user who cannot see the parent', function () {
     Livewire::actingAs(userWithPermissions('attachments.upload'))
         ->test(Attachments::class, ['model' => $this->parent])
         ->assertForbidden();
+
+    Livewire::actingAs(userWithPermissions('admin.audit.view'))
+        ->test(History::class, ['model' => $this->parent])
+        ->assertForbidden();
+});
+
+test('the history panel lists only the changes of its own record', function () {
+    AuditTrail::record($this->parent, 'updated', ['phone' => '01711000000'], ['phone' => '01811000000'], $this->actor);
+    AuditTrail::record(User::factory()->create(), 'updated', ['phone' => '01911000000'], ['phone' => '01511000000'], $this->actor);
+
+    Livewire::actingAs($this->actor)
+        ->test(History::class, ['model' => $this->parent])
+        ->assertSee('01711000000')
+        ->assertSee('01811000000')
+        ->assertSee($this->actor->username)
+        ->assertDontSee('01911000000');
+});
+
+test('the history panel loads older entries on demand', function () {
+    foreach (range(1, History::PAGE_SIZE + 1) as $number) {
+        AuditTrail::record($this->parent, 'updated', ['name' => "Old {$number}"], ['name' => "New {$number}"], $this->actor);
+    }
+
+    Livewire::actingAs($this->actor)
+        ->test(History::class, ['model' => $this->parent])
+        ->assertViewHas('hasMore', true)
+        ->assertDontSee('>Old 1<', false)
+        ->call('loadMore')
+        ->assertViewHas('hasMore', false)
+        ->assertSee('>Old 1<', false);
 });
 
 test('a file is uploaded through the panel and listed with a signed link', function () {
