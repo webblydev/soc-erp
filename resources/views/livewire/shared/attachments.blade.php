@@ -99,7 +99,7 @@
         @endif
         @if ($selected && $canDeleteSelected)
             <x-slot:footer>
-                <x-ui.button variant="destructive" x-on:click="$dispatch('confirm-action', { title: @js(__('Delete :name?', ['name' => $selected->original_name])), description: @js(__('The file is removed from this record.')), confirmLabel: @js(__('Delete file')), confirm: () => $wire.delete({{ $selected->id }}) })"><x-lucide-trash-2 /> {{ __('Delete') }}</x-ui.button>
+                <x-ui.button variant="destructive" :x-on:click="'$dispatch(\'confirm-action\', { ...'.Js::from(['title' => __('Delete :name?', ['name' => $selected->original_name]), 'description' => __('The file is removed from this record.'), 'confirmLabel' => __('Delete file')]).', confirm: () => $wire.delete('.$selected->id.') })'"><x-lucide-trash-2 /> {{ __('Delete') }}</x-ui.button>
             </x-slot:footer>
         @endif
     </x-shell.sheet>
