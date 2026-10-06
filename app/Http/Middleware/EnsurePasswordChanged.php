@@ -10,7 +10,9 @@ class EnsurePasswordChanged
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()?->must_change_password && ! $request->routeIs('password.change', 'logout')) {
+        if ($request->user()?->must_change_password
+            && ! $request->session()->has(HandleImpersonation::SESSION_KEY)
+            && ! $request->routeIs('password.change', 'logout')) {
             return redirect()->route('password.change');
         }
 
