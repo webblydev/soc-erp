@@ -46,7 +46,7 @@ class CreateLead
 
         $data = $this->validateLead($this->normaliseLead($input), null, [
             'assigned_to' => ['nullable', 'integer'],
-            'sales_team_id' => ['nullable', 'integer', Rule::exists('sales_teams', 'id')->where('is_active', true)],
+            'sales_team_id' => ['nullable', 'integer', Rule::exists('sales_teams', 'id')->where('is_active', true)->whereNull('deleted_at')],
             'follow_up' => ['nullable', 'array'],
             'follow_up.activity_type_id' => ['required_with:follow_up', new ActiveLookup('activity_types')],
             'follow_up.scheduled_at' => ['required_with:follow_up', 'date', 'after:now'],
