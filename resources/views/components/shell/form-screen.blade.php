@@ -2,6 +2,8 @@
     Create/edit screen. Below md it is the same full-screen form as x-shell.form-page (sections
     flow as one column, sticky bottom action bar). From md it gets a page header with the actions,
     and from lg the sections sit in a main column beside an optional sticky `aside` column.
+    Inside the detail modal the modal header carries the title, so only the actions show, pinned
+    to the top, and Cancel closes the modal.
 
     asidePosition  'end' (right) or 'start' (left). The aside is rendered in that DOM position,
                    so on mobile it also comes after or before the main sections.
@@ -11,8 +13,8 @@
 @php($hasAside = isset($aside) && $aside->isNotEmpty())
 
 <form {{ $attributes->merge(['class' => 'mx-auto flex w-full max-w-6xl flex-col gap-6 pb-28 md:pb-0']) }}>
-    <div data-test="form-screen-header" class="hidden items-start justify-between gap-4 md:flex">
-        <div class="flex min-w-0 flex-col gap-1">
+    <div data-test="form-screen-header" class="hidden items-start justify-between gap-4 md:flex in-modal:sticky in-modal:-top-6 in-modal:z-10 in-modal:-mx-6 in-modal:-mt-6 in-modal:justify-end in-modal:border-b in-modal:bg-background in-modal:px-6 in-modal:py-3">
+        <div class="flex min-w-0 flex-col gap-1 in-modal:hidden">
             <h1 class="truncate text-2xl font-semibold tracking-tight">{{ $heading }}</h1>
             @if ($description)
                 <p class="text-sm text-muted-foreground">{{ $description }}</p>
@@ -20,7 +22,7 @@
         </div>
         <div class="flex shrink-0 gap-2">
             @if ($cancelUrl)
-                <x-ui.button variant="outline" :href="$cancelUrl" wire:navigate>{{ __('Cancel') }}</x-ui.button>
+                <x-ui.button variant="outline" :href="$cancelUrl" wire:navigate data-modal-cancel>{{ __('Cancel') }}</x-ui.button>
             @endif
             <x-ui.button type="submit" wire:loading.attr="disabled" wire:target="save">
                 <x-lucide-loader-circle class="animate-spin" wire:loading wire:target="save" />
