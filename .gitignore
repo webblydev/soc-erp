@@ -36,3 +36,4 @@ yarn-error.log
 /boost.json
 /opencode.json
 /opencode.jsonc
+/docs/legacy_database.sql
