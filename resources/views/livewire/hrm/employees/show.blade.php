@@ -250,7 +250,7 @@
         @endif
     </div>
 
-    <x-shell.sheet id="employee-actions" :title="__('Employee actions')">
+    <x-shell.sheet id="employee-actions" :title="__('Employee actions')" :description="$employee->employee_code.' · '.$employee->full_name">
         <div class="flex flex-col gap-2 pb-4">
             @can('update', $employee)
                 <x-ui.button class="h-11 justify-start" variant="outline" :href="route('hrm.employees.edit', $employee)" wire:navigate><x-lucide-pencil /> {{ __('Edit') }}</x-ui.button>
@@ -273,7 +273,7 @@
     </x-shell.sheet>
 
     @can('manageHistory', $employee)
-        <x-shell.sheet id="employment-event" :title="__('Record event')">
+        <x-shell.sheet id="employment-event" :title="__('Record event')" :description="__('Add an entry to :name’s employment history.', ['name' => $employee->full_name])">
             <form id="employment-event-form" wire:submit="recordEvent" class="flex flex-col gap-4">
                 <x-ui.field>
                     <x-ui.field-label for="event-type">{{ __('Event') }} *</x-ui.field-label>
@@ -305,7 +305,7 @@
     @endcan
 
     @can('deactivate', $employee)
-        <x-shell.sheet id="rejoin" :title="__('Rejoin')">
+        <x-shell.sheet id="rejoin" :title="__('Rejoin')" :description="__('Bring :name back as an active employee.', ['name' => $employee->full_name])">
             <form id="rejoin-form" wire:submit="rejoin" class="flex flex-col gap-4">
                 <x-ui.field>
                     <x-ui.field-label for="rejoin-date">{{ __('Rejoining date') }} *</x-ui.field-label>
@@ -327,7 +327,7 @@
     @endcan
 
     @can('admin.users.update')
-        <x-shell.sheet id="link-user" :title="__('Link user')">
+        <x-shell.sheet id="link-user" :title="__('Link user')" :description="__('Connect :name to a login account.', ['name' => $employee->full_name])">
             <form id="link-user-form" wire:submit="linkUser" class="flex flex-col gap-4">
                 <x-ui.field>
                     <x-ui.field-label for="link-user">{{ __('User') }} *</x-ui.field-label>
