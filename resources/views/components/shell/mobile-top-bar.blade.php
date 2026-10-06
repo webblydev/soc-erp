@@ -18,6 +18,8 @@
 
         @if ($actions)
             <div class="flex items-center gap-2">{{ $actions }}</div>
+        @elseif (! $back && auth()->check())
+            <livewire:foundation.notifications.bell size="mobile" :key="'bell-mobile'" />
         @endif
     </div>
 </header>
