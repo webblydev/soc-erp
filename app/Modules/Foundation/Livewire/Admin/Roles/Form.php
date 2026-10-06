@@ -4,6 +4,7 @@ namespace App\Modules\Foundation\Livewire\Admin\Roles;
 
 use App\Models\User;
 use App\Modules\Foundation\Actions\SaveRole;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
 use Illuminate\Contracts\View\View;
@@ -13,6 +14,8 @@ use Livewire\Component;
 
 class Form extends Component
 {
+    use SavesFromDetailModal;
+
     public ?Role $role = null;
 
     public string $name = '';
@@ -70,9 +73,7 @@ class Form extends Component
 
         $saveRole->handle($this->only(['name', 'code', 'description', 'is_active', 'permissions']), $actor, $this->role);
 
-        session()->flash('success', __('Role saved.'));
-
-        $this->redirectRoute('admin.roles.index', navigate: true);
+        $this->redirectAfterSave(__('Role saved.'), 'admin.roles.index');
     }
 
     public function render(): View
