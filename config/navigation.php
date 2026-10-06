@@ -88,8 +88,19 @@ return [
     ],
 
     /*
-    | Detail routes that open in the detail modal at md and up when a link carries
-    | `data-detail-modal` (App\Modules\Foundation\Livewire\Shared\DetailModal).
+    | Detail and create/edit routes that open in the detail modal at md and up when a link
+    | carries `data-detail-modal` (App\Modules\Foundation\Livewire\Shared\DetailModal).
+    | Below md they stay full-screen pages.
     */
-    'detail_modal' => ['crm.leads.show', 'crm.customers.show', 'hrm.employees.show'],
+    'detail_modal' => [
+        'crm.leads.show', 'crm.leads.create', 'crm.leads.edit',
+        'crm.customers.show', 'crm.customers.create', 'crm.customers.edit',
+        'crm.teams.create', 'crm.teams.edit',
+        'hrm.employees.show', 'hrm.employees.create', 'hrm.employees.edit',
+        'catalog.services.create', 'catalog.services.edit',
+        'catalog.work-items.create', 'catalog.work-items.edit',
+        'catalog.materials.create', 'catalog.materials.edit',
+        'admin.users.create', 'admin.users.edit',
+        'admin.roles.create', 'admin.roles.edit',
+    ],
 ];
