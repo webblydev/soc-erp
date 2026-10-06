@@ -3,13 +3,16 @@
 namespace App\Modules\Foundation\Livewire\Admin\Users;
 
 use App\Models\User;
+use App\Modules\Foundation\Actions\DeleteUser;
 use App\Modules\Foundation\Actions\SetUserActive;
 use App\Modules\Foundation\Actions\StartImpersonation;
 use App\Modules\Foundation\Models\Role;
 use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -20,7 +23,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 #[Title('Users')]
 class Index extends Component
 {
-    use WithListing;
+    use WithBulkActions, WithListing;
 
     #[Locked]
     public ?int $actionUserId = null;
@@ -75,7 +78,7 @@ class Index extends Component
     {
         $this->authorize('admin.users.view');
 
-        return ListingExport::download('users', $this->filteredQuery(), [
+        return ListingExport::download('users', $this->exportQuery(), [
             'Name' => 'name',
             'Username' => 'username',
             'Email' => 'email',
@@ -85,6 +88,17 @@ class Index extends Component
             'Active' => fn (User $user): string => $user->is_active ? 'Yes' : 'No',
             'Last login' => fn (User $user): ?string => $user->last_login_at?->format('d-M-Y H:i'),
         ]);
+    }
+
+    protected function authorizeBulkDelete(): void
+    {
+        $this->authorize('admin.users.delete');
+    }
+
+    protected function deleteRow(Model $row): void
+    {
+        /** @var User $row */
+        app(DeleteUser::class)->handle($row, $this->actor());
     }
 
     /**
