@@ -40,27 +40,23 @@
         </x-slot:filters>
 
         <x-slot:desktop>
-            @can('crm.customers.update')
-                @if ($selected !== [])
-                    <div class="mb-3 flex flex-wrap items-center gap-2 rounded-md border bg-muted/50 p-2">
-                        <span class="text-sm font-medium">{{ trans_choice(':count selected|:count selected', count($selected)) }}</span>
-                        <x-ui.select native wire:model="bulkManagerId" class="w-56" :aria-label="__('New account manager')">
-                            <option value="">{{ __('No account manager') }}</option>
-                            @foreach ($managers as $manager)
-                                <option value="{{ $manager->id }}">{{ $manager->name }}</option>
-                            @endforeach
-                        </x-ui.select>
-                        <x-ui.button size="sm" wire:click="bulkChangeManager">{{ __('Change account manager') }}</x-ui.button>
-                    </div>
-                @endif
-            @endcan
+            <x-shell.bulk-bar :exportable="auth()->user()->can('crm.customers.export')" :deletable="auth()->user()->can('crm.customers.delete')">
+                @can('crm.customers.update')
+                    <x-ui.select native wire:model="bulkManagerId" class="h-8 w-56" :aria-label="__('New account manager')">
+                        <option value="">{{ __('No account manager') }}</option>
+                        @foreach ($managers as $manager)
+                            <option value="{{ $manager->id }}">{{ $manager->name }}</option>
+                        @endforeach
+                    </x-ui.select>
+                    <x-ui.button size="sm" variant="outline" wire:click="bulkChangeManager">{{ __('Change account manager') }}</x-ui.button>
+                @endcan
+            </x-shell.bulk-bar>
 
-            <x-ui.table>
+            <x-ui.table variant="bordered">
                 <x-ui.table-header>
                     <x-ui.table-row>
-                        @can('crm.customers.update')
-                            <x-ui.table-head class="w-8"><span class="sr-only">{{ __('Select') }}</span></x-ui.table-head>
-                        @endcan
+                        <x-shell.select-all :ids="$rows->pluck('id')" />
+                        <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="number" :label="__('Customer #')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="name" :label="__('Name')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head>{{ __('Company') }}</x-ui.table-head>
@@ -74,14 +70,19 @@
                 <x-ui.table-body>
                     @forelse ($rows as $customer)
                         <x-ui.table-row wire:key="customer-{{ $customer->id }}">
-                            @can('crm.customers.update')
-                                <x-ui.table-cell>
-                                    <x-ui.checkbox native wire:model.live="selected" value="{{ $customer->id }}" :aria-label="__('Select :name', ['name' => $customer->name])" />
-                                </x-ui.table-cell>
-                            @endcan
+                            <x-shell.select-row :id="$customer->id" :label="$customer->name" />
+                            <x-shell.row-menu>
+                                <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('crm.customers.show', $customer)">{{ __('View') }}</x-shell.row-menu-item>
+                                @can('update', $customer)
+                                    <x-shell.row-menu-item icon="pencil" :href="route('crm.customers.edit', $customer)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                @endcan
+                                @can('delete', $customer)
+                                    <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $customer->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $customer->name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                                @endcan
+                            </x-shell.row-menu>
                             <x-ui.table-cell class="font-mono text-sm">{{ $customer->customer_number }}</x-ui.table-cell>
                             <x-ui.table-cell class="font-medium">
-                                <a href="{{ route('crm.customers.show', $customer) }}" wire:navigate class="hover:underline">{{ $customer->name }}</a>
+                                <a data-detail-modal href="{{ route('crm.customers.show', $customer) }}" wire:navigate class="hover:underline">{{ $customer->name }}</a>
                             </x-ui.table-cell>
                             <x-ui.table-cell>{{ $customer->company_name ?? '—' }}</x-ui.table-cell>
                             <x-ui.table-cell>{{ $customer->type->name }}</x-ui.table-cell>
@@ -92,13 +93,13 @@
                         </x-ui.table-row>
                     @empty
                         <x-ui.table-row>
-                            <x-ui.table-cell colspan="9" class="py-10 text-center text-muted-foreground">{{ __('No customers found.') }}</x-ui.table-cell>
+                            <x-ui.table-cell colspan="10" class="py-10 text-center text-muted-foreground">{{ __('No customers found.') }}</x-ui.table-cell>
                         </x-ui.table-row>
                     @endforelse
                 </x-ui.table-body>
             </x-ui.table>
 
-            <div class="mt-4 flex items-center justify-between gap-4">
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
                 <x-ui.select native wire:model.live="perPage" class="w-36" :aria-label="__('Rows per page')">
                     @foreach (static::PER_PAGE_OPTIONS as $option)
                         <option value="{{ $option }}">{{ __(':count per page', ['count' => $option]) }}</option>
