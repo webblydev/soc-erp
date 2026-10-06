@@ -167,12 +167,18 @@ Admin password reset and session purge on deactivation (D10); user-created / pas
 ## 9. Implementation deviations
 Where the build differs from the sections above, the build is authoritative.
 
-- **§4.3:** the `exported` audit row is recorded on the acting user (event `export`, with `export` and `rows` in `new_values`), not on the exported resource type. Export cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'` as a formula-injection guard.
+- **§4.3:** the `exported` audit row is recorded on the acting user (event `exported`, with `export` and `rows` in `new_values`), not on the exported resource type. Export cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'` as a formula-injection guard.
 - **§5.1:** only a super admin may update or deactivate a super-admin account. Non-super admins may only grant direct permissions they hold themselves. Users cannot deactivate themselves.
 - **§5.2:** the mobile permission matrix uses checkbox rows, because `x-ui.switch` cannot bind to arrays.
 - **§5.3:** delete confirmation is `wire:confirm` inside the edit sheet. Master-data routes have no `can:` middleware; the per-table permission is enforced in `mount` and in each action.
 - **§5.7:** number formats must keep the tokens their scope needs (`{yy}` or `{yyyy}` for `fiscal_year`, `{bl_prefix}`, `{branch}`) and contain exactly one `{seq:N}`.
 - **§5.8:** audit entries open in a sheet on both desktop and mobile.
 - **§5.10:** turning 2FA off and generating new recovery codes require the current password. Fortify's own disable route also refuses users whose role requires 2FA. The 2FA challenge is throttled.
+- **§5.10:** turning 2FA on also requires the current password.
+- **§5.11:** starting or stopping impersonation clears `auth.password_confirmed_at`. While impersonating, Fortify's 2FA management routes (all `two-factor.*` except the login challenge) and the password-confirmation routes return 403, and the profile hides the Password and Two-factor tabs. Logging out while impersonating is recorded as `impersonation_ended`, not `logout`.
+- **§5.8:** audit rows written while impersonating also store `impersonator_id`; the audit log shows "via <impersonator>".
+- **§5.1/§5.2:** a non-super admin cannot change their own roles or direct permissions, can only assign roles whose permissions they all hold, cannot edit an account with more effective permissions than their own, and can only add permissions they hold to a role.
+- **§5.6:** `general.session_timeout_minutes` must be 5–1440 and `general.password_min_length` 8–128.
+- **§5.7:** format and next-number changes are audited (`number_sequence_format`, `number_sequence`); issuing document numbers is not. The `{seq:N}` pad width is clamped to 1–9 when rendering.
 - **Profile:** forms use the sticky mobile action bar, positioned above the bottom nav. The old `/settings/*` URLs redirect to `/profile`.
 - **Permissions:** `admin.branches.deactivate` and `admin.locations.deactivate` were added.
