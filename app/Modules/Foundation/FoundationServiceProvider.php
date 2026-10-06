@@ -11,6 +11,8 @@ use App\Models\User;
 use App\Modules\Foundation\Actions\DisableTwoFactorUnlessRequired;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
 use App\Modules\Foundation\Livewire\Profile\TwoFactor;
+use App\Modules\Foundation\Livewire\Shared\Attachments;
+use App\Modules\Foundation\Livewire\Shared\Notes;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Foundation\Services\Navigation;
 use App\Modules\Foundation\Services\PermissionRegistrar;
@@ -59,6 +61,8 @@ class FoundationServiceProvider extends ServiceProvider
         Livewire::addLocation(classNamespace: 'App\\Modules\\Foundation\\Livewire');
 
         Livewire::component('foundation.profile.two-factor', TwoFactor::class);
+        Livewire::component('foundation.attachments', Attachments::class);
+        Livewire::component('foundation.notes', Notes::class);
 
         Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class, EnsurePasswordChanged::class, EnsureTwoFactorEnabled::class, HandleImpersonation::class]);
     }
