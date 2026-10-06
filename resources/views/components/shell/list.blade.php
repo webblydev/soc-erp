@@ -9,7 +9,7 @@
 
 <div class="flex flex-col gap-4">
     {{-- Desktop toolbar and table --}}
-    <div class="hidden items-center gap-2 md:flex">
+    <div class="hidden flex-wrap items-center gap-2 md:flex">
         <x-ui.input type="search" wire:model.live.debounce.300ms="search" :placeholder="$searchPlaceholder" class="max-w-xs" />
 
         @isset($filters)
@@ -32,7 +32,7 @@
             </x-ui.popover>
         @endisset
 
-        <div class="ms-auto flex items-center gap-2">
+        <div class="ms-auto flex flex-wrap items-center justify-end gap-2">
             @isset($actions)
                 {{ $actions }}
             @endisset
@@ -51,12 +51,12 @@
         </div>
     </div>
 
-    <div class="hidden md:block">{{ $desktop }}</div>
+    <div class="hidden min-w-0 md:block" x-data>{{ $desktop }}</div>
 
     {{-- Mobile search, filter sheet and rows --}}
     <div class="flex flex-col gap-3 md:hidden">
         <div class="flex items-center gap-2">
-            <x-ui.input type="search" wire:model.live.debounce.300ms="search" :placeholder="$searchPlaceholder" class="h-11 flex-1 text-base" />
+            <x-ui.input type="search" wire:model.live.debounce.300ms="search" :placeholder="$searchPlaceholder" class="h-11 min-w-0 flex-1 text-base" />
 
             @isset($filters)
                 <x-ui.drawer>
