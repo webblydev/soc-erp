@@ -3,6 +3,7 @@
 use App\Modules\Catalog\Models\BusinessLine;
 use App\Modules\Catalog\Models\MaterialCategory;
 use App\Modules\Catalog\Models\PricingBasis;
+use App\Modules\Catalog\Models\Service;
 use App\Modules\Catalog\Models\ServiceCategory;
 use App\Modules\Catalog\Models\Unit;
 use App\Modules\Catalog\Models\UnitKind;
@@ -33,4 +34,18 @@ test('the catalog seeder is idempotent and keeps admin edits', function () {
     expect(BusinessLine::query()->count())->toBe(15)
         ->and(BusinessLine::query()->where('code', 'AMZ')->value('name'))->toBe('Amazon Works')
         ->and(Unit::query()->count())->toBe(19);
+});
+
+test('the legacy sellable services are seeded with their mapping', function () {
+    $this->seed(CatalogSeeder::class);
+
+    $bdra = Service::query()->where('code', 'BDRA')->firstOrFail();
+    $cetp = Service::query()->where('code', 'CETP')->firstOrFail();
+
+    expect(Service::query()->count())->toBe(14)
+        ->and($bdra->requires_approval_tracking)->toBeTrue()
+        ->and($bdra->category->code)->toBe('APPROVAL')
+        ->and($bdra->businessLine->code)->toBe('BDRA')
+        ->and($cetp->pricingBasis->code)->toBe('per_unit')
+        ->and($cetp->defaultUnit->code)->toBe('participant');
 });
