@@ -24,6 +24,7 @@ return new class extends Migration
     {
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->dropForeign(['impersonator_id']);
+            $table->dropIndex(['impersonator_id']);
             $table->dropColumn('impersonator_id');
         });
     }
