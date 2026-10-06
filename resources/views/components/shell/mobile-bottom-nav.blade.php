@@ -32,7 +32,7 @@
                     @foreach ($groups as $group)
                         <x-ui.item-group>
                             <p class="px-1 text-sm font-medium text-muted-foreground">{{ __($group['label']) }}</p>
-                            @foreach ($group['items'] as $item)
+                            @foreach (collect($group['items'])->flatMap(fn (array $item): array => $item['children'] ?? [$item]) as $item)
                                 <x-ui.item size="sm" :href="$item['url']" wire:navigate class="min-h-11 active:bg-accent">
                                     <x-dynamic-component :component="'lucide-'.$item['icon']" class="size-5" />
                                     <span class="flex-1 text-sm">{{ __($item['label']) }}</span>
