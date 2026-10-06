@@ -78,7 +78,7 @@ class Form extends Component
 
     public string $notes = '';
 
-    /** @var list<array{service_id: int|string|null, estimated_value: string, notes: string}> */
+    /** @var list<array<string, mixed>> */
     public array $services = [];
 
     public int|string|null $assigned_to = null;
@@ -124,11 +124,11 @@ class Form extends Component
         $this->expected_close_date = (string) $lead->expected_close_date?->toDateString();
         $this->floors_planned = (string) $lead->floors_planned;
         $this->expected_value = (string) $lead->expected_value;
-        $this->services = $lead->services()->get()->map(fn ($line): array => [
+        $this->services = array_values($lead->services()->get()->map(fn ($line): array => [
             'service_id' => $line->service_id,
             'estimated_value' => (string) $line->estimated_value,
             'notes' => (string) $line->notes,
-        ])->all() ?: [$this->blankService()];
+        ])->all()) ?: [$this->blankService()];
         $this->expected_value_manual = $this->expected_value !== '' && $this->expected_value !== (string) $this->servicesTotal();
     }
 
@@ -213,8 +213,7 @@ class Form extends Component
             return;
         }
 
-        unset($this->services[$index]);
-        $this->services = array_values($this->services);
+        $this->services = array_values(array_filter($this->services, fn (int $i): bool => $i !== $index, ARRAY_FILTER_USE_KEY));
         $this->updatedServices();
     }
 
