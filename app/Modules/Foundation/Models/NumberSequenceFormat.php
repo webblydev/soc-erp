@@ -2,6 +2,7 @@
 
 namespace App\Modules\Foundation\Models;
 
+use App\Support\AuditTrail\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['document_type', 'format', 'reset_policy', 'scope_by'])]
 class NumberSequenceFormat extends Model
 {
+    use Auditable;
+
     /**
      * @return HasMany<NumberSequence, $this>
      */
