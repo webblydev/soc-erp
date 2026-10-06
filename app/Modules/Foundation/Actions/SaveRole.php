@@ -47,7 +47,7 @@ class SaveRole
             $role->is_active = (bool) ($data['is_active'] ?? true);
             $role->save();
 
-            $role->syncPermissions(array_values($data['permissions'] ?? []));
+            $role->syncPermissions($data['permissions'] ?? []);
 
             return $role;
         });
