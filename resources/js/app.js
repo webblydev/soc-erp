@@ -16,23 +16,38 @@ document.addEventListener("livewire:navigated", () => {
 });
 
 // At md and up, links marked data-detail-modal open in the detail modal instead of navigating
-// (DetailModal). Capture-phase listeners run before wire:navigate's own link listeners.
+// (DetailModal), and a form's Cancel link (data-modal-cancel) inside the modal closes it.
+// Capture-phase listeners run before wire:navigate's own link listeners.
 const isDesktop = window.matchMedia("(min-width: 768px)");
 const isPlainPress = (e) => !(e.altKey || e.ctrlKey || e.metaKey || e.shiftKey);
 const detailLink = (e) => (isDesktop.matches && isPlainPress(e) ? e.target.closest?.("a[data-detail-modal][href]") : null);
+const cancelLink = (e) => e.target.closest?.("[data-detail-modal-body] a[data-modal-cancel]");
+const modalLink = (e) => detailLink(e) || cancelLink(e);
 
 window.addEventListener("mousedown", (e) => {
-    if (e.button === 0 && detailLink(e)) {
+    if (e.button === 0 && modalLink(e)) {
         e.stopPropagation();
     }
 }, true);
 window.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && detailLink(e)) {
+    if (e.key === "Enter" && modalLink(e)) {
         e.stopPropagation();
     }
 }, true);
 window.addEventListener("click", (e) => {
-    const link = e.button === 0 ? detailLink(e) : null;
+    if (e.button !== 0) {
+        return;
+    }
+
+    if (cancelLink(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.dispatchEvent(new CustomEvent("close-dialog-detail-modal"));
+
+        return;
+    }
+
+    const link = detailLink(e);
 
     if (!link) {
         return;
