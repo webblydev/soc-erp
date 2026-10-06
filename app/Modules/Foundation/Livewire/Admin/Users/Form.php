@@ -5,15 +5,19 @@ namespace App\Modules\Foundation\Livewire\Admin\Users;
 use App\Models\User;
 use App\Modules\Foundation\Actions\CreateUser;
 use App\Modules\Foundation\Actions\UpdateUser;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Hrm\Models\Employee;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Form extends Component
 {
+    use SavesFromDetailModal;
+
     public ?User $user = null;
 
     public string $name = '';
@@ -40,14 +44,16 @@ class Form extends Component
 
     public bool $is_active = true;
 
+    /** "Create user" on an employee profile passes ?employee=CODE (spec H8). */
+    #[Url]
+    public ?string $employee = null;
+
     public function mount(?User $user = null): void
     {
         if ($user === null || ! $user->exists) {
             $this->authorize('admin.users.create');
 
-            // "Create user" on an employee profile passes ?employee=CODE (spec H8).
-            $code = request()->query('employee');
-            $this->employee_id = is_string($code) ? Employee::query()->where('employee_code', $code)->whereDoesntHave('user')->value('id') : null;
+            $this->employee_id = filled($this->employee) ? Employee::query()->where('employee_code', $this->employee)->whereDoesntHave('user')->value('id') : null;
             $this->updatedEmployeeId();
 
             return;
@@ -96,9 +102,7 @@ class Form extends Component
             ? $createUser->handle($input, $this->actor())
             : $updateUser->handle($this->user, $input, $this->actor());
 
-        session()->flash('success', $this->user === null ? __('User created.') : __('User saved.'));
-
-        $this->redirectRoute('admin.users.index', navigate: true);
+        $this->redirectAfterSave($this->user === null ? __('User created.') : __('User saved.'), 'admin.users.index');
     }
 
     public function render(): View
