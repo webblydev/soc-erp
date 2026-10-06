@@ -32,9 +32,13 @@
         </x-slot:filters>
 
         <x-slot:desktop>
-            <x-ui.table>
+            <x-shell.bulk-bar exportable :deletable="auth()->user()->can('admin.users.delete')" />
+
+            <x-ui.table variant="bordered">
                 <x-ui.table-header>
                     <x-ui.table-row>
+                        <x-shell.select-all :ids="$rows->pluck('id')" />
+                        <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="name" :label="__('Name')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="username" :label="__('Username')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head>{{ __('Email') }}</x-ui.table-head>
@@ -43,12 +47,26 @@
                         <x-ui.table-head>{{ __('Branch') }}</x-ui.table-head>
                         <x-ui.table-head>{{ __('Active') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="last_login_at" :label="__('Last login')" :$sort :$direction /></x-ui.table-head>
-                        <x-ui.table-head class="text-end">{{ __('Actions') }}</x-ui.table-head>
                     </x-ui.table-row>
                 </x-ui.table-header>
                 <x-ui.table-body>
                     @forelse ($rows as $user)
-                        <x-ui.table-row wire:key="user-{{ $user->id }}">
+                        <x-ui.table-row wire:key="user-{{ $user->id }}-{{ (int) $user->is_active }}">
+                            <x-shell.select-row :id="$user->id" :label="$user->name" />
+                            <x-shell.row-menu>
+                                @can('admin.users.update')
+                                    <x-shell.row-menu-item icon="pencil" :href="route('admin.users.edit', $user)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                @endcan
+                                @can('admin.users.deactivate')
+                                    <x-shell.row-menu-item :icon="$user->is_active ? 'power-off' : 'power'" wire:click="toggleActive({{ $user->id }})">{{ $user->is_active ? __('Deactivate') : __('Activate') }}</x-shell.row-menu-item>
+                                @endcan
+                                @if (auth()->user()->hasRole(\App\Modules\Foundation\Models\Role::SUPER_ADMIN) && $user->is_active && ! $user->is(auth()->user()))
+                                    <x-shell.row-menu-item icon="log-in" wire:click="impersonate({{ $user->id }})">{{ __('Sign in as') }}</x-shell.row-menu-item>
+                                @endif
+                                @can('admin.users.delete')
+                                    <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $user->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $user->name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                                @endcan
+                            </x-shell.row-menu>
                             <x-ui.table-cell class="font-medium">
                                 <a href="{{ route('admin.users.edit', $user) }}" wire:navigate class="hover:underline">{{ $user->name }}</a>
                             </x-ui.table-cell>
@@ -67,29 +85,16 @@
                                 <x-ui.badge :tone="$user->is_active ? 'success' : 'neutral'">{{ $user->is_active ? __('Active') : __('Inactive') }}</x-ui.badge>
                             </x-ui.table-cell>
                             <x-ui.table-cell>{{ $user->last_login_at?->format('d-M-Y H:i') ?? '—' }}</x-ui.table-cell>
-                            <x-ui.table-cell>
-                                <div data-test="row-actions" class="flex items-center justify-end gap-1">
-                                    @can('admin.users.update')
-                                        <x-shell.row-action icon="pencil" :label="__('Edit')" :href="route('admin.users.edit', $user)" />
-                                    @endcan
-                                    @can('admin.users.deactivate')
-                                        <x-shell.row-action :icon="$user->is_active ? 'power-off' : 'power'" :label="$user->is_active ? __('Deactivate') : __('Activate')" wire:click="toggleActive({{ $user->id }})" />
-                                    @endcan
-                                    @if (auth()->user()->hasRole(\App\Modules\Foundation\Models\Role::SUPER_ADMIN) && $user->is_active && ! $user->is(auth()->user()))
-                                        <x-shell.row-action icon="log-in" :label="__('Sign in as')" wire:click="impersonate({{ $user->id }})" />
-                                    @endif
-                                </div>
-                            </x-ui.table-cell>
                         </x-ui.table-row>
                     @empty
                         <x-ui.table-row>
-                            <x-ui.table-cell colspan="9" class="py-10 text-center text-muted-foreground">{{ __('No users found.') }}</x-ui.table-cell>
+                            <x-ui.table-cell colspan="10" class="py-10 text-center text-muted-foreground">{{ __('No users found.') }}</x-ui.table-cell>
                         </x-ui.table-row>
                     @endforelse
                 </x-ui.table-body>
             </x-ui.table>
 
-            <div class="mt-4 flex items-center justify-between gap-4">
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
                 <x-ui.select native wire:model.live="perPage" class="w-36" :aria-label="__('Rows per page')">
                     @foreach (static::PER_PAGE_OPTIONS as $option)
                         <option value="{{ $option }}">{{ __(':count per page', ['count' => $option]) }}</option>
