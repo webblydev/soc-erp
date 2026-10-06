@@ -63,6 +63,12 @@ class MasterData extends Component
         $row = $this->findRow($id);
         $this->editingId = $row->getKey();
         $this->form = array_merge($this->blankForm(), $row->only(array_keys($this->blankForm())));
+
+        foreach ($this->registry()->get((string) $this->table)['extra_fields'] as $field => $definition) {
+            if ($definition['type'] === 'list') {
+                $this->form[$field] = implode(', ', (array) $this->form[$field]);
+            }
+        }
         $this->resetErrorBag();
         $this->dispatch('open-sheet-lookup-row');
     }
