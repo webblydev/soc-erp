@@ -9,6 +9,7 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleImpersonation;
 use App\Models\User;
 use App\Modules\Foundation\Actions\DisableTwoFactorUnlessRequired;
+use App\Modules\Foundation\Listeners\NotifyNewIpSignIn;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
 use App\Modules\Foundation\Livewire\Profile\TwoFactor;
 use App\Modules\Foundation\Livewire\Shared\Attachments;
@@ -56,6 +57,7 @@ class FoundationServiceProvider extends ServiceProvider
         });
 
         Event::listen(Login::class, [RecordAuthenticationAudit::class, 'handleLogin']);
+        Event::listen(Login::class, NotifyNewIpSignIn::class);
         Event::listen(Logout::class, [RecordAuthenticationAudit::class, 'handleLogout']);
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Foundation\\Livewire');
