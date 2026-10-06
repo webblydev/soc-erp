@@ -1,5 +1,6 @@
 <div>
-    <x-shell.sheet id="quick-log" :title="match ($mode) { 'schedule' => __('Schedule follow-up'), 'complete' => __('Mark done'), 'reschedule' => __('Reschedule'), default => __('Log activity') }">
+    <x-shell.sheet id="quick-log" :title="match ($mode) { 'schedule' => __('Schedule follow-up'), 'complete' => __('Mark done'), 'reschedule' => __('Reschedule'), default => __('Log activity') }"
+        :description="match ($mode) { 'schedule' => __('Plan the next call, visit or meeting.'), 'complete' => __('Record how the activity went.'), 'reschedule' => __('Move the activity to a new time.'), default => __('Record a call, visit or meeting.') }">
         <form wire:submit="save" id="quick-log-form" class="flex flex-col gap-4">
             @if (in_array($mode, ['log', 'schedule'], true))
                 <x-ui.segmented-control name="quick-log-done" wire:model.live="done" :value="$done ? '1' : '0'" size="lg" class="w-full"
