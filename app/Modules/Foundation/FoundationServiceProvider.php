@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleImpersonation;
 use App\Models\User;
+use App\Modules\Foundation\Listeners\DeactivateLinkedUser;
 use App\Modules\Foundation\Listeners\NotifyNewIpSignIn;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
 use App\Modules\Foundation\Livewire\Notifications\Bell;
@@ -16,6 +17,7 @@ use App\Modules\Foundation\Livewire\Shared\Notes;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Foundation\Services\Navigation;
 use App\Modules\Foundation\Services\PermissionRegistrar;
+use App\Modules\Hrm\Events\EmployeeDeactivated;
 use App\Support\Lookups\LookupRegistry;
 use App\Support\Settings\SettingsRepository;
 use Illuminate\Auth\Events\Login;
@@ -56,6 +58,7 @@ class FoundationServiceProvider extends ServiceProvider
         Event::listen(Login::class, [RecordAuthenticationAudit::class, 'handleLogin']);
         Event::listen(Login::class, NotifyNewIpSignIn::class);
         Event::listen(Logout::class, [RecordAuthenticationAudit::class, 'handleLogout']);
+        Event::listen(EmployeeDeactivated::class, DeactivateLinkedUser::class);
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Foundation\\Livewire');
 
