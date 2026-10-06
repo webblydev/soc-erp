@@ -22,6 +22,7 @@ Route::middleware('app')->prefix('crm')->name('crm.')->group(function () {
         'lead' => $lead->load(['status', 'source', 'priority', 'level', 'businessLine', 'location', 'assignee', 'services.service', 'activities.type', 'activities.outcome', 'activities.owner']),
         'company' => CompanyProfile::current(),
     ]))->middleware('can:view,lead')->name('leads.print');
+    Route::livewire('leads/{lead:lead_number}/convert', Leads\Convert::class)->middleware('can:convert,lead')->name('leads.convert');
     Route::livewire('leads/{lead:lead_number}', Leads\Show::class)->middleware('can:view,lead')->name('leads.show');
 
     Route::livewire('customers', Customers\Index::class)->middleware('can:viewAny,'.Customer::class)->name('customers.index');
