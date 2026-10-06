@@ -44,7 +44,6 @@ Route::middleware('app')->prefix('admin')->name('admin.')->group(function () {
 Route::middleware('app')->group(function () {
     Route::livewire('profile', Profile\Edit::class)->name('profile.edit');
     Route::livewire('notifications', Notifications\Index::class)->name('notifications.index');
-    Route::livewire('two-factor/setup', Profile\TwoFactorSetup::class)->name('two-factor.setup');
     Route::get('attachments/{attachment}/download', function (Attachment $attachment) {
         abort_unless($attachment->attachable?->isViewableBy(request()->user()), 403);
 
