@@ -7,7 +7,6 @@ use App\Modules\Hrm\Models\Employee;
 use App\Support\Notifications\PreferenceNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Route;
 
 /**
  * hrm.probation_ending (docs/09 §7): a probationer's confirmation date is within 15 days.
@@ -34,18 +33,18 @@ class ProbationEnding extends PreferenceNotification
             ->subject($data['title'])
             ->greeting(__('Hello :name,', ['name' => $notifiable->name]))
             ->line($data['body'])
-            ->action(__('Open'), $data['url'] ?? url('/'));
+            ->action(__('Open'), $data['url']);
     }
 
     /**
-     * @return array{title: string, body: string, url: string|null}
+     * @return array{title: string, body: string, url: string}
      */
     public function toArray(User $notifiable): array
     {
         return [
             'title' => __('Probation of :name ends soon', ['name' => $this->employee->full_name]),
             'body' => __('Confirmation due on :date.', ['date' => $this->employee->confirmation_date?->format('d-M-Y')]),
-            'url' => Route::has('hrm.employees.show') ? route('hrm.employees.show', $this->employee) : null,
+            'url' => route('hrm.employees.show', $this->employee),
         ];
     }
 }
