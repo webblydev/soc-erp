@@ -52,12 +52,20 @@ test('a new logo replaces the old file', function () {
     Storage::disk('public')->assertExists(CompanyProfile::current()->logo_path);
 });
 
-test('logos must be png or jpg up to 1 MB', function () {
+test('logos must be png or jpg up to 20 MB', function () {
     Livewire::actingAs(userWithPermissions('admin.company.view', 'admin.company.update'))
         ->test(Company::class)
-        ->set('logo', UploadedFile::fake()->create('logo.png', 2048, 'image/png'))
+        ->set('logo', UploadedFile::fake()->create('logo.png', 20481, 'image/png'))
         ->call('save')
-        ->assertHasErrors(['logo']);
+        ->assertHasErrors(['logo' => 'max']);
+});
+
+test('logos up to 20 MB are accepted', function () {
+    Livewire::actingAs(userWithPermissions('admin.company.view', 'admin.company.update'))
+        ->test(Company::class)
+        ->set('logo', UploadedFile::fake()->image('logo.png', 200, 80)->size(20480))
+        ->call('save')
+        ->assertHasNoErrors();
 });
 
 test('saving without update permission is forbidden', function () {
