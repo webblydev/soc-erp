@@ -33,8 +33,8 @@
                 </x-ui.dropdown-menu-label>
                 <x-ui.dropdown-menu-separator />
                 <x-ui.dropdown-menu-item :href="route('profile.edit')" wire:navigate>
-                    <x-lucide-settings />
-                    {{ __('Settings') }}
+                    <x-lucide-circle-user />
+                    {{ __('Profile') }}
                 </x-ui.dropdown-menu-item>
                 <x-ui.dropdown-menu-separator />
                 <form method="POST" action="{{ route('logout') }}" class="w-full">
