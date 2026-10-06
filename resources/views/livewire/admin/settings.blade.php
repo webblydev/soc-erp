@@ -9,7 +9,7 @@
     </div>
     <div class="overflow-x-auto md:hidden">
         <x-ui.segmented-control name="settings-group" wire:model.live="group" :value="$group" size="lg"
-            :options="$groups->mapWithKeys(fn ($tab) => [$tab => __(ucfirst($tab))])->all()" />
+            :options="$groups->map(fn ($tab) => ['value' => $tab, 'label' => __(ucfirst($tab))])->all()" />
     </div>
 
     <x-shell.form-page wire:submit="save" :submit-label="$readOnly ? null : __('Save :group settings', ['group' => __($group)])">
