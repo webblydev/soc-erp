@@ -18,6 +18,8 @@ use App\Modules\Hrm\Models\ExitReason;
 use App\Modules\Hrm\Models\Gender;
 use App\Modules\Hrm\Models\MaritalStatus;
 use App\Modules\Hrm\Policies\EmployeePolicy;
+use App\Modules\Hrm\Services\ExitChecks;
+use App\Modules\Hrm\Services\ExitChecks\LinkedUserCheck;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +27,19 @@ use Livewire\Livewire;
 
 class HrmServiceProvider extends ServiceProvider
 {
+    /**
+     * Register HRM services. Other modules add their exit checks to ExitChecks (spec H7).
+     */
+    public function register(): void
+    {
+        $this->app->singleton(ExitChecks::class, function (): ExitChecks {
+            $checks = new ExitChecks;
+            $checks->register(LinkedUserCheck::class);
+
+            return $checks;
+        });
+    }
+
     /**
      * Bootstrap HRM services.
      */
