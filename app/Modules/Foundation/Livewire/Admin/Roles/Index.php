@@ -8,6 +8,7 @@ use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -16,6 +17,7 @@ class Index extends Component
 {
     use WithListing;
 
+    #[Locked]
     public ?int $deletingRoleId = null;
 
     public function mount(): void
