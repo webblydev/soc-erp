@@ -100,14 +100,12 @@
     <x-shell.sheet id="audit-entry" :title="$selected ? $selected->auditable_type.' #'.$selected->auditable_id : null"
         :description="$selected ? str_replace('_', ' ', $selected->event).' · '.$selected->actorLabel().' · '.$selected->created_at->format('d-M-Y H:i:s') : null">
         @if ($selected)
-            @php($fields = collect(array_keys([...($selected->old_values ?? []), ...($selected->new_values ?? [])])))
-            @php($show = fn ($value) => is_bool($value) ? ($value ? 'true' : 'false') : (is_scalar($value) || $value === null ? (string) ($value ?? '—') : json_encode($value, JSON_UNESCAPED_UNICODE)))
             <div class="flex flex-col gap-3 pb-4">
-                @forelse ($fields as $field)
+                @forelse ($selected->fieldChanges() as $field => $change)
                     <div class="rounded-md border p-3 text-sm">
                         <p class="font-medium">{{ $field }}</p>
-                        <p class="break-all text-destructive line-through">{{ $show($selected->old_values[$field] ?? null) }}</p>
-                        <p class="break-all text-success">{{ $show($selected->new_values[$field] ?? null) }}</p>
+                        <p class="break-all text-destructive line-through">{{ $change['old'] }}</p>
+                        <p class="break-all text-success">{{ $change['new'] }}</p>
                     </div>
                 @empty
                     <p class="text-sm text-muted-foreground">{{ __('No field changes recorded for this event.') }}</p>
