@@ -199,3 +199,15 @@ test('the roles table shows edit and delete in its actions column', function () 
         ->assertSeeHtml('href="'.route('admin.roles.edit', $role).'"')
         ->assertSeeHtml('wire:click="confirmDelete('.$role->id.')"');
 });
+
+test('bulk delete removes custom roles and skips system roles', function () {
+    $system = ensureRole('auditor', ['is_system' => true]);
+    $custom = ensureRole('temporary');
+
+    Livewire::actingAs(superAdmin())->test(Index::class)
+        ->set('selected', [(string) $system->id, (string) $custom->id])
+        ->call('deleteSelected')
+        ->assertDispatched('toast', type: 'warning', description: '1 deleted, 1 skipped. System roles cannot be deleted.');
+
+    expect(Role::query()->whereKey([$system->id, $custom->id])->pluck('code')->all())->toBe(['auditor']);
+});
