@@ -2,6 +2,7 @@
 
 namespace App\Modules\Foundation\Models;
 
+use App\Support\AuditTrail\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,6 +17,8 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable(['document_type', 'scope_key', 'format', 'next_number', 'reset_policy'])]
 class NumberSequence extends Model
 {
+    use Auditable;
+
     /**
      * @return array<string, string>
      */
