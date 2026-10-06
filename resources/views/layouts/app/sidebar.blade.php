@@ -52,9 +52,7 @@
                         @isset($quickCreate)
                             {{ $quickCreate }}
                         @endisset
-                        <x-ui.button variant="ghost" size="icon" disabled :aria-label="__('Notifications')">
-                            <x-lucide-bell />
-                        </x-ui.button>
+                        <livewire:foundation.notifications.bell :key="'bell-desktop'" />
                     </div>
                 </header>
 
