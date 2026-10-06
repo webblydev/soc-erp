@@ -19,6 +19,7 @@ class EnsureTwoFactorEnabled
         $user = $request->user();
 
         if ($user !== null
+            && ! $request->session()->has(HandleImpersonation::SESSION_KEY)
             && ! $request->routeIs('two-factor.setup', 'password.change', 'logout')
             && ! $user->hasEnabledTwoFactorAuthentication()
             && $this->policy->requires($user)) {
