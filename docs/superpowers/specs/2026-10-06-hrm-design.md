@@ -4,7 +4,7 @@
 **Source specs:** `docs/00-index-and-conventions.md`, `docs/09-hrm.md`, `docs/01-foundation-admin.md` (users ↔ employees)
 **Builds on:** `docs/superpowers/specs/2026-10-06-admin-screens-design.md`, `docs/superpowers/specs/2026-10-06-shared-services-design.md`, `docs/superpowers/specs/2026-10-06-crm-design.md`
 **Date:** 06 Oct 2026
-**Status:** Approved in conversation (user asked to proceed to plan and build without review stops; corrections to follow).
+**Status:** Done, 2026-10-06, on branch `hrm`. Plan: `docs/superpowers/plans/2026-10-06-hrm.md`. Built without review stops at the user's request; corrections to follow.
 
 ## 1. Goal
 
@@ -176,4 +176,16 @@ Everything in H18, plus attendance and leave (docs/09 open question 2) and SMS d
 
 ## 9. Implementation deviations
 
-Where the build differs from the sections above, the build is authoritative. (Filled in at the end of the build.)
+Where the build differs from the sections above, the build is authoritative.
+
+- H2 / §3: `Employee::isViewableBy` needs **full** visibility (or being the employee), not `view_basic`. The shared attachments download, notes and history panels trust it, and document files can hold NID scans.
+- H5: events recorded from the employee form use the same sheet as the profile; the event types offered exclude JOINED, RESIGNED, TERMINATED, RETIRED and REJOINED (`EmploymentEventType::RESERVED`), which only their own Actions write.
+- H6 / H7: the form cannot change the status of a former employee; only Rejoin brings them back. Editing other fields of a former employee still works.
+- H7: `ExitEmployee` switches off the linked login inside its own transaction through `SetUserActive`, so a refusal there (own account, last super admin) rolls the exit back. The Foundation `DeactivateLinkedUser` listener covers `EmployeeDeactivated` from any other source. The exit wizard preselects Resigned and today.
+- H8: the user form changes `users.employee_id` only when the caller sends `employee_id`, so other callers of `UpdateUser` cannot unlink by accident.
+- H10: `SaveLookup` (Foundation) uses the HRM `AssignableEmployee` rule for the `employee` field type. `business_lines.manager_employee_id` was added to the BusinessLine fillable list.
+- H12: `Lead::referrerUser` became `Lead::referrerEmployee`.
+- H13: deleting an employee document soft-deletes its attachment under `hrm.documents.manage`, without the general `attachments.delete_*` permissions.
+- §5.3: the employment history tab key is `events`; direct reports list current employees only.
+- §5.5: anyone caught in a manager loop in old data is shown as a root instead of disappearing.
+- §5.1: the export column list is `Employees\Index::exportColumns()`.
