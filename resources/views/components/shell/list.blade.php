@@ -43,7 +43,7 @@
                 </x-ui.button>
             @endif
             @if ($createUrl)
-                <x-ui.button :href="$createUrl" wire:navigate>
+                <x-ui.button :href="$createUrl" wire:navigate data-detail-modal>
                     <x-lucide-plus />
                     {{ $createLabel }}
                 </x-ui.button>
