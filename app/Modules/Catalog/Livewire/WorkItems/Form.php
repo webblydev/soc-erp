@@ -5,11 +5,14 @@ namespace App\Modules\Catalog\Livewire\WorkItems;
 use App\Modules\Catalog\Actions\SaveWorkItem;
 use App\Modules\Catalog\Enums\MeasurementFormula;
 use App\Modules\Catalog\Models\WorkItem;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class Form extends Component
 {
+    use SavesFromDetailModal;
+
     public ?WorkItem $workItem = null;
 
     public string $code = '';
@@ -52,9 +55,7 @@ class Form extends Component
 
         $saveWorkItem->handle($this->only(SaveWorkItem::FIELDS), $this->workItem);
 
-        session()->flash('success', $this->workItem === null ? __('Work item created.') : __('Work item saved.'));
-
-        $this->redirectRoute('catalog.work-items.index', navigate: true);
+        $this->redirectAfterSave($this->workItem === null ? __('Work item created.') : __('Work item saved.'), 'catalog.work-items.index');
     }
 
     public function render(): View
