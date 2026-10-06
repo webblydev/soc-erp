@@ -11,10 +11,14 @@
         </div>
     </div>
 
-    <div class="hidden md:block">
-        <x-ui.table>
+    <div class="hidden md:block" x-data>
+        <x-shell.bulk-bar exportable deletable />
+
+        <x-ui.table variant="bordered">
             <x-ui.table-header>
                 <x-ui.table-row>
+                    <x-shell.select-all :ids="$documents->pluck('id')" />
+                    <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                     <x-ui.table-head>{{ __('Employee') }}</x-ui.table-head>
                     <x-ui.table-head>{{ __('Document') }}</x-ui.table-head>
                     <x-ui.table-head>{{ __('Number') }}</x-ui.table-head>
@@ -25,8 +29,13 @@
             <x-ui.table-body>
                 @forelse ($documents as $document)
                     <x-ui.table-row wire:key="document-{{ $document->id }}">
+                        <x-shell.select-row :id="$document->id" :label="$document->employee->full_name.' · '.$document->type->name" />
+                        <x-shell.row-menu>
+                            <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('hrm.employees.show', [$document->employee, 'tab' => 'documents'])">{{ __('View employee') }}</x-shell.row-menu-item>
+                            <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $document->id }})" wire:confirm="{{ __('Delete this :type?', ['type' => $document->type->name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                        </x-shell.row-menu>
                         <x-ui.table-cell class="font-medium">
-                            <a href="{{ route('hrm.employees.show', [$document->employee, 'tab' => 'documents']) }}" wire:navigate class="hover:underline">{{ $document->employee->full_name }}</a>
+                            <a data-detail-modal href="{{ route('hrm.employees.show', [$document->employee, 'tab' => 'documents']) }}" wire:navigate class="hover:underline">{{ $document->employee->full_name }}</a>
                             <span class="ms-1 font-mono text-sm text-muted-foreground">{{ $document->employee->employee_code }}</span>
                         </x-ui.table-cell>
                         <x-ui.table-cell>{{ $document->type->name }}</x-ui.table-cell>
@@ -36,7 +45,7 @@
                     </x-ui.table-row>
                 @empty
                     <x-ui.table-row>
-                        <x-ui.table-cell colspan="5" class="py-10 text-center text-muted-foreground">{{ __('No documents in this window.') }}</x-ui.table-cell>
+                        <x-ui.table-cell colspan="7" class="py-10 text-center text-muted-foreground">{{ __('No documents in this window.') }}</x-ui.table-cell>
                     </x-ui.table-row>
                 @endforelse
             </x-ui.table-body>
