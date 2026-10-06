@@ -212,3 +212,13 @@ test('the row-action user cannot be chosen from the client', function () {
         ->test(Index::class)
         ->set('actionUserId', 1);
 })->throws(CannotUpdateLockedPropertyException::class);
+
+test('the users table shows every permitted row action in its actions column', function () {
+    $target = User::factory()->create(['username' => 'target1']);
+
+    Livewire::actingAs(userWithPermissions('admin.users.view', 'admin.users.update', 'admin.users.deactivate'))
+        ->test(Index::class)
+        ->assertSeeHtml('data-test="row-actions"')
+        ->assertSeeHtml('href="'.route('admin.users.edit', $target).'"')
+        ->assertSeeHtml('wire:click="toggleActive('.$target->id.')"');
+});
