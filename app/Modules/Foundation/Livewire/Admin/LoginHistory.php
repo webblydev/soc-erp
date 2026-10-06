@@ -4,6 +4,7 @@ namespace App\Modules\Foundation\Livewire\Admin;
 
 use App\Modules\Foundation\Models\LoginHistory as LoginEntry;
 use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,7 +16,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 #[Title('Login history')]
 class LoginHistory extends Component
 {
-    use WithListing;
+    use WithBulkActions, WithListing;
 
     public function mount(): void
     {
@@ -26,7 +27,7 @@ class LoginHistory extends Component
     {
         $this->authorize('admin.login_history.view');
 
-        return ListingExport::download('login-history', $this->filteredQuery(), [
+        return ListingExport::download('login-history', $this->exportQuery(), [
             'When' => fn (LoginEntry $entry): string => $entry->created_at->format('d-M-Y H:i:s'),
             'Username attempted' => 'username_attempted',
             'User' => 'user.name',
