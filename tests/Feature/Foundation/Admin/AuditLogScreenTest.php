@@ -94,3 +94,17 @@ test('entries written while impersonating show the impersonator', function () {
         ->test(AuditLogScreen::class)
         ->assertSee('via bossadmin');
 });
+
+test('a row action narrows the list to that record history', function () {
+    $other = User::factory()->create();
+    AuditTrail::record($other, 'updated', ['phone' => '01733333333'], ['phone' => '01844444444']);
+    $entry = AuditLog::query()->where('auditable_id', $this->subject->id)->where('event', 'updated')->firstOrFail();
+
+    Livewire::actingAs(userWithPermissions('admin.audit.view'))
+        ->test(AuditLogScreen::class)
+        ->assertSee('data-test="row-actions"', false)
+        ->call('showRecordHistory', $entry->id)
+        ->assertSet('filters.record', (string) $this->subject->id)
+        ->assertSee('user #'.$this->subject->id)
+        ->assertDontSee('user #'.$other->id);
+});
