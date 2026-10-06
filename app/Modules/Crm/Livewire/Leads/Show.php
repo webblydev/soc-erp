@@ -118,6 +118,6 @@ class Show extends Component
             'assignmentHistory' => $this->lead->assignmentHistories()->with(['fromUser:id,name', 'toUser:id,name', 'assigner:id,name'])->get(),
         ])
             ->title($this->lead->lead_number)
-            ->layoutData(['back' => url()->previous()]);
+            ->layoutData(['back' => route('crm.leads.index')]);
     }
 }
