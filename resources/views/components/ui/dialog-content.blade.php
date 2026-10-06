@@ -9,8 +9,10 @@
                     dialog impossible to leave from the keyboard. Forcing a decision
                     rather than protecting one? Reach for the alert-dialog component —
                     role="alertdialog", non-dismissible by design.
+    stacked         other overlays (sheets, drawers) may open on top: the rest of the page
+                    is not made inert, and Escape leaves the dialog open while one shows.
 --}}
-@props(['showClose' => true, 'fullscreen' => false, 'position' => 'center', 'closeOnOverlay' => true])
+@props(['showClose' => true, 'fullscreen' => false, 'position' => 'center', 'closeOnOverlay' => true, 'stacked' => false])
 
 @php
     $positions = [
@@ -50,8 +52,13 @@
 
         <div
             x-show="open"
-            x-trap.noscroll.inert="open"
-            @keydown.escape.window="open = false"
+            @if ($stacked)
+                x-trap.noscroll="open"
+                @keydown.escape.window="if (! [...document.querySelectorAll('[data-slot=sheet-content], [data-slot=drawer-content]')].some((overlay) => overlay.checkVisibility())) open = false"
+            @else
+                x-trap.noscroll.inert="open"
+                @keydown.escape.window="open = false"
+            @endif
             :id="$id('blat-dialog')"
             x-blat-labelledby="{ label: '[data-slot=dialog-title]', description: '[data-slot=dialog-description]' }"
             role="dialog"
