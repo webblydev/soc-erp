@@ -55,7 +55,10 @@ test('login asks for the code when 2FA is on', function () {
 test('enabling and confirming 2FA from the panel, with the QR labelled by username', function () {
     $user = financeManager();
 
-    $component = Livewire::actingAs($user)->test(TwoFactor::class)->call('enable');
+    $component = Livewire::actingAs($user)->test(TwoFactor::class)
+        ->set('current_password', 'password')
+        ->call('enable')
+        ->assertHasNoErrors();
 
     $user->refresh();
     expect($user->two_factor_secret)->not->toBeNull()
@@ -67,6 +70,21 @@ test('enabling and confirming 2FA from the panel, with the QR labelled by userna
     $component->set('code', $code)->call('confirm')->assertHasNoErrors();
 
     expect($user->fresh()->two_factor_confirmed_at)->not->toBeNull();
+});
+
+test('turning 2FA on needs the current password', function () {
+    $user = financeManager();
+
+    Livewire::actingAs($user)->test(TwoFactor::class)
+        ->call('enable')
+        ->assertHasErrors(['current_password']);
+
+    Livewire::actingAs($user)->test(TwoFactor::class)
+        ->set('current_password', 'wrong')
+        ->call('enable')
+        ->assertHasErrors(['current_password']);
+
+    expect($user->fresh()->two_factor_secret)->toBeNull();
 });
 
 test('2FA cannot be turned off while a role requires it', function () {
