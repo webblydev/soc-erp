@@ -35,7 +35,7 @@ final class ActiveLookup implements ValidationRule
             return;
         }
 
-        $query = DB::table($this->table)->where('id', (int) $value)->where('is_active', true);
+        $query = DB::table($this->table)->where('id', (int) $value)->where('is_active', true)->whereNull('deleted_at');
 
         if ($this->constraint !== null) {
             ($this->constraint)($query);
