@@ -4,7 +4,7 @@
 **Source specs:** `docs/00-index-and-conventions.md`, `docs/03-crm.md`
 **Builds on:** `docs/superpowers/specs/2026-10-06-admin-screens-design.md`, `docs/superpowers/specs/2026-10-06-shared-services-design.md`, `docs/superpowers/specs/2026-10-06-catalog-design.md`
 **Date:** 06 Oct 2026
-**Status:** Approved, 2026-10-06. Plan: `docs/superpowers/plans/2026-10-06-crm.md`.
+**Status:** Done, 2026-10-06. Plan: `docs/superpowers/plans/2026-10-06-crm.md`.
 
 ## 1. Goal
 
@@ -227,3 +227,20 @@ No browser tests. When the build is done, the screens are listed for the user to
 - CRM reports and CRM-AC-08 (doc 10), the global search, lead import, bulk "Add follow-up", agents as an entity and priced quotations (R18, R20).
 - SMS delivery (no gateway).
 - Sales team fields on the user form.
+
+## 9. Implementation deviations
+
+Where the build differs from the sections above, the build is authoritative.
+
+- §4.4: the nav uses three view gates (`crm.leads.view`, `crm.customers.view`, `crm.activities.view`, each "any of view_own / view_team / view_all") instead of a list of permissions per item.
+- §3: `customers.source_lead_id` has no FK constraint, because `leads` is created after `customers`.
+- R4: `lead_statuses.probability_pct` is a whole number (0–100), because the Master Data screen edits numbers as integers. System rows use the lookup colour `danger` (LOST, BLOCKED) and `success` (WON, ACTIVE).
+- R9: a round-robin pick is not limited by the creator's assignment scope; the picked member must still be active and able to see leads.
+- R10 / CRM-BR-12: editing a lead or customer re-runs the duplicate check only when a phone (or, for leads, the email) changed, so a record saved once with an override reason is not asked again on every edit.
+- R1 / §5.7: after conversion the wizard opens the customer page, or the lead page when the user cannot see the linked customer (linking may pick a customer outside the user's scope).
+- CRM-BR-18: deleting a lead also soft-deletes its open activities, and the reminder and digest jobs skip activities whose lead or customer is gone.
+- §5.1: the Kanban uses Livewire `wire:sort` groups, not the `x-ui.kanban` Alpine board, so the server stays the source of truth; columns show at most 50 cards.
+- §5.2: the referrer customer search and the merge picker list only customers the user can see.
+- §5.3 / §5.11: header actions are buttons (no dropdown), and tabs use a segmented control on every width.
+- §5.5: the calendar week runs Saturday to Friday, and mobile shows a day-grouped agenda.
+- §4.1: the `viewer` role's `*.view_all` grant (Foundation) gives viewers `crm.leads.view_all`, so they count as assignable users and activity owners. Open question for the product owner.
