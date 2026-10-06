@@ -4,15 +4,12 @@ namespace App\Modules\Foundation;
 
 use App\Http\Middleware\EnforceSessionTimeout;
 use App\Http\Middleware\EnsurePasswordChanged;
-use App\Http\Middleware\EnsureTwoFactorEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleImpersonation;
 use App\Models\User;
-use App\Modules\Foundation\Actions\DisableTwoFactorUnlessRequired;
 use App\Modules\Foundation\Listeners\NotifyNewIpSignIn;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
 use App\Modules\Foundation\Livewire\Notifications\Bell;
-use App\Modules\Foundation\Livewire\Profile\TwoFactor;
 use App\Modules\Foundation\Livewire\Shared\Attachments;
 use App\Modules\Foundation\Livewire\Shared\Notes;
 use App\Modules\Foundation\Models\Role;
@@ -25,7 +22,6 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
 use Livewire\Livewire;
 
 class FoundationServiceProvider extends ServiceProvider
@@ -38,7 +34,6 @@ class FoundationServiceProvider extends ServiceProvider
         $this->app->singleton(LookupRegistry::class, fn (): LookupRegistry => new LookupRegistry(config('lookups', [])));
         $this->app->singleton(SettingsRepository::class);
         $this->app->scoped(PermissionRegistrar::class);
-        $this->app->bind(DisableTwoFactorAuthentication::class, DisableTwoFactorUnlessRequired::class);
         $this->app->singleton(Navigation::class, fn (): Navigation => new Navigation(config('navigation.groups', [])));
     }
 
@@ -63,11 +58,10 @@ class FoundationServiceProvider extends ServiceProvider
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Foundation\\Livewire');
 
-        Livewire::component('foundation.profile.two-factor', TwoFactor::class);
         Livewire::component('foundation.attachments', Attachments::class);
         Livewire::component('foundation.notes', Notes::class);
         Livewire::component('foundation.notifications.bell', Bell::class);
 
-        Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class, EnsurePasswordChanged::class, EnsureTwoFactorEnabled::class, HandleImpersonation::class]);
+        Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class, EnsurePasswordChanged::class, HandleImpersonation::class]);
     }
 }
