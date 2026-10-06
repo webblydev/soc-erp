@@ -1,5 +1,6 @@
 <div>
-    <x-shell.sheet id="change-status" :title="match ($mode) { 'lost' => __('Mark as lost'), 'reopen' => __('Reopen lead'), default => __('Change status') }">
+    <x-shell.sheet id="change-status" :title="match ($mode) { 'lost' => __('Mark as lost'), 'reopen' => __('Reopen lead'), default => __('Change status') }"
+        :description="match ($mode) { 'lost' => __('Close :lead as lost and record why.', ['lead' => $leadNumber]), 'reopen' => __('Move :lead back into the open pipeline.', ['lead' => $leadNumber]), default => __('Move :lead to another stage of the pipeline.', ['lead' => $leadNumber]) }">
         <form wire:submit="save" id="change-status-form" class="flex flex-col gap-4">
             @if ($mode === 'status')
                 <x-ui.field>
