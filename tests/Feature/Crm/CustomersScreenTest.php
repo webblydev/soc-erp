@@ -7,7 +7,11 @@ use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\CustomerType;
 use App\Modules\Foundation\Models\Location;
 use App\Modules\Foundation\Models\LocationLevel;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
+
+beforeEach(fn () => Model::preventLazyLoading());
+afterEach(fn () => Model::preventLazyLoading(false));
 
 beforeEach(fn () => seedCrm());
 
