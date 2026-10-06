@@ -9,13 +9,14 @@ use Illuminate\Support\Str;
 /**
  * Filters the navigation registry for a user.
  *
- * An item is either a link (route) or a branch (children) that renders as a tree node in
- * the sidebar. Branches with no visible children are dropped, like empty groups.
+ * An item is either a link (route, optional route params) or a branch (children) that renders
+ * as a tree node in the sidebar. Branches with no visible children are dropped, like empty groups.
+ * A link with params is active only on that route with those params (e.g. one master data table).
  *
  * @phpstan-type NavLink array{label: string, route: string, icon: string, url: string, active: bool}
  * @phpstan-type NavBranch array{label: string, icon: string, active: bool, children: list<NavLink>}
  * @phpstan-type NavGroup array{key: string, label: string, icon: string, items: list<NavLink|NavBranch>}
- * @phpstan-type LinkConfig array{label: string, route: string, icon: string, permission?: string|null, mobile_primary?: bool}
+ * @phpstan-type LinkConfig array{label: string, route: string, params?: array<string, string>, icon: string, permission?: string|null, mobile_primary?: bool}
  * @phpstan-type BranchConfig array{label: string, icon: string, children: list<LinkConfig>}
  */
 final class Navigation
@@ -129,12 +130,30 @@ final class Navigation
      */
     private function present(array $item): array
     {
+        $params = $item['params'] ?? [];
+
         return [
             'label' => $item['label'],
             'route' => $item['route'],
             'icon' => $item['icon'],
-            'url' => route($item['route']),
-            'active' => request()->routeIs(Str::beforeLast($item['route'], '.').'.*'),
+            'url' => route($item['route'], $params),
+            'active' => $params === []
+                ? request()->routeIs(Str::beforeLast($item['route'], '.').'.*')
+                : request()->routeIs($item['route']) && $this->routeHasParams($params),
         ];
+    }
+
+    /**
+     * @param  array<string, string>  $params
+     */
+    private function routeHasParams(array $params): bool
+    {
+        foreach ($params as $key => $value) {
+            if ((string) request()->route($key) !== $value) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
