@@ -118,10 +118,12 @@
                     @else
                         <x-ui.field>
                             <x-ui.field-label for="form-{{ $field }}">{{ __($definition['label']) }}{{ ($definition['required'] ?? false) ? ' *' : '' }}</x-ui.field-label>
-                            @if ($definition['type'] === 'textarea')
+                            @if ($definition['type'] === 'lookup')
+                                <x-lookup-select :table="$definition['table']" :include="$form[$field] ?? null" :placeholder="__('Choose…')" id="form-{{ $field }}" wire:model="form.{{ $field }}" />
+                            @elseif ($definition['type'] === 'textarea')
                                 <x-ui.textarea id="form-{{ $field }}" wire:model="form.{{ $field }}" rows="3" class="text-base md:text-sm" />
                             @else
-                                <x-ui.input id="form-{{ $field }}" wire:model="form.{{ $field }}" :type="$definition['type'] === 'number' ? 'number' : 'text'" :inputmode="$definition['type'] === 'number' ? 'numeric' : null" class="h-11 text-base md:h-9 md:text-sm" />
+                                <x-ui.input id="form-{{ $field }}" wire:model="form.{{ $field }}" :type="$definition['type'] === 'number' ? 'number' : 'text'" :inputmode="$definition['type'] === 'number' ? 'numeric' : null" :autocapitalize="($definition['uppercase'] ?? false) ? 'characters' : null" @class(['h-11 text-base md:h-9 md:text-sm', 'font-mono' => $definition['uppercase'] ?? false]) />
                             @endif
                             <x-ui.field-error :messages="$errors->get('form.'.$field)" />
                         </x-ui.field>
