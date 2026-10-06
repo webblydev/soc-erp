@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('app')->prefix('crm')->name('crm.')->group(function () {
     // Lead routes with a fixed segment (index, create) must stay above leads/{lead}.
     Route::livewire('leads', Leads\Index::class)->middleware('can:viewAny,'.Lead::class)->name('leads.index');
+    Route::livewire('leads/create', Leads\Form::class)->middleware('can:create,'.Lead::class)->name('leads.create');
+    Route::livewire('leads/{lead:lead_number}/edit', Leads\Form::class)->middleware('can:update,lead')->name('leads.edit');
     Route::get('leads/{lead:lead_number}/print', fn (Lead $lead) => view('crm.leads.print', [
         'lead' => $lead->load(['status', 'source', 'priority', 'level', 'businessLine', 'location', 'assignee', 'services.service', 'activities.type', 'activities.outcome', 'activities.owner']),
         'company' => CompanyProfile::current(),
