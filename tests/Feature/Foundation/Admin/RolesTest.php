@@ -109,7 +109,7 @@ test('an unused role is deleted from the list', function () {
         ->call('delete')
         ->assertDispatched('toast', type: 'success');
 
-    expect(Role::query()->where('code', 'temp')->exists())->toBeFalse();
+    $this->assertSoftDeleted($role);
 });
 
 test('the matrix toggles a whole resource row and a whole action column', function () {
