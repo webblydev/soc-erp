@@ -11,6 +11,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Fortify\Features;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -48,9 +49,7 @@ class Edit extends Component
 
     public function mount(): void
     {
-        if (! in_array($this->tab, self::TABS, true)) {
-            $this->tab = 'details';
-        }
+        $this->guardTab();
 
         $user = $this->user();
         $this->name = $user->name;
@@ -63,9 +62,7 @@ class Edit extends Component
 
     public function updatedTab(): void
     {
-        if (! in_array($this->tab, self::TABS, true)) {
-            $this->tab = 'details';
-        }
+        $this->guardTab();
     }
 
     public function saveDetails(UpdateProfile $updateProfile): void
@@ -94,6 +91,10 @@ class Edit extends Component
         $matrix = [];
 
         foreach ($this->notifications as $key => $channels) {
+            if (! is_array($channels)) {
+                continue;
+            }
+
             $matrix[str_replace('__', '.', $key)] = array_map(fn (mixed $enabled): bool => (bool) $enabled, $channels);
         }
 
@@ -105,8 +106,27 @@ class Edit extends Component
     {
         return view('livewire.profile.edit', [
             'user' => $this->user(),
+            'availableTabs' => $this->availableTabs(),
             'notificationKeys' => config('notifications.keys', []),
         ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function availableTabs(): array
+    {
+        return array_values(array_filter(
+            self::TABS,
+            fn (string $tab): bool => $tab !== 'two-factor' || Features::enabled(Features::twoFactorAuthentication()),
+        ));
+    }
+
+    private function guardTab(): void
+    {
+        if (! in_array($this->tab, $this->availableTabs(), true)) {
+            $this->tab = 'details';
+        }
     }
 
     private function user(): User
