@@ -23,7 +23,7 @@
                         <x-ui.field-error :messages="$errors->get('photo')" />
                     </x-ui.field>
                 </div>
-                <div class="grid gap-6 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <x-ui.field>
                         <x-ui.field-label for="first_name">{{ __('First name') }} *</x-ui.field-label>
                         <x-ui.input id="first_name" wire:model="first_name" autocomplete="given-name" class="{{ $input }}" :aria-invalid="$errors->has('first_name') ? 'true' : null" />
@@ -78,7 +78,7 @@
             </x-shell.form-section>
         @else
             <x-shell.form-section :title="__('Name')">
-                <div class="grid gap-6 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <x-ui.field>
                         <x-ui.field-label for="first_name">{{ __('First name') }} *</x-ui.field-label>
                         <x-ui.input id="first_name" wire:model="first_name" class="{{ $input }}" :aria-invalid="$errors->has('first_name') ? 'true' : null" />
@@ -94,7 +94,7 @@
         @endif
 
         <x-shell.form-section :title="__('Contact & emergency')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="phone">{{ __('Phone') }} *</x-ui.field-label>
                     <x-ui.input id="phone" type="tel" inputmode="tel" wire:model="phone" class="{{ $input }} tabular-nums" :aria-invalid="$errors->has('phone') ? 'true' : null" />
@@ -127,7 +127,7 @@
                     <x-ui.textarea id="permanent_address" wire:model="permanent_address" rows="2" class="text-base md:text-sm" />
                     <x-ui.field-error :messages="$errors->get('permanent_address')" />
                 </x-ui.field>
-                <div class="grid gap-6 md:grid-cols-3">
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <x-ui.field>
                         <x-ui.field-label for="emergency_contact_name">{{ __('Emergency contact') }}</x-ui.field-label>
                         <x-ui.input id="emergency_contact_name" wire:model="emergency_contact_name" class="{{ $input }}" />
@@ -155,7 +155,7 @@
                 @if ($employee && $canEditSalary)
                     <p class="text-sm text-muted-foreground">{{ __('A salary change is recorded in the employment history.') }}</p>
                 @endif
-                <div class="grid gap-6 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <x-ui.field>
                         <x-ui.field-label for="gross_salary">{{ __('Gross salary') }}</x-ui.field-label>
                         <x-ui.input id="gross_salary" inputmode="decimal" wire:model="gross_salary" class="{{ $input }} tabular-nums" :disabled="! $canEditSalary" />
@@ -187,7 +187,7 @@
                 </x-slot:action>
                 @forelse ($education as $i => $row)
                     <x-ui.item variant="outline" class="flex-col items-stretch gap-3" wire:key="education-{{ $i }}">
-                        <div class="grid gap-3 md:grid-cols-2">
+                        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <x-ui.field>
                                 <x-ui.field-label for="education-institution-{{ $i }}">{{ __('Institution') }} *</x-ui.field-label>
                                 <x-ui.input id="education-institution-{{ $i }}" wire:model="education.{{ $i }}.institution" class="{{ $input }}" />
@@ -229,7 +229,7 @@
                 </x-slot:action>
                 @forelse ($experience as $i => $row)
                     <x-ui.item variant="outline" class="flex-col items-stretch gap-3" wire:key="experience-{{ $i }}">
-                        <div class="grid gap-3 md:grid-cols-2">
+                        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <x-ui.field>
                                 <x-ui.field-label for="experience-company-{{ $i }}">{{ __('Company') }} *</x-ui.field-label>
                                 <x-ui.input id="experience-company-{{ $i }}" wire:model="experience.{{ $i }}.company" class="{{ $input }}" />
