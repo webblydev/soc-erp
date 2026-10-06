@@ -3,13 +3,16 @@
 namespace App\Modules\Crm\Livewire\Customers;
 
 use App\Models\User;
+use App\Modules\Crm\Actions\DeleteCustomer;
 use App\Modules\Crm\Actions\ReassignCustomers;
 use App\Modules\Crm\Concerns\FiltersByLocation;
 use App\Modules\Crm\Models\Customer;
 use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -20,10 +23,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 #[Title('Customers')]
 class Index extends Component
 {
-    use FiltersByLocation, WithListing;
-
-    /** @var list<string> */
-    public array $selected = [];
+    use FiltersByLocation, WithBulkActions, WithListing;
 
     public string $bulkManagerId = '';
 
@@ -83,7 +83,7 @@ class Index extends Component
     {
         $this->authorize('crm.customers.export');
 
-        return ListingExport::download('customers', $this->filteredQuery(), [
+        return ListingExport::download('customers', $this->exportQuery(), [
             'Customer #' => 'customer_number',
             'Name' => 'name',
             'Company' => 'company_name',
@@ -94,6 +94,17 @@ class Index extends Component
             'Account manager' => 'accountManager.name',
             'Status' => 'status.name',
         ]);
+    }
+
+    protected function authorizeBulkDelete(): void
+    {
+        $this->authorize('crm.customers.delete');
+    }
+
+    protected function deleteRow(Model $row): void
+    {
+        /** @var Customer $row */
+        app(DeleteCustomer::class)->handle($this->actor(), $row);
     }
 
     private function actor(): User
