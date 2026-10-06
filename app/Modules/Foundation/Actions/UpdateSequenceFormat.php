@@ -40,7 +40,10 @@ class UpdateSequenceFormat
 
         DB::transaction(function () use ($definition, $format): void {
             $definition->update(['format' => $format]);
-            NumberSequence::query()->where('document_type', $definition->document_type)->update(['format' => $format]);
+            NumberSequence::query()
+                ->where('document_type', $definition->document_type)
+                ->get()
+                ->each(fn (NumberSequence $sequence) => $sequence->update(['format' => $format]));
         });
     }
 }
