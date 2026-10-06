@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Catalog\Models\BusinessLine;
 use App\Modules\Crm\Actions\SaveSalesTeam;
 use App\Modules\Crm\Models\SalesTeam;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
@@ -14,6 +15,8 @@ use Livewire\Component;
  */
 class Form extends Component
 {
+    use SavesFromDetailModal;
+
     public ?SalesTeam $team = null;
 
     public string $name = '';
@@ -67,9 +70,7 @@ class Form extends Component
             'members' => array_map(fn (array $member): array => ['user_id' => (int) $member['user_id'], 'joined_on' => $member['joined_on']], $this->members),
         ], $this->team);
 
-        session()->flash('success', $this->team === null ? __('Team created.') : __('Team saved.'));
-
-        $this->redirectRoute('crm.teams.index', navigate: true);
+        $this->redirectAfterSave($this->team === null ? __('Team created.') : __('Team saved.'), 'crm.teams.index');
     }
 
     public function render(): View
