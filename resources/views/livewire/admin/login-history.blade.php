@@ -53,7 +53,7 @@
                             <x-shell.row-menu>
                                 <x-shell.row-menu-item icon="list-filter" wire:click="$set('filters.user', {{ \Illuminate\Support\Js::from((string) $entry->username_attempted) }})">{{ __('Only this username') }}</x-shell.row-menu-item>
                                 @if ($entry->user && auth()->user()->can('admin.users.update'))
-                                    <x-shell.row-menu-item icon="user-pen" :href="route('admin.users.edit', $entry->user)">{{ __('Open user') }}</x-shell.row-menu-item>
+                                    <x-shell.row-menu-item icon="user-pen" data-detail-modal :href="route('admin.users.edit', $entry->user)">{{ __('Open user') }}</x-shell.row-menu-item>
                                 @endif
                             </x-shell.row-menu>
                             <x-ui.table-cell class="whitespace-nowrap">{{ $entry->created_at->format('d-M-Y H:i') }}</x-ui.table-cell>
