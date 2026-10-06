@@ -13,6 +13,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -22,6 +23,7 @@ class Index extends Component
 {
     use WithListing;
 
+    #[Locked]
     public ?int $actionUserId = null;
 
     public function mount(): void
@@ -109,16 +111,16 @@ class Index extends Component
      */
     protected function applyFilters(Builder $query): void
     {
-        if (filled($this->filters['role'] ?? null)) {
-            $query->whereHas('roles', fn (Builder $roles) => $roles->where('code', $this->filters['role']));
+        if ($this->filterString('role') !== '') {
+            $query->whereHas('roles', fn (Builder $roles) => $roles->where('code', $this->filterString('role')));
         }
 
-        if (filled($this->filters['branch'] ?? null)) {
-            $query->where('branch_id', (int) $this->filters['branch']);
+        if ($this->filterString('branch') !== '') {
+            $query->where('branch_id', (int) $this->filterString('branch'));
         }
 
-        if (($this->filters['active'] ?? '') !== '') {
-            $query->where('is_active', $this->filters['active'] === '1');
+        if ($this->filterString('active') !== '') {
+            $query->where('is_active', $this->filterString('active') === '1');
         }
     }
 
