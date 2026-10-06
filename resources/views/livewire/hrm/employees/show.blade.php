@@ -27,7 +27,7 @@
         </div>
         <div class="hidden flex-wrap justify-end gap-2 md:flex">
             @can('update', $employee)
-                <x-ui.button size="sm" variant="outline" :href="route('hrm.employees.edit', $employee)" wire:navigate><x-lucide-pencil /> {{ __('Edit') }}</x-ui.button>
+                <x-ui.button size="sm" variant="outline" :href="route('hrm.employees.edit', $employee)" wire:navigate data-detail-modal><x-lucide-pencil /> {{ __('Edit') }}</x-ui.button>
             @endcan
             @can('manageHistory', $employee)
                 <x-ui.button size="sm" variant="outline" x-on:click="$dispatch('open-sheet-employment-event')"><x-lucide-history /> {{ __('Record event') }}</x-ui.button>
@@ -47,7 +47,7 @@
             <x-lucide-key-round class="size-4 text-muted-foreground" />
             <span class="text-muted-foreground">{{ __('Login') }}</span>
             @can('admin.users.view')
-                <a href="{{ route('admin.users.edit', $linked) }}" wire:navigate class="font-medium hover:underline">{{ $linked->username }}</a>
+                <a data-detail-modal href="{{ route('admin.users.edit', $linked) }}" wire:navigate class="font-medium hover:underline">{{ $linked->username }}</a>
             @else
                 <span class="font-medium">{{ $linked->username }}</span>
             @endcan
@@ -65,7 +65,7 @@
             <x-ui.alert-description class="flex flex-wrap gap-2">
                 <span class="w-full">{{ __('Create a login for this employee or link an existing one.') }}</span>
                 @can('admin.users.create')
-                    <x-ui.button size="sm" class="h-11 md:h-8" :href="route('admin.users.create', ['employee' => $employee->employee_code])" wire:navigate><x-lucide-user-plus /> {{ __('Create user') }}</x-ui.button>
+                    <x-ui.button size="sm" class="h-11 md:h-8" :href="route('admin.users.create', ['employee' => $employee->employee_code])" wire:navigate data-detail-modal><x-lucide-user-plus /> {{ __('Create user') }}</x-ui.button>
                 @endcan
                 @can('admin.users.update')
                     <x-ui.button size="sm" variant="outline" class="h-11 md:h-8" x-on:click="$dispatch('open-sheet-link-user')"><x-lucide-link /> {{ __('Link user') }}</x-ui.button>
