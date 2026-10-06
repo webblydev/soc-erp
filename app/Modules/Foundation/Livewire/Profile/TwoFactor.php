@@ -2,6 +2,7 @@
 
 namespace App\Modules\Foundation\Livewire\Profile;
 
+use App\Http\Middleware\HandleImpersonation;
 use App\Models\User;
 use App\Modules\Foundation\Services\TwoFactorPolicy;
 use Illuminate\Contracts\View\View;
@@ -26,6 +27,11 @@ class TwoFactor extends Component
     public string $current_password = '';
 
     public bool $showingRecoveryCodes = false;
+
+    public function boot(): void
+    {
+        abort_if(HandleImpersonation::isActive(), 403);
+    }
 
     public function enable(EnableTwoFactorAuthentication $enable): void
     {
