@@ -18,7 +18,8 @@ use Throwable;
 /**
  * Edits an employee (docs/09 §4.2). The code never changes (spec H3). Department, designation
  * and salary changes need an employment event, passed as $event and recorded through
- * RecordEmploymentEvent (HR-BR-05, spec H5).
+ * RecordEmploymentEvent (HR-BR-05, spec H5). A former employee's status changes only through
+ * RejoinEmployee (spec H7).
  */
 class UpdateEmployee
 {
@@ -39,6 +40,10 @@ class UpdateEmployee
 
         $input = Arr::except($this->restrict($actor, $employee, $this->normalise($input)), ['employee_code']);
         $data = $this->validateEmployee($input, $employee);
+
+        if ($employee->hasExited() && (int) $data['employee_status_id'] !== $employee->employee_status_id) {
+            throw ValidationException::withMessages(['employee_status_id' => __('A former employee comes back through Rejoin.')]);
+        }
 
         $changed = array_filter(
             Arr::only($data, self::JOB_FIELDS),

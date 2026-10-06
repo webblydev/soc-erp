@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Modules\Hrm\Actions\ExitEmployee;
 use App\Modules\Hrm\Actions\RejoinEmployee;
+use App\Modules\Hrm\Actions\UpdateEmployee;
 use App\Modules\Hrm\Contracts\EmployeeExitCheck;
 use App\Modules\Hrm\Events\EmployeeDeactivated;
 use App\Modules\Hrm\Models\Employee;
@@ -107,3 +108,15 @@ class BlockingCheck implements EmployeeExitCheck
         return [new ExitCheckItem('Open advance ৳5,000', null, blocking: true)];
     }
 }
+
+test('the form cannot bring a former employee back; rejoin does', function () {
+    $hr = userWithPermissions('hrm.employees.view_basic', 'hrm.employees.view_full', 'hrm.employees.update', 'hrm.employees.deactivate');
+    $employee = Employee::factory()->create();
+    app(ExitEmployee::class)->handle($hr, $employee, exitInput());
+    $employee->refresh();
+
+    expectValidationError(fn () => app(UpdateEmployee::class)->handle($hr, $employee, sameJob($employee, ['employee_status_id' => EmployeeStatus::idFor('ACTIVE')])), 'employee_status_id');
+
+    app(UpdateEmployee::class)->handle($hr, $employee, sameJob($employee, ['phone' => '01719999999']));
+    expect($employee->fresh())->phone->toBe('01719999999')->employee_status_id->toBe(EmployeeStatus::idFor('RESIGNED'));
+});
