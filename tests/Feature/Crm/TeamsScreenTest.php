@@ -5,7 +5,11 @@ use App\Modules\Crm\Livewire\Teams\Form;
 use App\Modules\Crm\Livewire\Teams\Index;
 use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Models\SalesTeam;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
+
+beforeEach(fn () => Model::preventLazyLoading());
+afterEach(fn () => Model::preventLazyLoading(false));
 
 beforeEach(fn () => seedCrm());
 
