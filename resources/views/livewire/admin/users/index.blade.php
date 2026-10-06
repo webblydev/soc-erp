@@ -131,7 +131,7 @@
         </x-slot:mobile>
     </x-shell.list>
 
-    <x-shell.sheet id="user-actions" :title="$actionUser?->name" :description="$actionUser ? '@'.$actionUser->username : null">
+    <x-shell.sheet id="user-actions" :title="$actionUser?->name ?? __('User actions')" :description="$actionUser ? '@'.$actionUser->username : __('Manage this user.')">
         @if ($actionUser)
             <div class="flex flex-col gap-2 pb-4">
                 @can('admin.users.update')
