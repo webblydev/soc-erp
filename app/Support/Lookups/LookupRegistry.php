@@ -74,6 +74,7 @@ final class LookupRegistry
 
         return DB::table($table)
             ->select(['id', 'code', 'name', 'color', 'is_active'])
+            ->whereNull('deleted_at')
             ->where(function (Builder $query) use ($include): void {
                 $query->where('is_active', true);
 
