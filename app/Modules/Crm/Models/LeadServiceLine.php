@@ -7,6 +7,7 @@ use App\Support\AuditTrail\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * A service a lead is interested in (docs/03 §3.5).
@@ -22,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['lead_id', 'service_id', 'estimated_value', 'notes'])]
 class LeadServiceLine extends Model
 {
-    use Auditable;
+    use Auditable, SoftDeletes;
 
     protected $table = 'lead_services';
 
