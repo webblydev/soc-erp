@@ -233,7 +233,7 @@
 
             <x-slot:footer>
                 @if ($editingId && ! $isSystem && $can('deactivate'))
-                    <x-ui.button variant="outline" class="text-destructive" wire:click="delete" wire:confirm="{{ __('Delete this row? Rows in use cannot be deleted.') }}">{{ __('Delete') }}</x-ui.button>
+                    <x-ui.button variant="outline" class="text-destructive" x-on:click="$dispatch('confirm-action', { title: @js(__('Delete this row?')), description: @js(__('Rows in use cannot be deleted.')), confirm: () => $wire.delete() })">{{ __('Delete') }}</x-ui.button>
                 @endif
                 @if ($canSave)
                     <x-ui.button type="submit" form="lookup-row-form">{{ __('Save') }}</x-ui.button>
