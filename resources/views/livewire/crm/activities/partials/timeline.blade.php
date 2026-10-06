@@ -34,7 +34,7 @@
                             ? route('crm.leads.show', $activity->subject)
                             : (Route::has('crm.customers.show') ? route('crm.customers.show', $activity->subject) : null))
                         @if ($subjectUrl)
-                            <a href="{{ $subjectUrl }}" wire:navigate class="font-medium text-foreground hover:underline">{{ $activity->subject->name }}</a>
+                            <a data-detail-modal href="{{ $subjectUrl }}" wire:navigate class="font-medium text-foreground hover:underline">{{ $activity->subject->name }}</a>
                         @else
                             <span class="font-medium text-foreground">{{ $activity->subject->name }}</span>
                         @endif
