@@ -136,7 +136,7 @@ class Form extends Component
 
         session()->flash('success', $this->customer === null ? __('Customer created.') : __('Customer saved.'));
 
-        $this->redirectRoute('crm.customers.index', navigate: true);
+        $this->redirectRoute('crm.customers.show', $customer, navigate: true);
     }
 
     public function render(): View
