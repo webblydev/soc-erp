@@ -3,8 +3,11 @@
 namespace App\Modules\Foundation;
 
 use App\Http\Middleware\EnforceSessionTimeout;
+use App\Http\Middleware\EnsurePasswordChanged;
+use App\Http\Middleware\EnsureTwoFactorEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Models\User;
+use App\Modules\Foundation\Actions\DisableTwoFactorUnlessRequired;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
 use App\Modules\Foundation\Livewire\Profile\TwoFactor;
 use App\Modules\Foundation\Models\Role;
@@ -17,6 +20,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
 use Livewire\Livewire;
 
 class FoundationServiceProvider extends ServiceProvider
@@ -29,6 +33,7 @@ class FoundationServiceProvider extends ServiceProvider
         $this->app->singleton(LookupRegistry::class, fn (): LookupRegistry => new LookupRegistry(config('lookups', [])));
         $this->app->singleton(SettingsRepository::class);
         $this->app->scoped(PermissionRegistrar::class);
+        $this->app->bind(DisableTwoFactorAuthentication::class, DisableTwoFactorUnlessRequired::class);
         $this->app->singleton(Navigation::class, fn (): Navigation => new Navigation(config('navigation.groups', [])));
     }
 
@@ -54,6 +59,6 @@ class FoundationServiceProvider extends ServiceProvider
 
         Livewire::component('foundation.profile.two-factor', TwoFactor::class);
 
-        Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class]);
+        Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class, EnsurePasswordChanged::class, EnsureTwoFactorEnabled::class]);
     }
 }
