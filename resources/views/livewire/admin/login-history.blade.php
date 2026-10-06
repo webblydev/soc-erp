@@ -31,21 +31,31 @@
         </x-slot:filters>
 
         <x-slot:desktop>
-            <x-ui.table>
+            <x-shell.bulk-bar exportable />
+
+            <x-ui.table variant="bordered">
                 <x-ui.table-header>
                     <x-ui.table-row>
+                        <x-shell.select-all :ids="$rows->pluck('id')" />
+                        <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="created_at" :label="__('When')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head>{{ __('Username attempted') }}</x-ui.table-head>
                         <x-ui.table-head>{{ __('User') }}</x-ui.table-head>
                         <x-ui.table-head>{{ __('Result') }}</x-ui.table-head>
                         <x-ui.table-head>{{ __('IP') }}</x-ui.table-head>
                         <x-ui.table-head>{{ __('Device') }}</x-ui.table-head>
-                        <x-ui.table-head class="text-end">{{ __('Actions') }}</x-ui.table-head>
                     </x-ui.table-row>
                 </x-ui.table-header>
                 <x-ui.table-body>
                     @forelse ($rows as $entry)
                         <x-ui.table-row wire:key="login-{{ $entry->id }}">
+                            <x-shell.select-row :id="$entry->id" :label="$entry->username_attempted" />
+                            <x-shell.row-menu>
+                                <x-shell.row-menu-item icon="list-filter" wire:click="$set('filters.user', {{ \Illuminate\Support\Js::from((string) $entry->username_attempted) }})">{{ __('Only this username') }}</x-shell.row-menu-item>
+                                @if ($entry->user && auth()->user()->can('admin.users.update'))
+                                    <x-shell.row-menu-item icon="user-pen" :href="route('admin.users.edit', $entry->user)">{{ __('Open user') }}</x-shell.row-menu-item>
+                                @endif
+                            </x-shell.row-menu>
                             <x-ui.table-cell class="whitespace-nowrap">{{ $entry->created_at->format('d-M-Y H:i') }}</x-ui.table-cell>
                             <x-ui.table-cell>{{ $entry->username_attempted }}</x-ui.table-cell>
                             <x-ui.table-cell>{{ $entry->user?->name ?? '—' }}</x-ui.table-cell>
@@ -54,18 +64,10 @@
                             </x-ui.table-cell>
                             <x-ui.table-cell class="font-mono text-sm">{{ $entry->ip_address }}</x-ui.table-cell>
                             <x-ui.table-cell class="max-w-64 truncate text-sm text-muted-foreground" title="{{ $entry->user_agent }}">{{ \Illuminate\Support\Str::limit((string) $entry->user_agent, 40) }}</x-ui.table-cell>
-                            <x-ui.table-cell>
-                                <div data-test="row-actions" class="flex items-center justify-end gap-1">
-                                    <x-shell.row-action icon="list-filter" :label="__('Only this username')" wire:click="$set('filters.user', {{ \Illuminate\Support\Js::from((string) $entry->username_attempted) }})" />
-                                    @if ($entry->user && auth()->user()->can('admin.users.update'))
-                                        <x-shell.row-action icon="user-pen" :label="__('Open user')" :href="route('admin.users.edit', $entry->user)" />
-                                    @endif
-                                </div>
-                            </x-ui.table-cell>
                         </x-ui.table-row>
                     @empty
                         <x-ui.table-row>
-                            <x-ui.table-cell colspan="7" class="py-10 text-center text-muted-foreground">{{ __('No sign-in attempts found.') }}</x-ui.table-cell>
+                            <x-ui.table-cell colspan="8" class="py-10 text-center text-muted-foreground">{{ __('No sign-in attempts found.') }}</x-ui.table-cell>
                         </x-ui.table-row>
                     @endforelse
                 </x-ui.table-body>
