@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Foundation\Actions\StopImpersonation;
 use App\Modules\Foundation\Livewire\Admin\AuditLog;
 use App\Modules\Foundation\Livewire\Admin\Company;
 use App\Modules\Foundation\Livewire\Admin\Locations;
@@ -40,4 +41,9 @@ Route::middleware('app')->prefix('admin')->name('admin.')->group(function () {
 Route::middleware('app')->group(function () {
     Route::livewire('profile', Profile\Edit::class)->name('profile.edit');
     Route::livewire('two-factor/setup', Profile\TwoFactorSetup::class)->name('two-factor.setup');
+    Route::post('impersonation/stop', function (StopImpersonation $stopImpersonation) {
+        $stopImpersonation->handle();
+
+        return redirect()->route('admin.users.index');
+    })->name('impersonation.stop');
 });
