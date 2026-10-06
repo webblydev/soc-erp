@@ -8,7 +8,7 @@ test('preferences default to enabled for every registered key and channel', func
     $matrix = NotificationPreference::matrixFor(User::factory()->create());
 
     expect($matrix)->toHaveKeys(['user.created', 'user.password_reset', 'security.login_new_ip'])
-        ->and($matrix['security.login_new_ip'])->toBe(['mail' => true]);
+        ->and($matrix['security.login_new_ip'])->toBe(['mail' => true, 'database' => true]);
 });
 
 test('saving stores choices and ignores unknown keys and channels', function () {
@@ -19,6 +19,6 @@ test('saving stores choices and ignores unknown keys and channels', function () 
         'made.up' => ['mail' => false],
     ]);
 
-    expect(NotificationPreference::matrixFor($user)['security.login_new_ip'])->toBe(['mail' => false])
+    expect(NotificationPreference::matrixFor($user)['security.login_new_ip'])->toBe(['mail' => false, 'database' => true])
         ->and(NotificationPreference::query()->count())->toBe(1);
 });
