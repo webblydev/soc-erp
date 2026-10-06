@@ -6,7 +6,7 @@
         :submit-label="$workItem ? __('Save changes') : __('Create work item')">
 
         <x-shell.form-section :title="__('Details')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="code">{{ __('Code') }} *</x-ui.field-label>
                     <x-ui.input id="code" wire:model="code" autocapitalize="characters" autocomplete="off" class="h-11 font-mono text-base md:h-9 md:text-sm" :aria-invalid="$errors->has('code') ? 'true' : null" />
@@ -37,7 +37,7 @@
         </x-shell.form-section>
 
         <x-shell.form-section :title="__('Measurement')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field x-data="{ labels: @js(collect($formulas)->mapWithKeys(fn ($formula) => [$formula->value => $formula->label()])) }">
                     <x-ui.field-label for="measurement_formula">{{ __('Formula') }} *</x-ui.field-label>
                     <x-ui.select native id="measurement_formula" wire:model="measurement_formula" class="h-11 text-base md:h-9 md:text-sm">
