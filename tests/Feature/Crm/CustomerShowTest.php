@@ -6,7 +6,11 @@ use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\Lead;
 use App\Modules\Foundation\Livewire\Shared\Attachments;
 use App\Modules\Foundation\Livewire\Shared\Notes;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
+
+beforeEach(fn () => Model::preventLazyLoading());
+afterEach(fn () => Model::preventLazyLoading(false));
 
 beforeEach(function () {
     seedCrm();
