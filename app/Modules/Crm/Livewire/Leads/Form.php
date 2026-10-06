@@ -15,6 +15,7 @@ use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Models\LeadPriority;
 use App\Modules\Crm\Models\LeadSource;
 use App\Modules\Crm\Models\SalesTeam;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use App\Modules\Hrm\Models\Employee;
 use App\Support\Facades\Settings;
 use Brick\Math\BigDecimal;
@@ -27,6 +28,8 @@ use Livewire\Component;
  */
 class Form extends Component
 {
+    use SavesFromDetailModal;
+
     public ?Lead $lead = null;
 
     public string $lead_date = '';
@@ -260,9 +263,7 @@ class Form extends Component
             throw $exception;
         }
 
-        session()->flash('success', $this->lead === null ? __('Lead created.') : __('Lead saved.'));
-
-        $this->redirectRoute('crm.leads.show', $lead, navigate: true);
+        $this->redirectAfterSave($this->lead === null ? __('Lead created.') : __('Lead saved.'), 'crm.leads.show', $lead);
     }
 
     private function checkDuplicates(): void
