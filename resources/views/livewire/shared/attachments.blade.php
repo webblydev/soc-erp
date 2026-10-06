@@ -99,12 +99,7 @@
         @endif
         @if ($selected && $canDeleteSelected)
             <x-slot:footer>
-                @if ($confirmingDelete)
-                    <x-ui.button variant="outline" wire:click="$set('confirmingDelete', false)">{{ __('Keep') }}</x-ui.button>
-                    <x-ui.button variant="destructive" wire:click="delete({{ $selected->id }})">{{ __('Delete file') }}</x-ui.button>
-                @else
-                    <x-ui.button variant="destructive" wire:click="$set('confirmingDelete', true)"><x-lucide-trash-2 /> {{ __('Delete') }}</x-ui.button>
-                @endif
+                <x-ui.button variant="destructive" x-on:click="$dispatch('confirm-action', { title: @js(__('Delete :name?', ['name' => $selected->original_name])), description: @js(__('The file is removed from this record.')), confirmLabel: @js(__('Delete file')), confirm: () => $wire.delete({{ $selected->id }}) })"><x-lucide-trash-2 /> {{ __('Delete') }}</x-ui.button>
             </x-slot:footer>
         @endif
     </x-shell.sheet>
