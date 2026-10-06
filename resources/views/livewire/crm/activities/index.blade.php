@@ -67,7 +67,7 @@
     @endif
 
     @if ($owners->isNotEmpty())
-        <x-shell.sheet id="activity-owner" :title="__('Owner')">
+        <x-shell.sheet id="activity-owner" :title="__('Owner')" :description="__('Show the activities of the chosen person.')">
             <x-ui.select native wire:model.live="owner" class="h-11 text-base" :aria-label="__('Owner')">
                 <option value="me">{{ __('Me') }}</option>
                 <option value="all">{{ __('Everyone I can see') }}</option>
@@ -82,7 +82,7 @@
         </x-shell.sheet>
     @endif
 
-    <x-shell.sheet id="activity-delete" :title="__('Delete activity?')">
+    <x-shell.sheet id="activity-delete" :title="__('Delete activity?')" :description="__('The activity is removed from the timeline.')">
         <x-slot:footer>
             <x-ui.button variant="outline" x-on:click="$dispatch('close-sheet-activity-delete')">{{ __('Cancel') }}</x-ui.button>
             <x-ui.button variant="destructive" wire:click="deleteActivity">{{ __('Delete') }}</x-ui.button>
