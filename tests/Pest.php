@@ -11,6 +11,7 @@ use Database\Seeders\Foundation\PermissionSeeder;
 use Database\Seeders\Foundation\RolePermissionSeeder;
 use Database\Seeders\Foundation\RoleSeeder;
 use Database\Seeders\Foundation\SettingSeeder;
+use Database\Seeders\Hrm\HrmSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -124,6 +125,14 @@ function seedAccessControl(): void
 function seedCrm(): void
 {
     test()->seed([SettingSeeder::class, NumberSequenceFormatSeeder::class, CrmSeeder::class]);
+}
+
+/**
+ * Seed the HRM lookups, the Foundation settings and the number formats.
+ */
+function seedHrm(): void
+{
+    test()->seed([SettingSeeder::class, NumberSequenceFormatSeeder::class, HrmSeeder::class]);
 }
 
 /**
