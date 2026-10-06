@@ -24,6 +24,7 @@ trait ValidatesUserInput
             'email' => ['nullable', 'string', 'email', 'max:150', $this->uniqueIgnoringCase('email', $user)],
             'phone' => ['nullable', 'string', 'regex:/^(?:\+?880|0)1[3-9]\d{8}$/'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'employee_id' => ['nullable', 'integer', Rule::exists('employees', 'id')->whereNull('deleted_at'), Rule::unique('users', 'employee_id')->ignore($user?->id)],
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['string', Rule::exists('roles', 'code')->where('is_active', true)],
             'permissions' => ['array'],
@@ -50,6 +51,8 @@ trait ValidatesUserInput
             'phone' => $phone === '' ? null : $phone,
             'branch_id' => filled($input['branch_id'] ?? null) ? (int) $input['branch_id'] : null,
             'password' => filled($input['password'] ?? null) ? $input['password'] : null,
+            // Only callers that send the employee link may change it (spec H8).
+            ...(array_key_exists('employee_id', $input) ? ['employee_id' => filled($input['employee_id']) ? (int) $input['employee_id'] : null] : []),
         ];
     }
 

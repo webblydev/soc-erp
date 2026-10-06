@@ -27,11 +27,11 @@ class CreateUser
      */
     public function handle(array $input, User $actor): User
     {
-        /** @var array{name: string, username: string, email: ?string, phone: ?string, branch_id: ?int, roles: list<string>, permissions?: list<string>, password: string, is_active?: bool} $data */
+        /** @var array{name: string, username: string, email: ?string, phone: ?string, branch_id: ?int, employee_id?: ?int, roles: list<string>, permissions?: list<string>, password: string, is_active?: bool} $data */
         $data = Validator::make($this->prepareUserInput($input), $this->userRules(null))->validate();
 
         $user = DB::transaction(function () use ($data, $actor): User {
-            $user = new User(Arr::only($data, ['name', 'username', 'email', 'phone', 'branch_id', 'password']));
+            $user = new User(Arr::only($data, ['name', 'username', 'email', 'phone', 'branch_id', 'employee_id', 'password']));
             $user->is_active = (bool) ($data['is_active'] ?? true);
             $user->must_change_password = true;
             $user->save();
