@@ -7,8 +7,10 @@ use App\Modules\Catalog\Livewire\WorkItems\Index;
 use App\Modules\Catalog\Models\Unit;
 use App\Modules\Catalog\Models\WorkItem;
 use App\Modules\Catalog\Models\WorkItemCategory;
+use App\Support\Exports\QueryExport;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
+use Maatwebsite\Excel\Facades\Excel;
 
 beforeEach(fn () => Model::preventLazyLoading());
 afterEach(fn () => Model::preventLazyLoading(false));
@@ -91,4 +93,22 @@ test('form errors show inline', function () {
         ->set('measurement_formula', 'cubic')
         ->call('save')
         ->assertHasErrors(['code', 'name', 'work_item_category_id', 'unit_id', 'measurement_formula']);
+});
+
+test('export selected needs work_items.export and downloads only the selected items', function () {
+    Excel::fake();
+    $this->travelTo(now()->setDate(2026, 10, 7)->setTime(10, 0, 0));
+    $chosen = WorkItem::factory()->create(['code' => 'WI-CHOSEN']);
+    WorkItem::factory()->create(['code' => 'WI-OTHER']);
+
+    Livewire::actingAs(userWithPermissions('catalog.work_items.view'))->test(Index::class)
+        ->set('selected', [(string) $chosen->id])
+        ->call('exportSelected')
+        ->assertForbidden();
+
+    Livewire::actingAs(userWithPermissions('catalog.work_items.view', 'catalog.work_items.export'))->test(Index::class)
+        ->set('selected', [(string) $chosen->id])
+        ->call('exportSelected');
+
+    Excel::assertDownloaded('work-items-20261007-100000.xlsx', fn (QueryExport $export): bool => $export->query()->pluck('code')->all() === ['WI-CHOSEN']);
 });
