@@ -3,6 +3,7 @@
 namespace App\Modules\Hrm\Livewire\Employees;
 
 use App\Models\User;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use App\Modules\Hrm\Actions\CreateEmployee;
 use App\Modules\Hrm\Actions\UpdateEmployee;
 use App\Modules\Hrm\Models\Employee;
@@ -22,7 +23,7 @@ use Livewire\WithFileUploads;
  */
 class Form extends Component
 {
-    use WithFileUploads;
+    use SavesFromDetailModal, WithFileUploads;
 
     private const FIELDS = [
         'employee_code', 'first_name', 'last_name', 'father_name', 'mother_name', 'gender_id', 'date_of_birth', 'marital_status_id',
@@ -243,9 +244,7 @@ class Form extends Component
 
     private function finish(Employee $employee, string $message): void
     {
-        session()->flash('success', $message);
-
-        $this->redirectRoute('hrm.employees.show', $employee, navigate: true);
+        $this->redirectAfterSave($message, 'hrm.employees.show', $employee);
     }
 
     private function actor(): User
