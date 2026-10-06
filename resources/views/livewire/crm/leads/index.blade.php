@@ -26,6 +26,7 @@
         :exportable="$user->can('crm.leads.export')"
         :has-more="$this->hasMoreRows"
         :active-filters="count(array_filter($filters, 'filled')) + count($statusFilter)"
+        :filter-columns="3"
     >
         <x-slot:filters>
             <x-ui.field>
@@ -37,9 +38,9 @@
                     <option value="all">{{ __('All') }}</option>
                 </x-ui.select>
             </x-ui.field>
-            <x-ui.field-set>
+            <x-ui.field-set class="col-span-full">
                 <x-ui.field-legend class="text-sm">{{ __('Status') }}</x-ui.field-legend>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-6">
                     @foreach ($statuses as $status)
                         <x-ui.field orientation="horizontal" class="min-h-11 items-center md:min-h-0" wire:key="sf-{{ $status->id }}">
                             <x-ui.checkbox native id="sf-{{ $status->id }}" wire:model.live="statusFilter" value="{{ $status->id }}" />
@@ -115,7 +116,7 @@
                     <option value="0">{{ __('No') }}</option>
                 </x-ui.select>
             </x-ui.field>
-            <x-ui.field orientation="horizontal" class="min-h-11 items-center">
+            <x-ui.field orientation="horizontal" class="min-h-11 items-center md:self-end md:min-h-9">
                 <x-ui.checkbox native id="filter-stale" wire:model.live="filters.stale" value="1" />
                 <x-ui.field-label for="filter-stale" class="font-normal">{{ __('Only stale leads') }}</x-ui.field-label>
             </x-ui.field>
