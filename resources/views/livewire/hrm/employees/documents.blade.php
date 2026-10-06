@@ -49,7 +49,7 @@
     </x-ui.item-group>
 
     @if ($canManage)
-        <x-shell.sheet id="employee-document" :title="$editingId ? __('Edit document') : __('Add document')">
+        <x-shell.sheet id="employee-document" :title="$editingId ? __('Edit document') : __('Add document')" :description="__('Identity, contract or certificate papers with their expiry date.')">
             <form id="employee-document-form" wire:submit="save" class="flex flex-col gap-4">
                 <x-ui.field>
                     <x-ui.field-label for="document-type">{{ __('Document type') }} *</x-ui.field-label>
