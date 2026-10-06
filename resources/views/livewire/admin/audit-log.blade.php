@@ -59,7 +59,7 @@
                     @forelse ($rows as $entry)
                         <x-ui.table-row wire:key="audit-{{ $entry->id }}">
                             <x-ui.table-cell class="whitespace-nowrap">{{ $entry->created_at->format('d-M-Y H:i') }}</x-ui.table-cell>
-                            <x-ui.table-cell>{{ $entry->user?->username ?? __('system') }}</x-ui.table-cell>
+                            <x-ui.table-cell>{{ $entry->actorLabel() }}</x-ui.table-cell>
                             <x-ui.table-cell><x-ui.badge variant="secondary" class="text-sm">{{ str_replace('_', ' ', $entry->event) }}</x-ui.badge></x-ui.table-cell>
                             <x-ui.table-cell class="font-mono text-sm">{{ $entry->auditable_type }} #{{ $entry->auditable_id }}</x-ui.table-cell>
                             <x-ui.table-cell>
@@ -82,7 +82,7 @@
                     <x-ui.item variant="outline" class="min-h-16 active:bg-accent">
                         <x-ui.item-content>
                             <x-ui.item-title class="text-base">{{ $entry->auditable_type }} #{{ $entry->auditable_id }}</x-ui.item-title>
-                            <x-ui.item-description class="text-sm">{{ $entry->user?->username ?? __('system') }} · {{ $entry->created_at->format('d-M-Y H:i') }}</x-ui.item-description>
+                            <x-ui.item-description class="text-sm">{{ $entry->actorLabel() }} · {{ $entry->created_at->format('d-M-Y H:i') }}</x-ui.item-description>
                         </x-ui.item-content>
                         <x-ui.badge variant="secondary" class="text-sm">{{ str_replace('_', ' ', $entry->event) }}</x-ui.badge>
                         <x-lucide-chevron-right class="size-4 text-muted-foreground" />
@@ -95,7 +95,7 @@
     </x-shell.list>
 
     <x-shell.sheet id="audit-entry" :title="$selected ? $selected->auditable_type.' #'.$selected->auditable_id : null"
-        :description="$selected ? str_replace('_', ' ', $selected->event).' · '.($selected->user?->username ?? __('system')).' · '.$selected->created_at->format('d-M-Y H:i:s') : null">
+        :description="$selected ? str_replace('_', ' ', $selected->event).' · '.$selected->actorLabel().' · '.$selected->created_at->format('d-M-Y H:i:s') : null">
         @if ($selected)
             @php($fields = collect(array_keys([...($selected->old_values ?? []), ...($selected->new_values ?? [])])))
             @php($show = fn ($value) => is_bool($value) ? ($value ? 'true' : 'false') : (is_scalar($value) || $value === null ? (string) ($value ?? '—') : json_encode($value, JSON_UNESCAPED_UNICODE)))
