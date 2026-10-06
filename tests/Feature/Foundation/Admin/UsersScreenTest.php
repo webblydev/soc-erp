@@ -3,6 +3,8 @@
 use App\Models\User;
 use App\Modules\Foundation\Livewire\Admin\Users\Form;
 use App\Modules\Foundation\Livewire\Admin\Users\Index;
+use App\Modules\Foundation\Models\Role;
+use App\Modules\Foundation\Services\PermissionRegistrar;
 use Livewire\Livewire;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -105,8 +107,14 @@ test('the edit form is reached by username and prefilled', function () {
 
 test('an accountant created by an admin must change password and sees no admin menus (FD-AC-01)', function () {
     seedAccessControl();
+    $admin = userWithPermissions('admin.users.view', 'admin.users.create');
+    $admin->syncDirectPermissions([
+        'admin.users.view', 'admin.users.create',
+        ...Role::query()->where('code', 'accountant')->firstOrFail()->permissions()->pluck('name')->all(),
+    ]);
+    app(PermissionRegistrar::class)->forget($admin);
 
-    Livewire::actingAs(userWithPermissions('admin.users.view', 'admin.users.create'))
+    Livewire::actingAs($admin)
         ->test(Form::class)
         ->set('name', 'Accounts One')
         ->set('username', 'accounts1')
