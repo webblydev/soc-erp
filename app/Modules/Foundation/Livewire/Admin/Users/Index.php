@@ -104,6 +104,9 @@ class Index extends Component
         return ['name' => 'users.name', 'username' => 'users.username', 'last_login_at' => 'users.last_login_at'];
     }
 
+    /**
+     * @param  Builder<*>  $query
+     */
     protected function applyFilters(Builder $query): void
     {
         if (filled($this->filters['role'] ?? null)) {
