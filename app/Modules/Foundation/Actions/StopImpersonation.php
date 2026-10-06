@@ -23,7 +23,7 @@ class StopImpersonation
             return null;
         }
 
-        $impersonator = User::query()->find($impersonatorId);
+        $impersonator = User::query()->whereKey($impersonatorId)->first();
 
         if ($impersonator === null) {
             Auth::guard('web')->logout();
