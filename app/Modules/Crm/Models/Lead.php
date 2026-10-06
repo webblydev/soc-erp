@@ -153,8 +153,8 @@ class Lead extends Model implements Collaborative
     public function referrerLabel(): ?string
     {
         return match ($this->referrer_type) {
-            'customer' => $this->referrerCustomer?->name ?? $this->referrer_name,
-            'employee' => $this->referrerUser?->name ?? $this->referrer_name,
+            'customer' => $this->referrerCustomer->name ?? $this->referrer_name,
+            'employee' => $this->referrerUser->name ?? $this->referrer_name,
             default => $this->referrer_name,
         };
     }
