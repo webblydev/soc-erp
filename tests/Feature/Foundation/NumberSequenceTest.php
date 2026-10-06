@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Foundation\Models\AuditLog;
 use App\Modules\Foundation\Models\NumberSequence;
 use App\Modules\Foundation\Models\NumberSequenceFormat;
 use App\Support\NumberSequenceService;
@@ -74,3 +75,17 @@ test('business line scope requires a prefix', function () {
 test('unknown document types are rejected', function () {
     nextNumber('nonsense');
 })->throws(InvalidArgumentException::class);
+
+test('issuing numbers writes no audit rows', function () {
+    nextNumber('lead');
+    nextNumber('lead');
+
+    expect(AuditLog::query()->where('auditable_type', 'number_sequence')->exists())->toBeFalse()
+        ->and(NumberSequence::query()->where('document_type', 'lead')->sole()->next_number)->toBe(3);
+});
+
+test('the preview clamps the seq width to nine digits', function () {
+    $preview = app(NumberSequenceService::class)->preview('X-{seq:2000000000}', 7);
+
+    expect($preview)->toBe('X-000000007');
+});
