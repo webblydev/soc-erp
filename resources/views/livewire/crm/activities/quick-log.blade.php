@@ -26,7 +26,7 @@
             @endif
 
             @if (($mode === 'log' || $mode === 'schedule') && ! $done || $mode === 'reschedule')
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <x-ui.field>
                         <x-ui.field-label for="ql-when">{{ __('When') }} *</x-ui.field-label>
                         <x-ui.input type="datetime-local" id="ql-when" wire:model="scheduled_at" class="h-11 text-base md:h-9 md:text-sm" />
@@ -57,7 +57,7 @@
             @endif
 
             @if ($mode === 'complete' || ($mode !== 'reschedule' && $done))
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <x-ui.field>
                         <x-ui.field-label for="ql-duration">{{ __('Duration (minutes)') }}{{ $type?->requires_duration ? ' *' : '' }}</x-ui.field-label>
                         <x-ui.input id="ql-duration" wire:model="duration_minutes" inputmode="numeric" class="h-11 text-base tabular-nums md:h-9 md:text-sm" />
@@ -81,7 +81,7 @@
                     <x-ui.field-label for="ql-next">{{ __('Schedule next follow-up') }}</x-ui.field-label>
                 </x-ui.field>
                 @if ($scheduleNext)
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <x-ui.field>
                             <x-ui.field-label for="ql-next-type">{{ __('Type') }}</x-ui.field-label>
                             <x-lookup-select table="activity_types" id="ql-next-type" wire:model="next_type_id" :placeholder="__('Choose…')" />
