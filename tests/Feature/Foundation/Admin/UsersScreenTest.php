@@ -5,6 +5,7 @@ use App\Modules\Foundation\Livewire\Admin\Users\Form;
 use App\Modules\Foundation\Livewire\Admin\Users\Index;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Foundation\Services\PermissionRegistrar;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -193,3 +194,21 @@ test('choosing no branch stores null', function () {
 
     expect($user->fresh()->branch_id)->toBeNull();
 });
+
+test('tampered array filters are ignored instead of failing', function () {
+    User::factory()->create(['username' => 'other1']);
+
+    Livewire::actingAs(userWithPermissions('admin.users.view'))
+        ->test(Index::class)
+        ->set('filters.role', ['accountant'])
+        ->set('filters.branch', ['1'])
+        ->set('filters.active', ['1'])
+        ->assertOk()
+        ->assertSee('other1');
+});
+
+test('the row-action user cannot be chosen from the client', function () {
+    Livewire::actingAs(userWithPermissions('admin.users.view'))
+        ->test(Index::class)
+        ->set('actionUserId', 1);
+})->throws(CannotUpdateLockedPropertyException::class);
