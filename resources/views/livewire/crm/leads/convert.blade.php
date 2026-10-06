@@ -56,7 +56,7 @@
                     </x-ui.item-group>
                     <x-ui.input type="search" wire:model.live.debounce.300ms="search" :placeholder="__('Search customers by number, name or phone')" class="h-11 text-base md:h-9 md:text-sm" />
                 @else
-                    <div class="grid gap-6 md:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <x-ui.field>
                             <x-ui.field-label for="c-type">{{ __('Customer type') }} *</x-ui.field-label>
                             <x-lookup-select table="customer_types" :placeholder="__('Choose…')" id="c-type" wire:model="customer.customer_type_id" />
@@ -143,7 +143,7 @@
             </x-shell.form-section>
         @else
             <x-shell.form-section :title="__('Review & confirm')">
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <x-ui.card class="gap-2 p-4">
                         <span class="text-sm text-muted-foreground">{{ __('Lead') }}</span>
                         <p class="font-medium">{{ $lead->name }} <span class="font-mono text-sm text-muted-foreground">{{ $lead->lead_number }}</span></p>
