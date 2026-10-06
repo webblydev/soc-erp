@@ -60,3 +60,9 @@ test('a tampered group is not found on save', function () {
         ->call('save')
         ->assertNotFound();
 });
+
+test('the mobile group control uses the group keys as values', function () {
+    $this->actingAs(userWithPermissions('admin.settings.view'))->get(route('admin.settings.edit'))
+        ->assertOk()
+        ->assertSee('value="notifications"', false);
+});
