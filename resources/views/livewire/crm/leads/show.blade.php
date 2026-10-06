@@ -8,7 +8,7 @@
 
     /** Header actions, shared by the desktop toolbar and the mobile actions sheet. */
     $actions = array_values(array_filter([
-        $user->can('update', $lead) && Route::has('crm.leads.edit') ? ['label' => __('Edit'), 'icon' => 'pencil', 'href' => route('crm.leads.edit', $lead)] : null,
+        $user->can('update', $lead) && Route::has('crm.leads.edit') ? ['label' => __('Edit'), 'icon' => 'pencil', 'href' => route('crm.leads.edit', $lead), 'modal' => true] : null,
         $user->can('crm.activities.create') ? ['label' => __('Log activity'), 'icon' => 'notebook-pen', 'click' => $logEvent('log'), 'primary' => true] : null,
         $user->can('crm.activities.create') ? ['label' => __('Schedule follow-up'), 'icon' => 'calendar-plus', 'click' => $logEvent('schedule')] : null,
         Route::has('crm.leads.convert') && $user->can('convert', $lead) ? ['label' => __('Mark won → convert'), 'icon' => 'trophy', 'href' => route('crm.leads.convert', $lead)] : null,
@@ -48,7 +48,7 @@
                 @if (isset($action['href']) && ($action['external'] ?? false))
                     <x-ui.button size="sm" :$variant :href="$action['href']" target="_blank"><x-dynamic-component :component="'lucide-'.$action['icon']" /> {{ $action['label'] }}</x-ui.button>
                 @elseif (isset($action['href']))
-                    <x-ui.button size="sm" :$variant :href="$action['href']" wire:navigate><x-dynamic-component :component="'lucide-'.$action['icon']" /> {{ $action['label'] }}</x-ui.button>
+                    <x-ui.button size="sm" :$variant :href="$action['href']" wire:navigate :data-detail-modal="($action['modal'] ?? false) ?: null"><x-dynamic-component :component="'lucide-'.$action['icon']" /> {{ $action['label'] }}</x-ui.button>
                 @else
                     <x-ui.button size="sm" :$variant x-on:click="{{ $action['click'] }}"><x-dynamic-component :component="'lucide-'.$action['icon']" /> {{ $action['label'] }}</x-ui.button>
                 @endif
