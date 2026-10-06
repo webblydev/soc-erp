@@ -99,8 +99,8 @@
         </x-slot:mobile>
     </x-shell.list>
 
-    <x-shell.sheet id="audit-entry" :title="$openEntry ? $openEntry->auditable_type.' #'.$openEntry->auditable_id : null"
-        :description="$openEntry ? str_replace('_', ' ', $openEntry->event).' · '.$openEntry->actorLabel().' · '.$openEntry->created_at->format('d-M-Y H:i:s') : null">
+    <x-shell.sheet id="audit-entry" :title="$openEntry ? $openEntry->auditable_type.' #'.$openEntry->auditable_id : __('Audit entry')"
+        :description="$openEntry ? str_replace('_', ' ', $openEntry->event).' · '.$openEntry->actorLabel().' · '.$openEntry->created_at->format('d-M-Y H:i:s') : __('What changed, who changed it and when.')">
         @if ($openEntry)
             <div class="flex flex-col gap-3 pb-4">
                 @forelse ($openEntry->fieldChanges() as $field => $change)
