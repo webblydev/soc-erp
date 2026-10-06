@@ -57,6 +57,8 @@ trait ValidatesUserInput
     {
         return function (string $attribute, mixed $value, Closure $fail) use ($column, $user): void {
             $taken = User::withTrashed()
+                // $column is a hard-coded column name, never user input; case-insensitive match needs raw SQL.
+                // @phpstan-ignore argument.type
                 ->whereRaw("LOWER({$column}) = ?", [Str::lower(trim((string) $value))])
                 ->when($user !== null, fn ($query) => $query->whereKeyNot($user->id))
                 ->exists();
