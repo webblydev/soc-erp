@@ -83,4 +83,35 @@ class AuditLog extends Model
 
         return $label;
     }
+
+    /**
+     * Every field the entry touched, with its old and new value formatted for display.
+     *
+     * @return array<string, array{old: string, new: string}>
+     */
+    public function fieldChanges(): array
+    {
+        $old = $this->old_values ?? [];
+        $new = $this->new_values ?? [];
+        $changes = [];
+
+        foreach (array_keys([...$old, ...$new]) as $field) {
+            $changes[$field] = [
+                'old' => self::displayValue($old[$field] ?? null),
+                'new' => self::displayValue($new[$field] ?? null),
+            ];
+        }
+
+        return $changes;
+    }
+
+    private static function displayValue(mixed $value): string
+    {
+        return match (true) {
+            $value === null => '—',
+            is_bool($value) => $value ? 'true' : 'false',
+            is_scalar($value) => (string) $value,
+            default => (string) json_encode($value, JSON_UNESCAPED_UNICODE),
+        };
+    }
 }
