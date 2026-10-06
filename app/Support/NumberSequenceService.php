@@ -34,7 +34,8 @@ class NumberSequenceService
         $sequence = $this->lockSequence($definition, $this->scopeKey($definition, $tokens));
         $number = $this->render($sequence->format, $sequence->next_number, $tokens);
 
-        $sequence->increment('next_number');
+        // A query-builder increment, so issuing numbers fires no model events and writes no audit rows.
+        NumberSequence::query()->whereKey($sequence->id)->increment('next_number');
 
         return $number;
     }
@@ -116,6 +117,8 @@ class NumberSequenceService
     }
 
     /**
+     * The {seq:N} pad width is clamped to 1–9, so a tampered format cannot exhaust memory.
+     *
      * @param  array{yy: string, yyyy: string, bl_prefix: string, branch: string}  $tokens
      */
     private function render(string $format, int $sequence, array $tokens): string
@@ -123,7 +126,7 @@ class NumberSequenceService
         return (string) preg_replace_callback(
             '/\{(seq:(\d+)|yyyy|yy|bl_prefix|branch)\}/',
             fn (array $match): string => str_starts_with($match[1], 'seq:')
-                ? str_pad((string) $sequence, (int) ($match[2] ?? 0), '0', STR_PAD_LEFT)
+                ? str_pad((string) $sequence, max(1, min(9, (int) ($match[2] ?? 1))), '0', STR_PAD_LEFT)
                 : $tokens[$match[1]],
             $format,
         );
