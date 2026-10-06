@@ -6,6 +6,9 @@ use App\Modules\Foundation\Concerns\HasRoles;
 use App\Modules\Foundation\Models\Branch;
 use App\Support\AuditTrail\Auditable;
 use App\Support\AuditTrail\TracksAuthors;
+use App\Support\Collaboration\Collaborative;
+use App\Support\Collaboration\HasAttachments;
+use App\Support\Collaboration\HasNotes;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -47,10 +50,10 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  */
 #[Fillable(['name', 'username', 'email', 'phone', 'password', 'employee_id', 'branch_id', 'avatar_path', 'is_active', 'must_change_password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements Collaborative
 {
     /** @use HasFactory<UserFactory> */
-    use Auditable, HasFactory, HasRoles, Notifiable, SoftDeletes, TracksAuthors, TwoFactorAuthenticatable;
+    use Auditable, HasAttachments, HasFactory, HasNotes, HasRoles, Notifiable, SoftDeletes, TracksAuthors, TwoFactorAuthenticatable;
 
     /**
      * Get the attributes that should be cast.
@@ -145,6 +148,14 @@ class User extends Authenticatable
         return Str::length($initials) > 1
             ? Str::substr($initials, 0, 1).Str::substr($initials, -1)
             : $initials;
+    }
+
+    /**
+     * Account attachments and notes are visible to user administrators.
+     */
+    public function isViewableBy(User $user): bool
+    {
+        return $user->can('admin.users.view');
     }
 
     /**
