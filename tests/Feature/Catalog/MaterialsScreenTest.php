@@ -81,3 +81,19 @@ test('form errors show inline', function () {
         ->call('save')
         ->assertHasErrors(['code', 'name', 'material_category_id', 'unit_id', 'standard_rate']);
 });
+
+test('bulk delete removes the selected materials and needs materials.delete', function () {
+    $material = Material::factory()->create();
+
+    Livewire::actingAs(userWithPermissions('catalog.materials.view'))->test(Index::class)
+        ->set('selected', [(string) $material->id])
+        ->call('deleteSelected')
+        ->assertForbidden();
+
+    Livewire::actingAs(userWithPermissions('catalog.materials.view', 'catalog.materials.delete'))->test(Index::class)
+        ->set('selected', [(string) $material->id])
+        ->call('deleteSelected')
+        ->assertDispatched('toast', type: 'success', description: '1 record deleted.');
+
+    expect(Material::query()->find($material->id))->toBeNull();
+});
