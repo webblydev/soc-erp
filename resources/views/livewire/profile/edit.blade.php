@@ -1,4 +1,4 @@
-@php($tabs = ['details' => __('Details'), 'password' => __('Password'), 'two-factor' => __('Two-factor'), 'notifications' => __('Notifications')])
+@php($tabs = collect(['details' => __('Details'), 'password' => __('Password'), 'two-factor' => __('Two-factor'), 'notifications' => __('Notifications')])->only($availableTabs)->all())
 
 <div class="flex flex-col gap-4">
     <div class="flex items-center gap-3">
@@ -16,17 +16,17 @@
 
     <div role="tablist" class="hidden gap-1 border-b md:flex">
         @foreach ($tabs as $key => $label)
-            <button type="button" role="tab" aria-selected="{{ $tab === $key ? 'true' : 'false' }}" wire:click="$set('tab', '{{ $key }}')"
+            <button type="button" role="tab" aria-selected="{{ $tab === $key ? 'true' : 'false' }}" wire:click="$set('tab', @js($key))"
                 @class(['px-3 py-2 text-sm', 'border-b-2 border-primary font-medium' => $tab === $key, 'text-muted-foreground' => $tab !== $key])>{{ $label }}</button>
         @endforeach
     </div>
     <div class="overflow-x-auto md:hidden">
-        <x-ui.segmented-control name="profile-tab" wire:model.live="tab" :value="$tab" :options="$tabs" class="h-11" />
+        <x-ui.segmented-control name="profile-tab" wire:model.live="tab" :value="$tab" :options="collect($tabs)->map(fn ($label, $key) => ['value' => $key, 'label' => $label])->values()->all()" class="h-11" />
     </div>
 
     <div class="max-w-xl">
         @if ($tab === 'details')
-            <form wire:submit="saveDetails" class="flex flex-col gap-6">
+            <x-shell.form-page wire:submit="saveDetails" :submit-label="__('Save')" above-nav>
                 <x-ui.field>
                     <x-ui.field-label for="name">{{ __('Name') }}</x-ui.field-label>
                     <x-ui.input id="name" wire:model="name" autocomplete="name" class="h-11 text-base md:h-9 md:text-sm" />
@@ -42,10 +42,9 @@
                     <x-ui.input id="avatar" type="file" wire:model="avatar" accept="image/png,image/jpeg" class="h-11 md:h-9" />
                     <x-ui.field-error :messages="$errors->get('avatar')" />
                 </x-ui.field>
-                <x-ui.button type="submit" class="h-11 md:h-9 md:self-start">{{ __('Save') }}</x-ui.button>
-            </form>
+            </x-shell.form-page>
         @elseif ($tab === 'password')
-            <form wire:submit="savePassword" class="flex flex-col gap-6">
+            <x-shell.form-page wire:submit="savePassword" :submit-label="__('Update password')" above-nav>
                 <x-ui.field>
                     <x-ui.field-label for="current_password">{{ __('Current password') }}</x-ui.field-label>
                     <x-ui.input id="current_password" type="password" wire:model="current_password" autocomplete="current-password" class="h-11 text-base md:h-9 md:text-sm" />
@@ -60,12 +59,11 @@
                     <x-ui.field-label for="password_confirmation">{{ __('Confirm new password') }}</x-ui.field-label>
                     <x-ui.input id="password_confirmation" type="password" wire:model="password_confirmation" autocomplete="new-password" class="h-11 text-base md:h-9 md:text-sm" />
                 </x-ui.field>
-                <x-ui.button type="submit" class="h-11 md:h-9 md:self-start">{{ __('Update password') }}</x-ui.button>
-            </form>
+            </x-shell.form-page>
         @elseif ($tab === 'two-factor')
             <livewire:foundation.profile.two-factor :key="'two-factor-panel'" />
         @else
-            <form wire:submit="saveNotifications" class="flex flex-col gap-4">
+            <x-shell.form-page wire:submit="saveNotifications" :submit-label="__('Save preferences')" above-nav>
                 @foreach ($notificationKeys as $key => $definition)
                     @php($field = str_replace('.', '__', $key))
                     <div class="flex flex-col gap-1 border-b pb-3">
@@ -78,8 +76,7 @@
                         @endforeach
                     </div>
                 @endforeach
-                <x-ui.button type="submit" class="h-11 md:h-9 md:self-start">{{ __('Save preferences') }}</x-ui.button>
-            </form>
+            </x-shell.form-page>
         @endif
     </div>
 </div>
