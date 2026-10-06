@@ -4,7 +4,7 @@
 **Source specs:** `docs/00-index-and-conventions.md`, `docs/02-catalog.md`
 **Builds on:** `docs/superpowers/specs/2026-10-06-admin-screens-design.md`, `docs/superpowers/specs/2026-10-06-shared-services-design.md`
 **Date:** 06 Oct 2026
-**Status:** Draft, awaiting review.
+**Status:** Done, 2026-10-06. Plan: `docs/superpowers/plans/2026-10-06-catalog.md`.
 
 ## 1. Goal
 
@@ -232,3 +232,13 @@ No browser tests. When the build is done, the screens are listed for the user to
 - Excel and PDF export of catalog lists.
 - PWD schedule rate data (open question 3).
 - Deleting services, work items or materials.
+
+## 9. Implementation deviations
+Where the build differs from the sections above, the build is authoritative.
+
+- **§4.2 / §5.4:** the import preview uses `x-ui.table` like the other lists, not `x-ui.server-table`. On mobile, each row's errors show inline under the row instead of in a bottom sheet, so they are visible without a tap.
+- **§5.4:** the failed-rows file starts with a `row` column (the sheet row number). Re-uploading it works, because unknown headings are ignored. Cells that start with `=`, `+`, `-` or `@` are prefixed with `'`.
+- **§5.4:** the preview is cached per user for a day. If the cache expires, it is rebuilt from the stored file. Uploaded files are removed after confirm, on start over, or by the daily `imports:prune` schedule.
+- **§4.3:** the Foundation registry test now allows the `lookup` extra-field type and checks that its `table` is registered.
+- **Lists:** services and materials sort by name by default, and work items by code.
+
