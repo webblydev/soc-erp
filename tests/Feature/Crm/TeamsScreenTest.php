@@ -73,3 +73,14 @@ test('bulk delete skips teams that have leads and needs teams.manage', function 
 
     expect(SalesTeam::query()->whereKey([$busy->id, $empty->id])->pluck('id')->all())->toBe([$busy->id]);
 });
+
+test('deleting a team soft-deletes it and ends its memberships so members can join another team', function () {
+    $member = User::factory()->create();
+    $team = SalesTeam::factory()->withMembers($member)->create();
+
+    Livewire::actingAs(userWithPermissions('crm.teams.view', 'crm.teams.manage'))->test(Index::class)
+        ->call('deleteRecord', $team->id);
+
+    $this->assertSoftDeleted($team);
+    expect(SalesTeam::activeTeamIdFor($member->id))->toBeNull();
+});
