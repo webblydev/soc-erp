@@ -7,7 +7,6 @@ use App\Modules\Foundation\Actions\CreateUser;
 use App\Modules\Foundation\Actions\UpdateUser;
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
-use App\Support\Facades\Lookup;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -79,7 +78,6 @@ class Form extends Component
     public function render(): View
     {
         return view('livewire.admin.users.form', [
-            'branches' => Lookup::options('branches', $this->branch_id),
             'availableRoles' => Role::query()->where('is_active', true)->orderBy('name')->get(['code', 'name', 'description']),
             'canGrantSuperAdmin' => $this->actor()->hasRole(Role::SUPER_ADMIN),
             'permissionGroups' => Permission::query()->orderBy('sort_order')->get()->groupBy('module'),
