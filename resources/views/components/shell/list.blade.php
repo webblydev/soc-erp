@@ -71,6 +71,7 @@
                     <x-ui.drawer-content>
                         <x-ui.drawer-header>
                             <x-ui.drawer-title>{{ __('Filters') }}</x-ui.drawer-title>
+                            <x-ui.drawer-description>{{ __('Narrow down the list.') }}</x-ui.drawer-description>
                         </x-ui.drawer-header>
                         <div class="flex flex-col gap-4 overflow-y-auto px-4">{{ $filters }}</div>
                         <x-ui.drawer-footer class="flex-row gap-2 pb-[calc(1rem+env(safe-area-inset-bottom))]">
