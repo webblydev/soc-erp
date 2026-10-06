@@ -61,7 +61,7 @@ test('every registered table names its model and typed extra fields', function (
         expect($registry->modelFor($table)->getTable())->toBe($table);
 
         foreach ($entry['extra_fields'] as $field) {
-            expect($field['type'])->toBeIn(['text', 'textarea', 'number', 'bool']);
+            expect($field['type'])->toBeIn(['text', 'textarea', 'number', 'bool', 'list']);
         }
     }
 
