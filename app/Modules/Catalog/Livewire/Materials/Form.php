@@ -4,11 +4,14 @@ namespace App\Modules\Catalog\Livewire\Materials;
 
 use App\Modules\Catalog\Actions\SaveMaterial;
 use App\Modules\Catalog\Models\Material;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class Form extends Component
 {
+    use SavesFromDetailModal;
+
     public ?Material $material = null;
 
     public string $code = '';
@@ -44,9 +47,7 @@ class Form extends Component
 
         $saveMaterial->handle($this->only(SaveMaterial::FIELDS), $this->material);
 
-        session()->flash('success', $this->material === null ? __('Material created.') : __('Material saved.'));
-
-        $this->redirectRoute('catalog.materials.index', navigate: true);
+        $this->redirectAfterSave($this->material === null ? __('Material created.') : __('Material saved.'), 'catalog.materials.index');
     }
 
     public function render(): View
