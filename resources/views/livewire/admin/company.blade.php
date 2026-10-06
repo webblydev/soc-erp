@@ -27,11 +27,7 @@
 
             <x-ui.field>
                 <x-ui.field-label for="base_currency_id">{{ __('Base currency') }} *</x-ui.field-label>
-                <x-ui.select native id="base_currency_id" wire:model="base_currency_id" class="h-11 text-base md:h-9 md:text-sm">
-                    @foreach ($currencies as $currency)
-                        <option value="{{ $currency->id }}">{{ $currency->code }} — {{ $currency->name }}</option>
-                    @endforeach
-                </x-ui.select>
+                <x-lookup-select table="currencies" :include="$base_currency_id" show-code id="base_currency_id" wire:model="base_currency_id" />
                 <x-ui.field-error :messages="$errors->get('base_currency_id')" />
             </x-ui.field>
 
