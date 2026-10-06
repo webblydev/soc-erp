@@ -32,7 +32,7 @@ trait ResolvesLookups
     {
         $map = [];
 
-        foreach (DB::table($table)->where('is_active', true)->orderBy('sort_order')->get(['id', ...$columns]) as $row) {
+        foreach (DB::table($table)->where('is_active', true)->whereNull('deleted_at')->orderBy('sort_order')->get(['id', ...$columns]) as $row) {
             foreach ($columns as $column) {
                 $map[Str::lower((string) $row->{$column})] ??= (int) $row->id;
             }
