@@ -41,7 +41,7 @@ class UpdateCompanyProfile
             'base_currency_id' => ['required', 'integer', 'exists:currencies,id'],
             'fiscal_year_start_month' => ['required', 'integer', 'between:1,12'],
             'print_footer' => ['nullable', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:1024'],
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:20480'],
         ])->validate();
 
         $newLogo = $logo?->store('company', 'public');
