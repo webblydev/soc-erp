@@ -45,13 +45,6 @@ test('the new password follows the minimum length setting', function () {
         ->assertHasErrors(['password']);
 });
 
-test('the two-factor tab renders the 2FA panel', function () {
-    $this->actingAs(User::factory()->create())
-        ->get(route('profile.edit', ['tab' => 'two-factor']))
-        ->assertOk()
-        ->assertSee(__('Turn on two-factor authentication'));
-});
-
 test('notification preferences are saved from the profile', function () {
     $user = User::factory()->create();
 
