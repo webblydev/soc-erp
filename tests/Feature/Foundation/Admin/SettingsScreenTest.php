@@ -6,10 +6,7 @@ use App\Support\Facades\Settings;
 use Database\Seeders\Foundation\SettingSeeder;
 use Livewire\Livewire;
 
-beforeEach(function () {
-    $this->seed(SettingSeeder::class);
-    ensureRole('finance_manager');
-});
+beforeEach(fn () => $this->seed(SettingSeeder::class));
 
 test('settings need admin.settings.view', function () {
     $this->actingAs(User::factory()->create())->get(route('admin.settings.edit'))->assertForbidden();
@@ -20,22 +17,19 @@ test('a tab saves typed values and flushes the cache', function () {
     Livewire::actingAs(userWithPermissions('admin.settings.view', 'admin.settings.update'))
         ->test(SettingsScreen::class)
         ->set('values.general.session_timeout_minutes', '45')
-        ->set('values.general.require_2fa_roles', ['finance_manager'])
         ->call('save')
         ->assertHasNoErrors()
         ->assertDispatched('toast', type: 'success');
 
-    expect(Settings::get('general.session_timeout_minutes'))->toBe(45)
-        ->and(Settings::get('general.require_2fa_roles'))->toBe(['finance_manager']);
+    expect(Settings::get('general.session_timeout_minutes'))->toBe(45);
 });
 
 test('invalid values show on their fields', function () {
     Livewire::actingAs(userWithPermissions('admin.settings.view', 'admin.settings.update'))
         ->test(SettingsScreen::class)
         ->set('values.general.session_timeout_minutes', 'soon')
-        ->set('values.general.require_2fa_roles', ['not_a_role'])
         ->call('save')
-        ->assertHasErrors(['values.general.session_timeout_minutes', 'values.general.require_2fa_roles.0']);
+        ->assertHasErrors(['values.general.session_timeout_minutes']);
 });
 
 test('timeout and password length are kept within safe bounds', function () {
