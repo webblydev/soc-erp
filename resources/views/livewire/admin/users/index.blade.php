@@ -48,7 +48,7 @@
                         <x-ui.table-head>{{ __('Branch') }}</x-ui.table-head>
                         <x-ui.table-head>{{ __('Active') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="last_login_at" :label="__('Last login')" :$sort :$direction /></x-ui.table-head>
-                        <x-ui.table-head class="w-10"><span class="sr-only">{{ __('Actions') }}</span></x-ui.table-head>
+                        <x-ui.table-head class="text-end">{{ __('Actions') }}</x-ui.table-head>
                     </x-ui.table-row>
                 </x-ui.table-header>
                 <x-ui.table-body>
@@ -73,24 +73,17 @@
                             </x-ui.table-cell>
                             <x-ui.table-cell>{{ $user->last_login_at?->format('d-M-Y H:i') ?? '—' }}</x-ui.table-cell>
                             <x-ui.table-cell>
-                                <x-ui.dropdown-menu>
-                                    <x-ui.dropdown-menu-trigger>
-                                        <x-ui.button variant="ghost" size="icon" :aria-label="__('Actions')"><x-lucide-ellipsis /></x-ui.button>
-                                    </x-ui.dropdown-menu-trigger>
-                                    <x-ui.dropdown-menu-content align="end">
-                                        @can('admin.users.update')
-                                            <x-ui.dropdown-menu-item :href="route('admin.users.edit', $user)" wire:navigate>{{ __('Edit') }}</x-ui.dropdown-menu-item>
-                                        @endcan
-                                        @can('admin.users.deactivate')
-                                            <x-ui.dropdown-menu-item wire:click="toggleActive({{ $user->id }})">
-                                                {{ $user->is_active ? __('Deactivate') : __('Activate') }}
-                                            </x-ui.dropdown-menu-item>
-                                        @endcan
-                                        @if (auth()->user()->hasRole(\App\Modules\Foundation\Models\Role::SUPER_ADMIN) && $user->is_active && ! $user->is(auth()->user()))
-                                            <x-ui.dropdown-menu-item wire:click="impersonate({{ $user->id }})">{{ __('Sign in as') }}</x-ui.dropdown-menu-item>
-                                        @endif
-                                    </x-ui.dropdown-menu-content>
-                                </x-ui.dropdown-menu>
+                                <div data-test="row-actions" class="flex items-center justify-end gap-1">
+                                    @can('admin.users.update')
+                                        <x-shell.row-action icon="pencil" :label="__('Edit')" :href="route('admin.users.edit', $user)" />
+                                    @endcan
+                                    @can('admin.users.deactivate')
+                                        <x-shell.row-action :icon="$user->is_active ? 'power-off' : 'power'" :label="$user->is_active ? __('Deactivate') : __('Activate')" wire:click="toggleActive({{ $user->id }})" />
+                                    @endcan
+                                    @if (auth()->user()->hasRole(\App\Modules\Foundation\Models\Role::SUPER_ADMIN) && $user->is_active && ! $user->is(auth()->user()))
+                                        <x-shell.row-action icon="log-in" :label="__('Sign in as')" wire:click="impersonate({{ $user->id }})" />
+                                    @endif
+                                </div>
                             </x-ui.table-cell>
                         </x-ui.table-row>
                     @empty
