@@ -10,6 +10,13 @@
 return [
     'groups' => [
         ['key' => 'crm', 'label' => 'CRM', 'icon' => 'handshake', 'items' => []],
+        ['key' => 'catalog', 'label' => 'Catalog', 'icon' => 'package', 'items' => [
+            ['label' => 'Business lines', 'route' => 'catalog.business-lines.index', 'icon' => 'briefcase', 'permission' => 'catalog.business_lines.view'],
+            ['label' => 'Services', 'route' => 'catalog.services.index', 'icon' => 'clipboard-list', 'permission' => 'catalog.services.view'],
+            ['label' => 'Units', 'route' => 'catalog.units.index', 'icon' => 'ruler', 'permission' => 'catalog.units.view'],
+            ['label' => 'Work items', 'route' => 'catalog.work-items.index', 'icon' => 'hammer', 'permission' => 'catalog.work_items.view'],
+            ['label' => 'Materials', 'route' => 'catalog.materials.index', 'icon' => 'boxes', 'permission' => 'catalog.materials.view'],
+        ]],
         ['key' => 'projects', 'label' => 'Projects', 'icon' => 'folder-kanban', 'items' => []],
         ['key' => 'estimation', 'label' => 'Estimation & Site', 'icon' => 'ruler', 'items' => []],
         ['key' => 'sales', 'label' => 'Sales', 'icon' => 'receipt', 'items' => []],
