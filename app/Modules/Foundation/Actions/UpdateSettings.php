@@ -45,7 +45,6 @@ class UpdateSettings
                 $type === 'decimal' => ['required', 'numeric'],
                 $type === 'bool' => ['boolean'],
                 $type === 'json' => ['nullable', 'json'],
-                $type === 'roles' => ['array'],
                 str_starts_with($type, 'fk:') => ['nullable', 'integer', Rule::exists(substr($type, 3), 'id')],
                 default => ['nullable', 'string', 'max:255'],
             };
@@ -53,10 +52,6 @@ class UpdateSettings
             if (isset(self::INTEGER_BOUNDS[$group.'.'.$key])) {
                 [$min, $max] = self::INTEGER_BOUNDS[$group.'.'.$key];
                 $rules[$key] = [...$rules[$key], 'min:'.$min, 'max:'.$max];
-            }
-
-            if ($type === 'roles') {
-                $rules[$key.'.*'] = ['string', Rule::exists('roles', 'code')];
             }
         }
 
