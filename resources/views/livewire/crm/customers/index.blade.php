@@ -74,7 +74,7 @@
                             <x-shell.row-menu>
                                 <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('crm.customers.show', $customer)">{{ __('View') }}</x-shell.row-menu-item>
                                 @can('update', $customer)
-                                    <x-shell.row-menu-item icon="pencil" :href="route('crm.customers.edit', $customer)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                    <x-shell.row-menu-item icon="pencil" data-detail-modal :href="route('crm.customers.edit', $customer)">{{ __('Edit') }}</x-shell.row-menu-item>
                                 @endcan
                                 @can('delete', $customer)
                                     <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $customer->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $customer->name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
