@@ -185,7 +185,7 @@ class SaveCustomer
         ]);
 
         $validator->after(function ($validator) use ($input): void {
-            if (collect($input['contacts'])->where('is_primary', true)->count() > 1) {
+            if (count(array_filter((array) $input['contacts'], fn (array $contact): bool => $contact['is_primary'] === true)) > 1) {
                 $validator->errors()->add('contacts', __('Only one contact can be primary.'));
             }
         });
@@ -205,7 +205,7 @@ class SaveCustomer
             $attributes = Arr::only($contact, ['name', 'designation', 'phone', 'email', 'is_primary', 'notes']);
 
             if (isset($contact['id'])) {
-                $row = $customer->contacts()->findOrFail($contact['id']);
+                $row = $customer->contacts()->whereKey((int) $contact['id'])->firstOrFail();
                 $row->update($attributes);
             } else {
                 $row = $customer->contacts()->create($attributes);
