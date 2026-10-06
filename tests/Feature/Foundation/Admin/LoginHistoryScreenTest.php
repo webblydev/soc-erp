@@ -55,3 +55,13 @@ test('array-valued filters are ignored instead of failing', function () {
         ->assertSee('goodlogin')
         ->assertSee('badlogin');
 });
+
+test('an attempt matched to a user links to that user', function () {
+    $user = User::factory()->create(['username' => 'matched1']);
+    LoginHistory::query()->create(['username_attempted' => 'matched1', 'user_id' => $user->id, 'succeeded' => true, 'ip_address' => '10.0.0.3']);
+
+    $this->actingAs(userWithPermissions('admin.login_history.view', 'admin.users.update'))
+        ->get(route('admin.login-history.index'))
+        ->assertOk()
+        ->assertSee(route('admin.users.edit', $user), false);
+});
