@@ -17,6 +17,7 @@ use Closure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
@@ -102,7 +103,7 @@ class Index extends Component
     }
 
     /**
-     * @param  Builder<*>  $query
+     * @param  Builder<Lead>  $query
      */
     protected function applyFilters(Builder $query): void
     {
@@ -202,7 +203,7 @@ class Index extends Component
     /**
      * Lead count and Σ expected value per open status.
      *
-     * @return Collection<int|string, object{status_id: int, lead_count: int, value_total: string|float|null}>
+     * @return Collection<int|string, \stdClass>
      */
     private function statusTotals(): Collection
     {
@@ -215,7 +216,7 @@ class Index extends Component
     /**
      * Open lead counts per status for the mobile chip bar.
      *
-     * @return array<int, int>
+     * @return array<int|string, int>
      */
     public function statusCounts(): array
     {
@@ -226,14 +227,14 @@ class Index extends Component
      * Kanban columns: open statuses in order, each with its cards, count and Σ expected value
      * (docs/03 §5.1). The status filter is ignored here; every other filter applies.
      *
-     * @return list<array{id: int, code: string, name: string, color: ?string, count: int, total: string, leads: Collection<int, Lead>}>
+     * @return list<array{id: int, code: string, name: string, color: ?string, count: int, total: string, leads: EloquentCollection<int, Lead>}>
      */
     public function kanbanColumns(): array
     {
         $base = $this->pipelineQuery();
         $totals = $this->statusTotals();
 
-        return LeadStatus::query()->active()->open()->ordered()->get()->map(fn (LeadStatus $status): array => [
+        return array_values(LeadStatus::query()->active()->open()->ordered()->get()->map(fn (LeadStatus $status): array => [
             'id' => $status->id,
             'code' => $status->code,
             'name' => $status->name,
@@ -241,7 +242,7 @@ class Index extends Component
             'count' => (int) ($totals[$status->id]->lead_count ?? 0),
             'total' => number_format((float) ($totals[$status->id]->value_total ?? 0), 2, '.', ''),
             'leads' => (clone $base)->where('leads.lead_status_id', $status->id)->limit(self::KANBAN_CARDS_PER_COLUMN)->get(),
-        ])->values()->all();
+        ])->values()->all());
     }
 
     public function moveLead(string $leadId, int $position, string $statusId, ChangeLeadStatus $changeLeadStatus): void
