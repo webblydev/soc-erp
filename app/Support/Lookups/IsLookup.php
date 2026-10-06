@@ -3,12 +3,15 @@
 namespace App\Support\Lookups;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Shared behaviour for [LOOKUP] tables (docs/00 §4.2).
+ * Shared behaviour for [LOOKUP] tables (docs/00 §4.2). Deleted rows are soft-deleted.
  */
 trait IsLookup
 {
+    use SoftDeletes;
+
     public function initializeIsLookup(): void
     {
         $this->mergeCasts([
