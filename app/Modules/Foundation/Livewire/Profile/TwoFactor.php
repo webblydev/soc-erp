@@ -50,6 +50,9 @@ class TwoFactor extends Component
 
     public function regenerateRecoveryCodes(GenerateNewRecoveryCodes $generate): void
     {
+        $this->validate(['current_password' => ['required', 'string', 'current_password']]);
+        $this->reset('current_password');
+
         $generate($this->user());
         $this->showingRecoveryCodes = true;
     }
