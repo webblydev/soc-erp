@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\CompanyProfile;
 use App\Modules\Foundation\Models\Currency;
+use App\Modules\Foundation\Models\DocumentType;
 use App\Modules\Foundation\Models\Location;
 use App\Modules\Foundation\Models\LocationLevel;
 use App\Modules\Foundation\Models\NumberSequence;
@@ -76,6 +77,7 @@ class AppServiceProvider extends ServiceProvider
             'location_level' => LocationLevel::class,
             'number_sequence' => NumberSequence::class,
             'number_sequence_format' => NumberSequenceFormat::class,
+            'document_type' => DocumentType::class,
         ]);
     }
 }
