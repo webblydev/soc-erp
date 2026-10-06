@@ -2,6 +2,7 @@
 
 namespace App\Modules\Foundation\Livewire\Profile;
 
+use App\Http\Middleware\HandleImpersonation;
 use App\Models\User;
 use App\Modules\Foundation\Actions\ChangePassword;
 use App\Modules\Foundation\Actions\SaveNotificationPreferences;
@@ -75,6 +76,8 @@ class Edit extends Component
 
     public function savePassword(ChangePassword $changePassword): void
     {
+        abort_if(HandleImpersonation::isActive(), 403);
+
         $this->validate([
             'current_password' => ['required', 'string', 'current_password'],
             'password' => ['required', 'string', 'confirmed', 'different:current_password', Password::default()],
@@ -112,13 +115,22 @@ class Edit extends Component
     }
 
     /**
+     * The Password and Two-factor tabs are hidden while impersonating, so the impersonator
+     * cannot change the target's credentials.
+     *
      * @return list<string>
      */
     private function availableTabs(): array
     {
+        $impersonating = HandleImpersonation::isActive();
+
         return array_values(array_filter(
             self::TABS,
-            fn (string $tab): bool => $tab !== 'two-factor' || Features::enabled(Features::twoFactorAuthentication()),
+            fn (string $tab): bool => match ($tab) {
+                'password' => ! $impersonating,
+                'two-factor' => ! $impersonating && Features::enabled(Features::twoFactorAuthentication()),
+                default => true,
+            },
         ));
     }
 
