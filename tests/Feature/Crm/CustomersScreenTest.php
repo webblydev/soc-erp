@@ -5,6 +5,7 @@ use App\Modules\Crm\Livewire\Customers\Form;
 use App\Modules\Crm\Livewire\Customers\Index;
 use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\CustomerType;
+use App\Modules\Crm\Models\Lead;
 use App\Modules\Foundation\Models\Location;
 use App\Modules\Foundation\Models\LocationLevel;
 use Illuminate\Database\Eloquent\Model;
@@ -101,4 +102,21 @@ test('finance fields are read-only without update_finance', function () {
     Livewire::actingAs(userWithPermissions('crm.customers.view_all', 'crm.customers.update'))->test(Form::class, ['customer' => $customer])
         ->assertSet('canEditFinance', false)
         ->assertSee(__('Only finance users can change these.'));
+});
+
+test('bulk delete skips customers converted from a lead and customers the user cannot see', function () {
+    $actor = userWithPermissions('crm.customers.view_own', 'crm.customers.delete');
+    $plain = Customer::factory()->managedBy($actor)->create();
+    $converted = Customer::factory()->managedBy($actor)->create();
+    Lead::factory()->converted($converted)->create();
+    $hidden = Customer::factory()->create();
+
+    Livewire::actingAs($actor)->test(Index::class)
+        ->set('selected', [(string) $plain->id, (string) $converted->id, (string) $hidden->id])
+        ->call('deleteSelected')
+        ->assertDispatched('toast', type: 'warning', description: '1 deleted, 2 skipped. Customers converted from a lead cannot be deleted.');
+
+    expect($plain->fresh()->trashed())->toBeTrue()
+        ->and($converted->fresh()->trashed())->toBeFalse()
+        ->and($hidden->fresh()->trashed())->toBeFalse();
 });
