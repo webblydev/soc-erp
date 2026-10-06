@@ -77,6 +77,8 @@
             @endcanany
         @endif
 
+        <x-shell.confirm-action />
+
         @persist('toast')
             <x-ui.sonner />
         @endpersist
