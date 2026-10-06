@@ -5,6 +5,7 @@ namespace App\Modules\Foundation\Actions;
 use App\Models\User;
 use App\Modules\Foundation\Concerns\ValidatesUserInput;
 use App\Modules\Foundation\Models\Role;
+use App\Modules\Foundation\Notifications\PasswordResetByAdmin;
 use App\Modules\Foundation\Services\PermissionRegistrar;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +14,8 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Admin edit of an account. A username change after first login is allowed for admins and
- * audited by the Auditable observer (FD-BR-01). Setting a password forces a change at next login.
+ * audited by the Auditable observer (FD-BR-01). Setting a password forces a change at next login
+ * and sends user.password_reset to the user.
  */
 class UpdateUser
 {
@@ -37,7 +39,9 @@ class UpdateUser
         $data = Validator::make($this->prepareUserInput($input), $this->userRules($user))->validate();
         $active = (bool) ($data['is_active'] ?? $user->is_active);
 
-        return DB::transaction(function () use ($user, $data, $active, $actor): User {
+        $passwordSet = filled($data['password'] ?? null);
+
+        $user = DB::transaction(function () use ($user, $data, $active, $actor): User {
             $this->ensureNotLastSuperAdmin->lockActiveSuperAdmins();
             $this->ensureNotLastSuperAdmin->ensureActorMayChange($user, $actor);
             $this->ensureActorOutranks($user, $actor);
@@ -60,6 +64,12 @@ class UpdateUser
 
             return $user;
         });
+
+        if ($passwordSet && $user->id !== $actor->id) {
+            $user->notify(new PasswordResetByAdmin);
+        }
+
+        return $user;
     }
 
     /**
