@@ -20,9 +20,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
-use Laravel\Fortify\Fortify;
-use Laravel\Fortify\TwoFactorAuthenticatable;
 
 /**
  * @property int $id
@@ -36,9 +33,6 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $avatar_path
  * @property bool $is_active
  * @property bool $must_change_password
- * @property string|null $two_factor_secret
- * @property string|null $two_factor_recovery_codes
- * @property Carbon|null $two_factor_confirmed_at
  * @property Carbon|null $last_login_at
  * @property string|null $last_login_ip
  * @property string|null $remember_token
@@ -49,11 +43,11 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $deleted_at
  */
 #[Fillable(['name', 'username', 'email', 'phone', 'password', 'employee_id', 'branch_id', 'avatar_path', 'is_active', 'must_change_password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements Collaborative
 {
     /** @use HasFactory<UserFactory> */
-    use Auditable, HasAttachments, HasFactory, HasNotes, HasRoles, Notifiable, SoftDeletes, TracksAuthors, TwoFactorAuthenticatable;
+    use Auditable, HasAttachments, HasFactory, HasNotes, HasRoles, Notifiable, SoftDeletes, TracksAuthors;
 
     /**
      * Get the attributes that should be cast.
@@ -66,7 +60,6 @@ class User extends Authenticatable implements Collaborative
             'password' => 'hashed',
             'is_active' => 'boolean',
             'must_change_password' => 'boolean',
-            'two_factor_confirmed_at' => 'datetime',
             'last_login_at' => 'datetime',
         ];
     }
@@ -79,7 +72,7 @@ class User extends Authenticatable implements Collaborative
     public function auditExcludedAttributes(): array
     {
         return [
-            'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes',
+            'password', 'remember_token',
             'last_login_at', 'last_login_ip', 'created_at', 'updated_at', 'deleted_at',
             'created_by', 'updated_by',
         ];
@@ -123,19 +116,6 @@ class User extends Authenticatable implements Collaborative
         }
 
         return (string) preg_replace('/^\+?880(?=1)/', '0', $digits);
-    }
-
-    /**
-     * Label the authenticator entry with the username. Fortify's default reads the `login`
-     * form field name as a column, which does not exist (Fortify::username() is 'login').
-     */
-    public function twoFactorQrCodeUrl(): string
-    {
-        return app(TwoFactorAuthenticationProvider::class)->qrCodeUrl(
-            (string) config('app.name'),
-            $this->username,
-            Fortify::currentEncrypter()->decrypt($this->two_factor_secret),
-        );
     }
 
     /**
