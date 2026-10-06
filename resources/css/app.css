@@ -1,5 +1,8 @@
 @import "./blatui.css";
 
+/* Styles for content rendered inside the detail modal (create/edit forms opened there). */
+@custom-variant in-modal (&:where([data-detail-modal-body] *));
+
 /* -------------------------------------------------------------------------- */
 /*  No page ever scrolls sideways. Wide content (data tables, chip and tab     */
 /*  strips) scrolls inside its own container instead. Long unbroken strings    */
