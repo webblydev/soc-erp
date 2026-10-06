@@ -42,7 +42,7 @@ class UploadAttachment
 
         /** @var array{document_type_id?: int|null, title?: string|null} $data */
         $data = Validator::make($input, [
-            'document_type_id' => ['nullable', 'integer', $replaces === null ? Rule::exists('document_types', 'id')->where('is_active', true) : Rule::exists('document_types', 'id')],
+            'document_type_id' => ['nullable', 'integer', $replaces === null ? Rule::exists('document_types', 'id')->where('is_active', true)->whereNull('deleted_at') : Rule::exists('document_types', 'id')],
             'title' => ['nullable', 'string', 'max:200'],
         ])->validate();
 
