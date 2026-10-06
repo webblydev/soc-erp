@@ -59,9 +59,9 @@
         <x-ui.alert tone="success">
             <x-lucide-badge-check />
             <x-ui.alert-title>{{ __('Converted to customer :name on :date', ['name' => $lead->convertedCustomer->name, 'date' => $lead->converted_at?->format('d-M-Y')]) }}</x-ui.alert-title>
-            @if ($user->can('update', $lead->convertedCustomer))
+            @if ($user->can('view', $lead->convertedCustomer))
                 <x-ui.alert-description>
-                    <a href="{{ route('crm.customers.edit', $lead->convertedCustomer) }}" wire:navigate class="font-medium underline">{{ $lead->convertedCustomer->customer_number }}</a>
+                    <a href="{{ route('crm.customers.show', $lead->convertedCustomer) }}" wire:navigate class="font-medium underline">{{ $lead->convertedCustomer->customer_number }}</a>
                 </x-ui.alert-description>
             @endif
         </x-ui.alert>
