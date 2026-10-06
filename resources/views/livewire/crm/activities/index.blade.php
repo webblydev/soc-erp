@@ -82,10 +82,10 @@
         </x-shell.sheet>
     @endif
 
-    <x-shell.sheet id="activity-delete" :title="__('Delete activity?')" :description="__('The activity is removed from the timeline.')">
+    <x-shell.confirm id="activity-delete" :title="__('Delete activity?')" :description="__('The activity is removed from the timeline.')">
         <x-slot:footer>
             <x-ui.button variant="outline" x-on:click="$dispatch('close-sheet-activity-delete')">{{ __('Cancel') }}</x-ui.button>
             <x-ui.button variant="destructive" wire:click="deleteActivity">{{ __('Delete') }}</x-ui.button>
         </x-slot:footer>
-    </x-shell.sheet>
+    </x-shell.confirm>
 </div>
