@@ -9,7 +9,7 @@
 return [
     'permissions' => [
         'hrm' => [
-            'employees' => ['view_basic', 'view_full', 'create', 'update', 'deactivate', 'export', 'view_salary', 'update_salary'],
+            'employees' => ['view_basic', 'view_full', 'create', 'update', 'deactivate', 'delete', 'export', 'view_salary', 'update_salary'],
             'documents' => ['view', 'manage'],
             'history' => ['manage'],
             'masters' => ['view', 'create', 'update', 'deactivate'],
