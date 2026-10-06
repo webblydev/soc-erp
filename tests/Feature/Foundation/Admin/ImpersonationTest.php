@@ -6,6 +6,8 @@ use App\Modules\Foundation\Actions\StartImpersonation;
 use App\Modules\Foundation\Livewire\Admin\Users\Index;
 use App\Modules\Foundation\Models\AuditLog;
 use App\Modules\Foundation\Models\LoginHistory;
+use App\Support\Facades\Settings;
+use Database\Seeders\Foundation\SettingSeeder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Livewire;
 
@@ -33,7 +35,8 @@ test('starting switches the user, audits both ids and writes no login rows', fun
         ->and(session(HandleImpersonation::SESSION_KEY))->toBe($this->admin->id)
         ->and(AuditLog::query()->where('event', 'impersonation_started')->first()?->new_values)->toBe(['impersonator_id' => $this->admin->id, 'user_id' => $this->target->id])
         ->and(AuditLog::query()->where('event', 'login')->where('auditable_id', $this->target->id)->exists())->toBeFalse()
-        ->and(LoginHistory::query()->count())->toBe(0);
+        ->and(LoginHistory::query()->count())->toBe(0)
+        ->and($this->target->fresh()->last_login_at)->toBeNull();
 });
 
 test('the banner shows and the forced password change is skipped while impersonating', function () {
@@ -93,4 +96,51 @@ test('users without the impersonate permission cannot call impersonate', functio
         ->test(Index::class)
         ->call('impersonate', $this->target->id)
         ->assertForbidden();
+});
+
+test('role admin is blocked while impersonating', function () {
+    createPermissions('admin.roles.view');
+    $this->target->syncDirectPermissions(['admin.roles.view']);
+
+    $this->actingAs($this->target)
+        ->withSession([HandleImpersonation::SESSION_KEY => $this->admin->id])
+        ->get(route('admin.roles.index'))
+        ->assertForbidden();
+});
+
+test('the impersonation guard also applies to Livewire requests', function () {
+    expect(Livewire::getPersistentMiddleware())->toContain(HandleImpersonation::class);
+});
+
+test('forced 2FA setup is skipped only while impersonating', function () {
+    $this->seed(SettingSeeder::class);
+    Settings::set('general.require_2fa_roles', ['finance_manager']);
+    ensureRole('finance_manager');
+    $this->target->syncRoles(['finance_manager']);
+
+    $this->actingAs($this->target)
+        ->get(route('dashboard'))
+        ->assertRedirect(route('two-factor.setup'));
+
+    $this->actingAs($this->target)
+        ->withSession([HandleImpersonation::SESSION_KEY => $this->admin->id])
+        ->get(route('dashboard'))
+        ->assertOk();
+});
+
+test('stopping writes no login audit row for the impersonator', function () {
+    $this->actingAs($this->target)
+        ->withSession([HandleImpersonation::SESSION_KEY => $this->admin->id])
+        ->post(route('impersonation.stop'));
+
+    expect(AuditLog::query()->where('event', 'login')->where('auditable_id', $this->admin->id)->doesntExist())->toBeTrue();
+});
+
+test('a second impersonation is refused while one is active', function () {
+    $this->actingAs($this->admin);
+    session()->put(HandleImpersonation::SESSION_KEY, $this->admin->id);
+    $other = User::factory()->create();
+
+    expectValidationError(fn () => app(StartImpersonation::class)->handle($this->admin, $other), 'user');
+    expect(Auth::id())->toBe($this->admin->id);
 });
