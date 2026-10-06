@@ -62,3 +62,12 @@ test('notification preferences are saved from the profile', function () {
 
     expect(NotificationPreference::matrixFor($user)['security.login_new_ip']['mail'])->toBeFalse();
 });
+
+test('tampered notification preference input is skipped', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)->test(Edit::class)
+        ->set('notifications.security__login_new_ip', 'junk')
+        ->call('saveNotifications')
+        ->assertHasNoErrors();
+});
