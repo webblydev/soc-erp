@@ -31,9 +31,10 @@ class FindDuplicates
         /** @var list<string> $fields */
         $fields = (array) Settings::get('crm.duplicate_check_fields', ['phone', 'whatsapp', 'email']);
 
-        $phones = array_intersect($fields, ['phone', 'whatsapp']) === [] ? [] : collect(self::PHONE_INPUTS)
-            ->map(fn (string $key): ?string => Phone::normalise(is_string($values[$key] ?? null) ? $values[$key] : null))
-            ->filter()->unique()->values()->all();
+        $phones = array_intersect($fields, ['phone', 'whatsapp']) === [] ? [] : array_values(array_unique(array_filter(array_map(
+            fn (string $key): ?string => Phone::normalise(is_string($values[$key] ?? null) ? $values[$key] : null),
+            self::PHONE_INPUTS,
+        ))));
 
         $email = in_array('email', $fields, true) && is_string($values['email'] ?? null) && trim($values['email']) !== ''
             ? Str::lower(trim($values['email']))
