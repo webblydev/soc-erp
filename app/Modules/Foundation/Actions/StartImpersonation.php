@@ -35,6 +35,7 @@ class StartImpersonation
         });
 
         session()->put(HandleImpersonation::SESSION_KEY, $impersonator->id);
+        session()->forget('auth.password_confirmed_at');
         Auth::guard('web')->login($target);
     }
 }
