@@ -21,15 +21,27 @@ use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\Currency;
 use App\Modules\Foundation\Models\DocumentType;
 use App\Modules\Foundation\Models\LocationLevel;
+use App\Modules\Hrm\Models\BloodGroup;
+use App\Modules\Hrm\Models\Department;
+use App\Modules\Hrm\Models\Designation;
+use App\Modules\Hrm\Models\EmployeeDocumentType;
+use App\Modules\Hrm\Models\EmployeeStatus;
+use App\Modules\Hrm\Models\EmployeeType;
+use App\Modules\Hrm\Models\EmploymentEventType;
+use App\Modules\Hrm\Models\ExitReason;
+use App\Modules\Hrm\Models\Gender;
+use App\Modules\Hrm\Models\MaritalStatus;
 
 /*
 | Registry of lookup tables edited through the generic Master Data screen (docs/01 §5.8).
 | Each module appends its own tables. permission is a prefix: {prefix}.view|create|update|deactivate.
-| extra_fields: column => [type (text|textarea|number|bool|list), label]. list is edited as
+| extra_fields: column => [type (text|textarea|number|bool|list|lookup|employee), label]. list is edited as
 | comma-separated text and stored as a JSON array of lowercase tokens; `in` names a config list
 | the tokens must come from. A lookup field stores an id from `table`. Any field may add `rules`
 | (extra Laravel rules), `unique` (unique in its table) and `uppercase` (stored upper-cased).
-| single_flags: bool columns only one row may hold.
+| An employee field stores an employee id; new values must be assignable employees (HR-BR-06).
+| single_flags: bool columns only one row may hold. tree: the parent column of a self-referencing
+| table; a row cannot be placed under itself or a descendant.
 */
 
 return [
@@ -42,6 +54,7 @@ return [
             'address' => ['type' => 'textarea', 'label' => 'Address'],
             'phone' => ['type' => 'text', 'label' => 'Phone'],
             'is_head_office' => ['type' => 'bool', 'label' => 'Head office'],
+            'manager_employee_id' => ['type' => 'employee', 'label' => 'Manager'],
         ],
         'single_flags' => ['is_head_office'],
     ],
@@ -82,6 +95,7 @@ return [
         'extra_fields' => [
             'project_prefix' => ['type' => 'text', 'label' => 'Project number prefix', 'required' => true, 'uppercase' => true, 'unique' => true, 'rules' => ['max:30', 'regex:/^[A-Z0-9&-]+$/']],
             'is_internal' => ['type' => 'bool', 'label' => 'Internal (not sellable)'],
+            'manager_employee_id' => ['type' => 'employee', 'label' => 'Manager'],
         ],
     ],
     'service_categories' => ['label' => 'Service categories', 'module' => 'catalog', 'model' => ServiceCategory::class, 'permission' => 'catalog.master_data', 'extra_fields' => []],
@@ -125,4 +139,29 @@ return [
         'label' => 'Payment terms', 'module' => 'crm', 'model' => PaymentTerm::class, 'permission' => 'crm.master_data',
         'extra_fields' => ['days' => ['type' => 'number', 'label' => 'Days', 'required' => true, 'rules' => ['max:365']]],
     ],
+    'departments' => [
+        'label' => 'Departments', 'module' => 'hrm', 'model' => Department::class, 'permission' => 'hrm.masters', 'tree' => 'parent_id',
+        'extra_fields' => [
+            'parent_id' => ['type' => 'lookup', 'table' => 'departments', 'label' => 'Parent department'],
+            'head_employee_id' => ['type' => 'employee', 'label' => 'Head'],
+        ],
+    ],
+    'designations' => [
+        'label' => 'Designations', 'module' => 'hrm', 'model' => Designation::class, 'permission' => 'hrm.masters',
+        'extra_fields' => [
+            'grade' => ['type' => 'text', 'label' => 'Grade', 'rules' => ['max:20']],
+            'department_id' => ['type' => 'lookup', 'table' => 'departments', 'label' => 'Department'],
+        ],
+    ],
+    'employee_types' => ['label' => 'Employee types', 'module' => 'hrm', 'model' => EmployeeType::class, 'permission' => 'hrm.masters', 'extra_fields' => []],
+    'employee_statuses' => ['label' => 'Employee statuses', 'module' => 'hrm', 'model' => EmployeeStatus::class, 'permission' => 'hrm.masters', 'extra_fields' => []],
+    'genders' => ['label' => 'Genders', 'module' => 'hrm', 'model' => Gender::class, 'permission' => 'hrm.masters', 'extra_fields' => []],
+    'marital_statuses' => ['label' => 'Marital statuses', 'module' => 'hrm', 'model' => MaritalStatus::class, 'permission' => 'hrm.masters', 'extra_fields' => []],
+    'blood_groups' => ['label' => 'Blood groups', 'module' => 'hrm', 'model' => BloodGroup::class, 'permission' => 'hrm.masters', 'extra_fields' => []],
+    'employee_document_types' => [
+        'label' => 'Employee document types', 'module' => 'hrm', 'model' => EmployeeDocumentType::class, 'permission' => 'hrm.masters',
+        'extra_fields' => ['has_expiry' => ['type' => 'bool', 'label' => 'Has an expiry date']],
+    ],
+    'employment_event_types' => ['label' => 'Employment event types', 'module' => 'hrm', 'model' => EmploymentEventType::class, 'permission' => 'hrm.masters', 'extra_fields' => []],
+    'exit_reasons' => ['label' => 'Exit reasons', 'module' => 'hrm', 'model' => ExitReason::class, 'permission' => 'hrm.masters', 'extra_fields' => []],
 ];
