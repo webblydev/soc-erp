@@ -54,9 +54,9 @@ test('seeded system statuses can be saved unchanged from the master data screen'
         ->assertHasNoErrors();
 })->with(['MEETING', 'LOST']);
 
-test('the crm setup tree shows for master data viewers', function () {
+test('the crm master data tree shows for master data viewers', function () {
     $groups = app(Navigation::class)->for(userWithPermissions('crm.master_data.view'));
     $crm = collect($groups)->firstWhere('key', 'crm');
 
-    expect(collect($crm['items'])->firstWhere('label', 'CRM setup')['children'])->toHaveCount(10);
+    expect(collect($crm['items'])->firstWhere('label', 'Master data')['children'])->toHaveCount(10);
 });
