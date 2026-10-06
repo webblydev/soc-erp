@@ -85,3 +85,12 @@ test('the change sheet renders booleans as true and false', function () {
         ->call('show', $entry->id)
         ->assertSeeInOrder(['is_active', 'true', 'false']);
 });
+
+test('entries written while impersonating show the impersonator', function () {
+    $admin = User::factory()->create(['username' => 'bossadmin']);
+    AuditLog::query()->latest('id')->first()->update(['impersonator_id' => $admin->id]);
+
+    Livewire::actingAs(userWithPermissions('admin.audit.view'))
+        ->test(AuditLogScreen::class)
+        ->assertSee('via bossadmin');
+});
