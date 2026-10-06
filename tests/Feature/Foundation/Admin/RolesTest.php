@@ -7,6 +7,7 @@ use App\Modules\Foundation\Livewire\Admin\Roles\Form;
 use App\Modules\Foundation\Livewire\Admin\Roles\Index;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Foundation\Services\PermissionRegistrar;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -70,11 +71,13 @@ test('the roles list component refuses users without admin.roles.view', function
 test('deleting from the list needs admin.roles.delete even when called directly', function () {
     $role = ensureRole('temp');
 
-    Livewire::actingAs(userWithPermissions('admin.roles.view'))
-        ->test(Index::class)
-        ->set('deletingRoleId', $role->id)
-        ->call('delete')
-        ->assertForbidden();
+    $admin = userWithPermissions('admin.roles.view', 'admin.roles.delete');
+    $component = Livewire::actingAs($admin)->test(Index::class)->call('confirmDelete', $role->id);
+
+    $admin->syncDirectPermissions(['admin.roles.view']);
+    app(PermissionRegistrar::class)->forget($admin);
+
+    $component->call('delete')->assertForbidden();
 
     expect(Role::query()->where('code', 'temp')->exists())->toBeTrue();
 });
@@ -183,3 +186,7 @@ test('a super admin can put any permission into a role', function () {
 
     expect($role->permissions()->pluck('name')->all())->toBe(['sales.quotes.approve']);
 });
+
+test('the role being deleted cannot be chosen from the client', function () {
+    Livewire::test(Index::class)->set('deletingRoleId', ensureRole('auditor')->id);
+})->throws(CannotUpdateLockedPropertyException::class);
