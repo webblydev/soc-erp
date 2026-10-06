@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Modules\Hrm\Livewire\Employees\Index;
 use App\Modules\Hrm\Models\Department;
 use App\Modules\Hrm\Models\Employee;
@@ -63,4 +64,25 @@ test('export columns follow field visibility', function () {
 test('the HRM nav shows Employees for view_basic', function () {
     $this->actingAs(userWithPermissions('hrm.employees.view_basic'));
     $this->get(route('hrm.employees.index'))->assertSee(route('hrm.employees.index'));
+});
+
+test('bulk delete skips employees linked to a login or managing others', function () {
+    $linked = Employee::factory()->linkedTo(User::factory()->create())->create();
+    $manager = Employee::factory()->create();
+    Employee::factory()->create(['manager_id' => $manager->id]);
+    $plain = Employee::factory()->create();
+
+    Livewire::actingAs(userWithPermissions('hrm.employees.view_basic'))->test(Index::class)
+        ->set('selected', [(string) $plain->id])
+        ->call('deleteSelected')
+        ->assertForbidden();
+
+    Livewire::actingAs(userWithPermissions('hrm.employees.view_basic', 'hrm.employees.delete'))->test(Index::class)
+        ->set('selected', [(string) $linked->id, (string) $manager->id, (string) $plain->id])
+        ->call('deleteSelected')
+        ->assertDispatched('toast', type: 'warning');
+
+    expect($plain->fresh()->trashed())->toBeTrue()
+        ->and($linked->fresh()->trashed())->toBeFalse()
+        ->and($manager->fresh()->trashed())->toBeFalse();
 });
