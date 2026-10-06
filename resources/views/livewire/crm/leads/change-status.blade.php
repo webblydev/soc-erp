@@ -21,7 +21,7 @@
                         <x-lucide-calendar-clock />
                         <x-ui.alert-title>{{ __('This status needs a follow-up') }}</x-ui.alert-title>
                     </x-ui.alert>
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <x-ui.field>
                             <x-ui.field-label for="cs-follow-type">{{ __('Follow-up type') }}</x-ui.field-label>
                             <x-lookup-select table="activity_types" id="cs-follow-type" wire:model="followUpTypeId" :placeholder="__('Choose…')" />
