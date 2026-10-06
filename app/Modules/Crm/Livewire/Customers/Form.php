@@ -8,6 +8,7 @@ use App\Modules\Crm\Actions\SaveCustomer;
 use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\CustomerContact;
 use App\Modules\Crm\Models\CustomerType;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
@@ -17,6 +18,8 @@ use Livewire\Component;
  */
 class Form extends Component
 {
+    use SavesFromDetailModal;
+
     public ?Customer $customer = null;
 
     public int|string|null $customer_type_id = null;
@@ -134,9 +137,7 @@ class Form extends Component
             'duplicate_reason' => $this->duplicate_reason !== '' ? $this->duplicate_reason : null,
         ], $this->customer);
 
-        session()->flash('success', $this->customer === null ? __('Customer created.') : __('Customer saved.'));
-
-        $this->redirectRoute('crm.customers.show', $customer, navigate: true);
+        $this->redirectAfterSave($this->customer === null ? __('Customer created.') : __('Customer saved.'), 'crm.customers.show', $customer);
     }
 
     public function render(): View
