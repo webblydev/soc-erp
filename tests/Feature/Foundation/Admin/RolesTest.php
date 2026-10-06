@@ -190,3 +190,12 @@ test('a super admin can put any permission into a role', function () {
 test('the role being deleted cannot be chosen from the client', function () {
     Livewire::test(Index::class)->set('deletingRoleId', ensureRole('auditor')->id);
 })->throws(CannotUpdateLockedPropertyException::class);
+
+test('the roles table shows edit and delete in its actions column', function () {
+    $role = ensureRole('auditor');
+
+    Livewire::test(Index::class)
+        ->assertSeeHtml('data-test="row-actions"')
+        ->assertSeeHtml('href="'.route('admin.roles.edit', $role).'"')
+        ->assertSeeHtml('wire:click="confirmDelete('.$role->id.')"');
+});
