@@ -71,3 +71,13 @@ test('a basic viewer cannot download an employee document file', function () {
     $this->actingAs(userWithPermissions('hrm.employees.view_basic'))->get($url)->assertForbidden();
     $this->actingAs($this->actor)->get($url)->assertOk();
 });
+
+test('deleting a document soft-deletes it and its file', function () {
+    $document = app(SaveEmployeeDocument::class)->handle($this->actor, $this->employee, ['employee_document_type_id' => EmployeeDocumentType::idFor('CV')], UploadedFile::fake()->create('cv.pdf', 50, 'application/pdf'));
+    $attachment = $document->attachment;
+
+    app(DeleteEmployeeDocument::class)->handle($this->actor, $document);
+
+    $this->assertSoftDeleted($document);
+    $this->assertSoftDeleted($attachment);
+});
