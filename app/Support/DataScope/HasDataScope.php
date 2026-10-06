@@ -35,8 +35,10 @@ trait HasDataScope
             return;
         }
 
+        $isTeam = $user->hasPermission("{$resource}.view_team");
+
         $userIds = match (true) {
-            $user->hasPermission("{$resource}.view_team") => array_values(array_unique([$user->id, ...$this->dataScopeTeamUserIds($user)])),
+            $isTeam => array_values(array_unique([$user->id, ...$this->dataScopeTeamUserIds($user)])),
             $user->hasPermission("{$resource}.view_own") => [$user->id],
             default => [],
         };
@@ -47,10 +49,21 @@ trait HasDataScope
             return;
         }
 
-        $query->where(function (Builder $query) use ($userIds): void {
+        $query->where(function (Builder $query) use ($userIds, $isTeam, $user): void {
             foreach ($this->dataScopeOwnerColumns() as $column) {
                 $query->orWhereIn($this->qualifyColumn($column), $userIds);
             }
+
+            if ($isTeam) {
+                $this->dataScopeTeamExtra($query, $user);
+            }
         });
     }
+
+    /**
+     * Extra OR clauses for view_team (e.g. records filed under a team the user manages).
+     *
+     * @param  Builder<static>  $query
+     */
+    protected function dataScopeTeamExtra(Builder $query, User $user): void {}
 }
