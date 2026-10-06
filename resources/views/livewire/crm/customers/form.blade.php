@@ -24,7 +24,7 @@
         </x-slot:alerts>
 
         <x-shell.form-section :title="__('Identity')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="customer_type_id">{{ __('Customer type') }} *</x-ui.field-label>
                     <x-lookup-select table="customer_types" :include="$customer?->customer_type_id" :placeholder="__('Choose…')" id="customer_type_id" wire:model="customer_type_id" />
@@ -49,7 +49,7 @@
         </x-shell.form-section>
 
         <x-shell.form-section :title="__('Contact')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="phone">{{ __('Phone') }} *</x-ui.field-label>
                     <x-ui.input id="phone" type="tel" inputmode="tel" wire:model="phone" class="h-11 text-base tabular-nums md:h-9 md:text-sm" :aria-invalid="$errors->has('phone') ? 'true' : null" />
@@ -87,7 +87,7 @@
             @unless ($canEditFinance)
                 <p class="text-sm text-muted-foreground">{{ __('Only finance users can change these.') }}</p>
             @endunless
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="payment_term_id">{{ __('Payment term') }}</x-ui.field-label>
                     <x-lookup-select table="payment_terms" :include="$customer?->payment_term_id" :placeholder="__('None')" id="payment_term_id" wire:model="payment_term_id" :disabled="! $canEditFinance" />
@@ -123,7 +123,7 @@
 
             @forelse ($contacts as $i => $contact)
                 <x-ui.item variant="outline" class="flex-col items-stretch gap-3" wire:key="contact-{{ $i }}">
-                    <div class="grid gap-3 md:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                         <x-ui.field>
                             <x-ui.field-label for="contact-name-{{ $i }}">{{ __('Name') }} *</x-ui.field-label>
                             <x-ui.input id="contact-name-{{ $i }}" wire:model="contacts.{{ $i }}.name" class="h-11 text-base md:h-9 md:text-sm" />
