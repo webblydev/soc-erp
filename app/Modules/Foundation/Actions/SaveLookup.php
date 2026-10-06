@@ -3,10 +3,12 @@
 namespace App\Modules\Foundation\Actions;
 
 use App\Support\Lookups\LookupRegistry;
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -30,6 +32,7 @@ class SaveLookup
 
         $entry = $this->registry->get($table);
         $row ??= $this->registry->modelFor($table);
+        $input = $this->splitListFields($entry['extra_fields'], $input);
 
         $rules = [
             'code' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9_\-]+$/', Rule::unique($table, 'code')->ignore($row->getKey())],
@@ -46,8 +49,20 @@ class SaveLookup
                 'bool' => ['boolean'],
                 'number' => [$presence, 'integer', 'min:0', 'max:65535'],
                 'textarea' => [$presence, 'string', 'max:2000'],
+                'list' => [$presence, 'array'],
                 default => [$presence, 'string', 'max:255'],
             };
+
+            if ($definition['type'] === 'list' && isset($definition['in'])) {
+                $allowed = (array) config($definition['in']);
+                $rules[$field][] = function (string $attribute, mixed $value, Closure $fail) use ($allowed): void {
+                    $unknown = array_diff((array) $value, $allowed);
+
+                    if ($unknown !== []) {
+                        $fail(__('Not allowed: :values.', ['values' => implode(', ', $unknown)]));
+                    }
+                };
+            }
         }
 
         /** @var array<string, mixed> $data */
@@ -82,5 +97,30 @@ class SaveLookup
 
             return $row;
         });
+    }
+
+    /**
+     * Turn comma-separated text for `list` fields into lowercase tokens; an empty list is null.
+     *
+     * @param  array<string, array{type: string, label: string, required?: bool, in?: string}>  $fields
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    private function splitListFields(array $fields, array $input): array
+    {
+        foreach ($fields as $field => $definition) {
+            if ($definition['type'] !== 'list' || ! is_string($input[$field] ?? null)) {
+                continue;
+            }
+
+            $tokens = array_values(array_filter(array_map(
+                fn (string $token): string => Str::lower(trim($token)),
+                explode(',', $input[$field]),
+            ), fn (string $token): bool => $token !== ''));
+
+            $input[$field] = $tokens === [] ? null : $tokens;
+        }
+
+        return $input;
     }
 }
