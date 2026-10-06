@@ -12,7 +12,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
-use Laravel\Fortify\Features;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -23,7 +22,7 @@ class Edit extends Component
 {
     use WithFileUploads;
 
-    public const TABS = ['details', 'password', 'two-factor', 'notifications'];
+    public const TABS = ['details', 'password', 'notifications'];
 
     #[Url(except: 'details')]
     public string $tab = 'details';
@@ -115,7 +114,7 @@ class Edit extends Component
     }
 
     /**
-     * The Password and Two-factor tabs are hidden while impersonating, so the impersonator
+     * The Password tab is hidden while impersonating, so the impersonator
      * cannot change the target's credentials.
      *
      * @return list<string>
@@ -128,7 +127,6 @@ class Edit extends Component
             self::TABS,
             fn (string $tab): bool => match ($tab) {
                 'password' => ! $impersonating,
-                'two-factor' => ! $impersonating && Features::enabled(Features::twoFactorAuthentication()),
                 default => true,
             },
         ));
