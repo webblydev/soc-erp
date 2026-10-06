@@ -1,7 +1,4 @@
-{{-- One entry in a row's ⋮ menu. A link navigates with wire:navigate; other attributes (wire:click, wire:confirm …) go to the item. --}}
+{{-- One icon action in a row's Action cell; the slot text is its tooltip and accessible name. Other attributes (wire:click, wire:confirm …) go to the button. --}}
 @props(['icon', 'href' => null, 'destructive' => false])
 
-<x-ui.dropdown-menu-item :href="$href" :variant="$destructive ? 'destructive' : 'default'" {{ $attributes->merge($href ? ['wire:navigate' => true] : []) }}>
-    <x-dynamic-component :component="'lucide-'.$icon" />
-    {{ $slot }}
-</x-ui.dropdown-menu-item>
+<x-shell.row-action :icon="$icon" :href="$href" :destructive="$destructive" :label="html_entity_decode(trim(strip_tags((string) $slot)), ENT_QUOTES)" {{ $attributes }} />
