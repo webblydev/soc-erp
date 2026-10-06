@@ -14,6 +14,7 @@ class CatalogSeeder extends Seeder
             PricingBasisSeeder::class,
             UnitSeeder::class,
             ServiceSeeder::class,
+            MaterialSeeder::class,
         ]);
     }
 }
