@@ -4,6 +4,7 @@ use App\Http\Middleware\HandleImpersonation;
 use App\Models\User;
 use App\Modules\Foundation\Actions\StartImpersonation;
 use App\Modules\Foundation\Livewire\Admin\Users\Index;
+use App\Modules\Foundation\Livewire\Profile\Edit;
 use App\Modules\Foundation\Models\AuditLog;
 use App\Modules\Foundation\Models\LoginHistory;
 use App\Support\Facades\Settings;
@@ -143,4 +144,46 @@ test('a second impersonation is refused while one is active', function () {
 
     expectValidationError(fn () => app(StartImpersonation::class)->handle($this->admin, $other), 'user');
     expect(Auth::id())->toBe($this->admin->id);
+});
+
+test('impersonating drops password confirmation and blocks Fortify 2FA routes', function () {
+    $target = User::factory()->withTwoFactor()->create();
+    $this->actingAs($this->admin);
+    session()->put('auth.password_confirmed_at', time());
+
+    app(StartImpersonation::class)->handle($this->admin, $target);
+
+    expect(session()->has('auth.password_confirmed_at'))->toBeFalse();
+
+    $this->get('/user/two-factor-recovery-codes')->assertForbidden();
+    $this->get(route('two-factor.secret-key'))->assertForbidden();
+    $this->get(route('password.confirmation'))->assertForbidden();
+});
+
+test('stopping drops password confirmation', function () {
+    $this->actingAs($this->target)
+        ->withSession([HandleImpersonation::SESSION_KEY => $this->admin->id, 'auth.password_confirmed_at' => time()])
+        ->post(route('impersonation.stop'));
+
+    expect(session()->has('auth.password_confirmed_at'))->toBeFalse();
+});
+
+test('the profile hides the password and two-factor tabs while impersonating', function () {
+    $this->actingAs($this->target)
+        ->withSession([HandleImpersonation::SESSION_KEY => $this->admin->id]);
+
+    Livewire::withQueryParams(['tab' => 'two-factor'])
+        ->test(Edit::class)
+        ->assertSet('tab', 'details')
+        ->assertDontSee('Two-factor')
+        ->call('savePassword')
+        ->assertForbidden();
+});
+
+test('the profile still shows the two-factor tab when not impersonating', function () {
+    Livewire::actingAs($this->target)
+        ->withQueryParams(['tab' => 'two-factor'])
+        ->test(Edit::class)
+        ->assertSet('tab', 'two-factor')
+        ->assertSee('Two-factor');
 });
