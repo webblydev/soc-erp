@@ -29,7 +29,7 @@ class AdminUserSeeder extends Seeder
             'email' => $admin['email'] ?: null,
             'password' => $admin['password'],
             'is_active' => true,
-            'must_change_password' => true,
+            'must_change_password' => false,
             'branch_id' => Branch::query()->where('code', 'HO')->value('id'),
         ]);
 
