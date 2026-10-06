@@ -1,11 +1,15 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Unit;
+use App\Modules\Catalog\Models\UnitKind;
 use App\Modules\Foundation\Livewire\Admin\MasterData;
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\Currency;
+use App\Support\Exports\QueryExport;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
+use Maatwebsite\Excel\Facades\Excel;
 
 test('master data needs a view permission for at least one table', function () {
     $this->actingAs(User::factory()->create())->get(route('admin.master-data.index'))->assertForbidden();
@@ -155,4 +159,88 @@ test('the master data index lists the tables the user may open', function () {
         ->get(route('admin.master-data.index'))
         ->assertSee(route('admin.master-data.show', 'branches'), false)
         ->assertDontSee(route('admin.master-data.show', 'currencies'), false);
+});
+
+test('a table lists its rows in the ERP grid with extra fields resolved to names', function () {
+    $kind = UnitKind::factory()->create(['name' => 'Area kind']);
+    Unit::factory()->create(['code' => 'SQFT', 'name' => 'Square foot', 'symbol' => 'sft', 'unit_kind_id' => $kind->id]);
+
+    Livewire::actingAs(userWithPermissions('catalog.units.view'))
+        ->test(MasterData::class, ['table' => 'units'])
+        ->assertSee('data-variant="bordered"', false)
+        ->assertSee('Square foot')
+        ->assertSee('sft')
+        ->assertSee('Area kind');
+});
+
+test('search and the status filter narrow the rows and turn off drag reordering', function () {
+    Branch::factory()->create(['name' => 'Chattogram']);
+    Branch::factory()->create(['name' => 'Sylhet', 'is_active' => false]);
+
+    $component = Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.update'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->assertSee('wire:sort="sortOnPage"', false);
+
+    $component->set('search', 'chatto')->assertSee('Chattogram')->assertDontSee('Sylhet')
+        ->assertDontSee('wire:sort="sortOnPage"', false);
+
+    $component->set('search', '')->set('filters.active', '0')->assertSee('Sylhet')->assertDontSee('Chattogram');
+});
+
+test('dragging on a later desktop page reorders by the absolute position', function () {
+    $branches = collect(range(1, 26))->map(fn (int $order) => Branch::factory()->create(['sort_order' => $order, 'name' => sprintf('Branch %02d', $order)]));
+    $last = $branches->last();
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.update'))
+        ->withQueryParams(['page' => 2])
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('sortOnPage', $last->id, 0);
+
+    $order = Branch::query()->orderBy('sort_order')->pluck('id');
+    expect($order->search($last->id))->toBe(25);
+});
+
+test('delete selected removes unused rows and skips system rows', function () {
+    $unused = Branch::factory()->create();
+    $system = Branch::factory()->create(['is_system' => true]);
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.deactivate'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->set('selected', [(string) $unused->id, (string) $system->id])
+        ->call('deleteSelected')
+        ->assertDispatched('toast', type: 'warning', description: '1 deleted, 1 skipped. System rows cannot be deleted.');
+
+    expect(Branch::query()->whereKey($unused->id)->exists())->toBeFalse()
+        ->and(Branch::query()->whereKey($system->id)->exists())->toBeTrue();
+});
+
+test('deleting from the row menu needs the deactivate permission', function () {
+    $branch = Branch::factory()->create();
+
+    Livewire::actingAs(userWithPermissions('admin.branches.view', 'admin.branches.update'))
+        ->test(MasterData::class, ['table' => 'branches'])
+        ->call('deleteRecord', $branch->id)
+        ->assertForbidden();
+
+    expect(Branch::query()->whereKey($branch->id)->exists())->toBeTrue();
+});
+
+test('export downloads the filtered rows with extra fields as names', function () {
+    Excel::fake();
+    $this->travelTo(now()->setDate(2026, 10, 7)->setTime(10, 0, 0));
+    $kind = UnitKind::factory()->create(['name' => 'Area kind']);
+    Unit::factory()->create(['code' => 'SQFT', 'unit_kind_id' => $kind->id]);
+    Unit::factory()->create(['code' => 'OLD', 'unit_kind_id' => $kind->id, 'is_active' => false]);
+
+    Livewire::actingAs(userWithPermissions('catalog.units.view'))
+        ->test(MasterData::class, ['table' => 'units'])
+        ->set('filters.active', '1')
+        ->call('export');
+
+    Excel::assertDownloaded('units-20261007-100000.xlsx', function (QueryExport $export): bool {
+        $rows = $export->query()->get()->map(fn ($row) => $export->map($row));
+
+        return $rows->pluck(0)->contains('SQFT') && ! $rows->pluck(0)->contains('OLD')
+            && $rows->firstWhere(0, 'SQFT')[4] === 'Area kind';
+    });
 });
