@@ -41,12 +41,12 @@
         @endif
     </x-shell.form-section>
 
-    <x-shell.sheet id="note-delete" :title="__('Delete this note?')" :description="__('It disappears for everyone.')">
+    <x-shell.confirm id="note-delete" :title="__('Delete this note?')" :description="__('It disappears for everyone.')">
         <x-slot:footer>
             <x-ui.button variant="outline" x-on:click="$dispatch('close-sheet-note-delete')">{{ __('Keep') }}</x-ui.button>
             @if ($deletingId)
                 <x-ui.button variant="destructive" wire:click="delete({{ $deletingId }})">{{ __('Delete') }}</x-ui.button>
             @endif
         </x-slot:footer>
-    </x-shell.sheet>
+    </x-shell.confirm>
 </div>
