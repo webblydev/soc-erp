@@ -43,7 +43,7 @@
 
             @unless ($readOnly)
                 <x-ui.field>
-                    <x-ui.field-label for="logo">{{ __('Logo (PNG or JPG, up to 1 MB)') }}</x-ui.field-label>
+                    <x-ui.field-label for="logo">{{ __('Logo (PNG or JPG, up to 20 MB)') }}</x-ui.field-label>
                     <x-ui.input id="logo" type="file" wire:model="logo" accept="image/png,image/jpeg" class="h-11 md:h-9" />
                     <x-ui.field-error :messages="$errors->get('logo')" />
                 </x-ui.field>
