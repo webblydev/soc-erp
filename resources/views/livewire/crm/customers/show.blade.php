@@ -33,7 +33,7 @@
         </div>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
         <aside class="grid grid-cols-2 gap-3 lg:order-last lg:grid-cols-1">
             <x-ui.card class="gap-1 p-4">
                 <span class="text-sm text-muted-foreground">{{ __('Source') }}</span>
@@ -46,7 +46,7 @@
             <x-ui.card class="gap-1 p-4">
                 <span class="text-sm text-muted-foreground">{{ __('First lead') }}</span>
                 @if ($customer->sourceLead)
-                    <a href="{{ route('crm.leads.show', $customer->sourceLead) }}" wire:navigate class="font-mono text-sm font-medium hover:underline">{{ $customer->sourceLead->lead_number }}</a>
+                    <a data-detail-modal href="{{ route('crm.leads.show', $customer->sourceLead) }}" wire:navigate class="font-mono text-sm font-medium hover:underline">{{ $customer->sourceLead->lead_number }}</a>
                 @else
                     <span class="text-sm font-medium">—</span>
                 @endif
@@ -135,7 +135,7 @@
             @elseif ($tab === 'leads')
                 <x-ui.item-group class="gap-2">
                     @forelse ($leads as $lead)
-                        <x-ui.item variant="outline" class="min-h-16 active:bg-accent" :href="route('crm.leads.show', $lead)" wire:navigate wire:key="lead-{{ $lead->id }}">
+                        <x-ui.item variant="outline" class="min-h-16 active:bg-accent" data-detail-modal :href="route('crm.leads.show', $lead)" wire:navigate wire:key="lead-{{ $lead->id }}">
                             <x-ui.item-content class="min-w-0">
                                 <x-ui.item-title class="flex items-center gap-2 text-base md:text-sm">
                                     <span class="truncate">{{ $lead->name }}</span>
@@ -182,6 +182,4 @@
             <x-ui.button variant="destructive" wire:click="deleteActivity">{{ __('Delete') }}</x-ui.button>
         </x-slot:footer>
     </x-shell.sheet>
-
-    <livewire:crm.quick-log />
 </div>
