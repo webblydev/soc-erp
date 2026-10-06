@@ -1,6 +1,27 @@
 @import "./blatui.css";
 
 /* -------------------------------------------------------------------------- */
+/*  No page ever scrolls sideways. Wide content (data tables, chip and tab     */
+/*  strips) scrolls inside its own container instead. Long unbroken strings    */
+/*  (emails, class names, codes) may break anywhere so they never widen a      */
+/*  flex or grid column; data tables keep normal wrapping and scroll instead.  */
+/* -------------------------------------------------------------------------- */
+@layer base {
+    html,
+    body {
+        overflow-x: clip;
+    }
+
+    body {
+        overflow-wrap: anywhere;
+    }
+
+    [data-slot='table'] {
+        overflow-wrap: normal;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
 /*  App theme — overrides the BlatUI base preset tokens. Light mode only.      */
 /* -------------------------------------------------------------------------- */
 :root {
