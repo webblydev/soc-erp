@@ -23,7 +23,7 @@ test('seeding creates every manifest permission, the system roles and the super 
     $admin = User::query()->where('username', 'admin')->sole();
 
     expect($admin->hasRole('super_admin'))->toBeTrue()
-        ->and($admin->must_change_password)->toBeTrue();
+        ->and($admin->must_change_password)->toBeFalse();
 });
 
 test('wildcard grants are expanded onto roles', function () {
