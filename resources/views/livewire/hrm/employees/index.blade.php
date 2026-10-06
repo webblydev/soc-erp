@@ -94,7 +94,7 @@
                                 <x-shell.row-menu>
                                     <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('hrm.employees.show', $employee)">{{ __('View') }}</x-shell.row-menu-item>
                                     @can('update', $employee)
-                                        <x-shell.row-menu-item icon="pencil" :href="route('hrm.employees.edit', $employee)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                        <x-shell.row-menu-item icon="pencil" data-detail-modal :href="route('hrm.employees.edit', $employee)">{{ __('Edit') }}</x-shell.row-menu-item>
                                     @endcan
                                     @can('delete', $employee)
                                         <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $employee->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $employee->full_name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
