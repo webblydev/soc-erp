@@ -8,7 +8,6 @@ use App\Modules\Crm\Models\CrmActivity;
 use App\Modules\Crm\Models\SalesTeam;
 use App\Modules\Foundation\Models\Role;
 use Carbon\CarbonInterface;
-use Carbon\WeekDay;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -166,7 +165,7 @@ class Index extends Component
     {
         $anchor = preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->date) === 1 ? Carbon::parse($this->date) : today();
 
-        return $anchor->copy()->startOfWeek(WeekDay::Saturday);
+        return $anchor->copy()->startOfWeek(CarbonInterface::SATURDAY);
     }
 
     /**
@@ -178,7 +177,7 @@ class Index extends Component
     {
         $end = $start->copy()->addDays(7);
 
-        return $this->scoped()
+        $events = $this->scoped()
             ->where(fn (Builder $query) => $query->whereBetween('scheduled_at', [$start, $end])
                 ->orWhere(fn (Builder $query) => $query->whereNull('scheduled_at')->whereBetween('completed_at', [$start, $end])))
             ->get()
@@ -193,12 +192,14 @@ class Index extends Component
                     'start' => $when->format('H:i'),
                     'end' => $when->copy()->addMinutes($minutes)->min($when->copy()->endOfDay())->format('H:i'),
                     'color' => $activity->isOverdue() ? 'rose' : ($activity->isOpen() ? 'sky' : 'emerald'),
-                    'subject' => $activity->subject?->getAttribute('name'),
+                    'subject' => $activity->subject !== null ? (string) $activity->subject->getAttribute('name') : null,
                     'when' => $when,
                     'open' => $activity->isOpen(),
                 ];
             })
             ->sortBy('when')->values()->all();
+
+        return array_values($events);
     }
 
     private function actor(): User
