@@ -6,7 +6,7 @@
         :submit-label="$team ? __('Save changes') : __('Create team')">
 
         <x-shell.form-section :title="__('Team')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="name">{{ __('Name') }} *</x-ui.field-label>
                     <x-ui.input id="name" wire:model="name" class="h-11 text-base md:h-9 md:text-sm" :aria-invalid="$errors->has('name') ? 'true' : null" />
@@ -51,7 +51,7 @@
 
             @forelse ($members as $i => $member)
                 <x-ui.item variant="outline" class="items-start gap-3 max-md:flex-col md:border-0 md:p-0" wire:key="member-{{ $i }}">
-                    <div class="grid w-full gap-3 md:grid-cols-[1fr_12rem_auto] md:items-start">
+                    <div class="grid grid-cols-1 w-full gap-3 md:grid-cols-[1fr_12rem_auto] md:items-start">
                         <x-ui.field>
                             <x-ui.field-label for="member-user-{{ $i }}" class="md:sr-only">{{ __('Person') }}</x-ui.field-label>
                             <x-ui.select native id="member-user-{{ $i }}" wire:model="members.{{ $i }}.user_id" class="h-11 text-base md:h-9 md:text-sm">
