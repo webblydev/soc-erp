@@ -33,9 +33,11 @@ Give every module three shared services: polymorphic attachments with versions a
 
 ## 4. Units
 
-- Actions (`app/Modules/Foundation/Actions`): `UploadAttachment`, `ReplaceAttachment`, `DeleteAttachment`, `AddNote`, `SetNotePinned`, `DeleteNote`. Each authorizes against the actor, validates, throws `ValidationException` / `AuthorizationException`, and writes in `DB::transaction()`.
-- Livewire (`Foundation\Livewire\Shared`): `Attachments` and `Notes` panels taking the parent as a locked model; `Foundation\Livewire\Notifications\Bell` and `Notifications\Index`.
-- Controller-less download route closure in `routes/modules/foundation.php`.
+- Actions (`app/Modules/Foundation/Actions`): `UploadAttachment` (also uploads a new version when given the file it replaces), `DeleteAttachment`, `AddNote`, `SetNotePinned`, `DeleteNote`. Each authorizes against the actor, validates, throws `ValidationException` / `AuthorizationException`, and writes in `DB::transaction()`.
+- Livewire (`Foundation\Livewire\Shared`): `Attachments` and `Notes` panels, registered as `foundation.attachments` and `foundation.notes` and mounted with `:model`; the parent is kept as a locked morph alias and id (`InteractsWithCollaborativeParent`) and re-checked on every request. `Foundation\Livewire\Notifications\Bell` (`foundation.notifications.bell`) and `Notifications\Index` (route `notifications.index`).
+- Notifications in `app/Modules/Foundation/Notifications`: `AccountCreated`, `PasswordResetByAdmin`, `NewIpSignIn`; the new-IP check is the `NotifyNewIpSignIn` listener on `Login`.
+- Download route closure in `routes/modules/foundation.php` (`attachments.download`, `signed` middleware).
+- `config/livewire.php` temporary upload ceiling raised to 100 MB; the real limits are applied by `UploadAttachment`. PHP's `upload_max_filesize` / `post_max_size` must allow the largest document type on the server.
 
 ## 5. Mobile
 
