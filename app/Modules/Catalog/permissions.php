@@ -12,10 +12,10 @@ return [
     'permissions' => [
         'catalog' => [
             'business_lines' => $lookup,
-            'services' => ['view', 'create', 'update'],
+            'services' => ['view', 'create', 'update', 'delete', 'export'],
             'units' => $lookup,
-            'work_items' => ['view', 'create', 'update', 'import'],
-            'materials' => ['view', 'create', 'update', 'import'],
+            'work_items' => ['view', 'create', 'update', 'delete', 'import', 'export'],
+            'materials' => ['view', 'create', 'update', 'delete', 'import', 'export'],
             'master_data' => $lookup,
         ],
     ],
