@@ -6,6 +6,8 @@ use App\Modules\Catalog\Models\BusinessLine;
 use App\Modules\Catalog\Models\PricingBasis;
 use App\Modules\Catalog\Models\Service;
 use App\Modules\Catalog\Models\ServiceCategory;
+use App\Modules\Crm\Models\Lead;
+use App\Modules\Crm\Models\LeadServiceLine;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
 
@@ -104,4 +106,18 @@ test('the edit form loads the service and shows its history', function () {
         ->assertHasNoErrors();
 
     expect($service->fresh()->name)->toBe('New name');
+});
+
+test('bulk delete skips services used on leads', function () {
+    seedCrm();
+    $quoted = Service::factory()->create();
+    $unused = Service::factory()->create();
+    LeadServiceLine::query()->create(['lead_id' => Lead::factory()->create()->id, 'service_id' => $quoted->id]);
+
+    Livewire::actingAs(userWithPermissions('catalog.services.view', 'catalog.services.delete'))->test(Index::class)
+        ->set('selected', [(string) $quoted->id, (string) $unused->id])
+        ->call('deleteSelected')
+        ->assertDispatched('toast', type: 'warning', description: '1 deleted, 1 skipped. Services used on leads cannot be deleted. Deactivate them instead.');
+
+    expect($quoted->fresh()->trashed())->toBeFalse()->and($unused->fresh()->trashed())->toBeTrue();
 });
