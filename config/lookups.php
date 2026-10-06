@@ -7,6 +7,16 @@ use App\Modules\Catalog\Models\ServiceCategory;
 use App\Modules\Catalog\Models\Unit;
 use App\Modules\Catalog\Models\UnitKind;
 use App\Modules\Catalog\Models\WorkItemCategory;
+use App\Modules\Crm\Models\ActivityOutcome;
+use App\Modules\Crm\Models\ActivityType;
+use App\Modules\Crm\Models\CustomerStatus;
+use App\Modules\Crm\Models\CustomerType;
+use App\Modules\Crm\Models\LeadLevel;
+use App\Modules\Crm\Models\LeadPriority;
+use App\Modules\Crm\Models\LeadSource;
+use App\Modules\Crm\Models\LeadStatus;
+use App\Modules\Crm\Models\LostReason;
+use App\Modules\Crm\Models\PaymentTerm;
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\Currency;
 use App\Modules\Foundation\Models\DocumentType;
@@ -89,4 +99,30 @@ return [
     'unit_kinds' => ['label' => 'Unit kinds', 'module' => 'catalog', 'model' => UnitKind::class, 'permission' => 'catalog.master_data', 'extra_fields' => []],
     'work_item_categories' => ['label' => 'Work item categories', 'module' => 'catalog', 'model' => WorkItemCategory::class, 'permission' => 'catalog.master_data', 'extra_fields' => []],
     'material_categories' => ['label' => 'Material categories', 'module' => 'catalog', 'model' => MaterialCategory::class, 'permission' => 'catalog.master_data', 'extra_fields' => []],
+    'lead_sources' => [
+        'label' => 'Lead sources', 'module' => 'crm', 'model' => LeadSource::class, 'permission' => 'crm.master_data',
+        'extra_fields' => ['requires_referrer' => ['type' => 'bool', 'label' => 'Requires a referrer']],
+    ],
+    'lead_statuses' => [
+        'label' => 'Lead statuses', 'module' => 'crm', 'model' => LeadStatus::class, 'permission' => 'crm.master_data',
+        'extra_fields' => ['probability_pct' => ['type' => 'number', 'label' => 'Probability %', 'required' => true, 'rules' => ['max:100']]],
+    ],
+    'lead_priorities' => ['label' => 'Lead priorities', 'module' => 'crm', 'model' => LeadPriority::class, 'permission' => 'crm.master_data', 'extra_fields' => []],
+    'lead_levels' => ['label' => 'Lead levels', 'module' => 'crm', 'model' => LeadLevel::class, 'permission' => 'crm.master_data', 'extra_fields' => []],
+    'lost_reasons' => ['label' => 'Lost reasons', 'module' => 'crm', 'model' => LostReason::class, 'permission' => 'crm.master_data', 'extra_fields' => []],
+    'activity_types' => [
+        'label' => 'Activity types', 'module' => 'crm', 'model' => ActivityType::class, 'permission' => 'crm.master_data',
+        'extra_fields' => [
+            'icon' => ['type' => 'text', 'label' => 'Icon (lucide name)', 'rules' => ['max:40', 'regex:/^[a-z0-9-]+$/']],
+            'requires_duration' => ['type' => 'bool', 'label' => 'Requires a duration'],
+            'counts_as_contact' => ['type' => 'bool', 'label' => 'Counts as contact'],
+        ],
+    ],
+    'activity_outcomes' => ['label' => 'Activity outcomes', 'module' => 'crm', 'model' => ActivityOutcome::class, 'permission' => 'crm.master_data', 'extra_fields' => []],
+    'customer_types' => ['label' => 'Customer types', 'module' => 'crm', 'model' => CustomerType::class, 'permission' => 'crm.master_data', 'extra_fields' => []],
+    'customer_statuses' => ['label' => 'Customer statuses', 'module' => 'crm', 'model' => CustomerStatus::class, 'permission' => 'crm.master_data', 'extra_fields' => []],
+    'payment_terms' => [
+        'label' => 'Payment terms', 'module' => 'crm', 'model' => PaymentTerm::class, 'permission' => 'crm.master_data',
+        'extra_fields' => ['days' => ['type' => 'number', 'label' => 'Days', 'required' => true, 'rules' => ['max:365']]],
+    ],
 ];
