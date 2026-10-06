@@ -9,7 +9,11 @@ use App\Modules\Foundation\Livewire\Shared\Attachments;
 use App\Modules\Foundation\Livewire\Shared\History;
 use App\Modules\Foundation\Livewire\Shared\Notes;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
+
+beforeEach(fn () => Model::preventLazyLoading());
+afterEach(fn () => Model::preventLazyLoading(false));
 
 beforeEach(function () {
     seedCrm();
