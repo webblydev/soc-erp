@@ -150,6 +150,9 @@ trait WithListing
 
             $query->where(function (Builder $query) use ($like): void {
                 foreach ($this->searchColumns() as $column) {
+                    // The column comes from the developer-defined searchColumns() whitelist, never user input;
+                    // the portable LIKE ... ESCAPE '!' needs raw SQL.
+                    // @phpstan-ignore argument.type
                     $query->orWhereRaw("LOWER({$column}) LIKE ? ESCAPE '!'", [$like]);
                 }
             });
