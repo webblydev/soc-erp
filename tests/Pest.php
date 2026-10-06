@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Crm\Models\LeadPriority;
+use App\Modules\Crm\Models\LeadSource;
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
 use Database\Seeders\Crm\CrmSeeder;
@@ -122,6 +124,27 @@ function seedAccessControl(): void
 function seedCrm(): void
 {
     test()->seed([SettingSeeder::class, NumberSequenceFormatSeeder::class, CrmSeeder::class]);
+}
+
+/**
+ * Valid CreateLead input for CRM tests. Needs $this->actor, $this->design and $this->survey.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function leadInput(array $overrides = []): array
+{
+    return [
+        'lead_date' => today()->toDateString(), 'name' => 'Rahim Uddin', 'company_name' => null,
+        'phone' => '+880 1711-000000', 'whatsapp' => null, 'office_phone' => null, 'email' => null, 'address' => null, 'location_id' => null,
+        'lead_source_id' => LeadSource::idFor('F2F'), 'referrer_type' => null, 'referrer_id' => null, 'referrer_name' => null,
+        'business_line_id' => null, 'lead_level_id' => null, 'lead_priority_id' => LeadPriority::idFor('NORMAL'),
+        'expected_value' => null, 'expected_value_manual' => false, 'expected_close_date' => null,
+        'site_location_text' => null, 'land_area' => '5 katha', 'floors_planned' => 6, 'notes' => null,
+        'services' => [['service_id' => test()->design->id, 'estimated_value' => '150000', 'notes' => null], ['service_id' => test()->survey->id, 'estimated_value' => '20,000', 'notes' => null]],
+        'assigned_to' => test()->actor->id, 'sales_team_id' => null, 'follow_up' => null, 'duplicate_reason' => null,
+        ...$overrides,
+    ];
 }
 
 /**
