@@ -28,12 +28,7 @@
                         @if ($setting->type === 'json')
                             <x-ui.textarea :id="$id" wire:model="{{ $model }}" rows="4" class="font-mono text-base md:text-sm" />
                         @elseif (str_starts_with($setting->type, 'fk:'))
-                            <x-ui.select native :id="$id" wire:model="{{ $model }}" class="h-11 text-base md:h-9 md:text-sm">
-                                <option value="">{{ __('None') }}</option>
-                                @foreach ($lookupOptions(substr($setting->type, 3), data_get($values, $group.'.'.$setting->key)) as $option)
-                                    <option value="{{ $option->id }}">{{ $option->name }}</option>
-                                @endforeach
-                            </x-ui.select>
+                            <x-lookup-select :table="substr($setting->type, 3)" :include="data_get($values, $group.'.'.$setting->key)" :placeholder="__('None')" :id="$id" wire:model="{{ $model }}" />
                         @else
                             <x-ui.input :id="$id" wire:model="{{ $model }}"
                                 :type="$setting->type === 'int' ? 'number' : 'text'"
