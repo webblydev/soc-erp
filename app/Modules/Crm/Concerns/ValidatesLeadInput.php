@@ -121,7 +121,7 @@ trait ValidatesLeadInput
      */
     private function validateReferrer(ValidatorInstance $validator, array $input): void
     {
-        $source = LeadSource::query()->find($input['lead_source_id'] ?? null);
+        $source = is_numeric($input['lead_source_id'] ?? null) ? LeadSource::query()->whereKey((int) $input['lead_source_id'])->first() : null;
 
         if ($source?->requires_referrer && empty($input['referrer_id']) && empty($input['referrer_name'])) {
             $validator->errors()->add('referrer_name', __('This source needs a referrer.'));
@@ -147,7 +147,9 @@ trait ValidatesLeadInput
      */
     protected function expectedValue(array $data): ?string
     {
-        $estimates = collect($data['services'])->pluck('estimated_value')->filter(fn (mixed $value): bool => $value !== null);
+        /** @var list<array{estimated_value: mixed}> $services */
+        $services = $data['services'];
+        $estimates = collect(array_column($services, 'estimated_value'))->filter(fn (mixed $value): bool => $value !== null);
 
         if (($data['expected_value_manual'] ?? false) || $estimates->isEmpty()) {
             return ($data['expected_value'] ?? null) !== null ? (string) $data['expected_value'] : null;
