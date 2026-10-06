@@ -35,7 +35,7 @@
         </x-slot:alerts>
 
         <x-shell.form-section :title="__('Contact')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="name">{{ __('Name') }} *</x-ui.field-label>
                     <x-ui.input id="name" wire:model="name" class="h-11 text-base md:h-9 md:text-sm" :aria-invalid="$errors->has('name') ? 'true' : null" />
@@ -84,7 +84,7 @@
         </x-shell.form-section>
 
         <x-shell.form-section :title="__('Enquiry')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="lead_date">{{ __('Lead date') }} *</x-ui.field-label>
                     <x-ui.input id="lead_date" type="date" wire:model="lead_date" max="{{ today()->toDateString() }}" class="h-11 text-base md:h-9 md:text-sm" />
@@ -188,7 +188,7 @@
                 <x-ui.field-error :messages="$errors->get('services')" />
             </div>
 
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="lead_level_id">{{ __('Level') }}</x-ui.field-label>
                     <x-lookup-select table="lead_levels" :include="$lead?->lead_level_id" :placeholder="__('None')" id="lead_level_id" wire:model="lead_level_id" />
