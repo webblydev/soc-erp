@@ -14,6 +14,16 @@ use Illuminate\Validation\ValidationException;
  */
 class UpdateSettings
 {
+    /**
+     * Inclusive bounds for integer settings, keyed by full setting key.
+     *
+     * @var array<string, array{0: int, 1: int}>
+     */
+    public const INTEGER_BOUNDS = [
+        'general.session_timeout_minutes' => [5, 1440],
+        'general.password_min_length' => [8, 128],
+    ];
+
     public function __construct(private SettingsRepository $settings) {}
 
     /**
@@ -39,6 +49,11 @@ class UpdateSettings
                 str_starts_with($type, 'fk:') => ['nullable', 'integer', Rule::exists(substr($type, 3), 'id')],
                 default => ['nullable', 'string', 'max:255'],
             };
+
+            if (isset(self::INTEGER_BOUNDS[$group.'.'.$key])) {
+                [$min, $max] = self::INTEGER_BOUNDS[$group.'.'.$key];
+                $rules[$key] = [...$rules[$key], 'min:'.$min, 'max:'.$max];
+            }
 
             if ($type === 'roles') {
                 $rules[$key.'.*'] = ['string', Rule::exists('roles', 'code')];
