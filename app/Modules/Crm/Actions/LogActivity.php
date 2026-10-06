@@ -38,7 +38,7 @@ class LogActivity
         Gate::forUser($actor)->authorize('view', $subject);
 
         $done = (bool) ($input['done'] ?? false);
-        $type = ActivityType::query()->find($input['activity_type_id'] ?? null);
+        $type = is_numeric($input['activity_type_id'] ?? null) ? ActivityType::query()->whereKey((int) $input['activity_type_id'])->first() : null;
 
         /** @var array<string, mixed> $data */
         $data = Validator::make($input, [
@@ -129,7 +129,7 @@ class LogActivity
     private function ownerRule(): Closure
     {
         return function (string $attribute, mixed $value, Closure $fail): void {
-            $owner = User::query()->where('is_active', true)->find($value);
+            $owner = is_numeric($value) ? User::query()->where('is_active', true)->whereKey((int) $value)->first() : null;
 
             if ($owner === null || ! $owner->can('crm.activities.view')) {
                 $fail(__('The selected owner cannot take CRM activities.'));
