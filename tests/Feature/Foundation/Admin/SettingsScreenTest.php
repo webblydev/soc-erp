@@ -38,6 +38,18 @@ test('invalid values show on their fields', function () {
         ->assertHasErrors(['values.general.session_timeout_minutes', 'values.general.require_2fa_roles.0']);
 });
 
+test('timeout and password length are kept within safe bounds', function () {
+    Livewire::actingAs(userWithPermissions('admin.settings.view', 'admin.settings.update'))
+        ->test(SettingsScreen::class)
+        ->set('values.general.session_timeout_minutes', '0')
+        ->set('values.general.password_min_length', '500')
+        ->call('save')
+        ->assertHasErrors(['values.general.session_timeout_minutes', 'values.general.password_min_length']);
+
+    expect(Settings::get('general.session_timeout_minutes'))->toBe(120)
+        ->and(Settings::get('general.password_min_length'))->toBe(8);
+});
+
 test('switching tabs saves only that group', function () {
     Livewire::actingAs(userWithPermissions('admin.settings.view', 'admin.settings.update'))
         ->test(SettingsScreen::class)
