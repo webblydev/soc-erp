@@ -162,7 +162,7 @@
         </div>
     </div>
 
-    <x-shell.sheet id="customer-actions" :title="__('Customer actions')">
+    <x-shell.sheet id="customer-actions" :title="__('Customer actions')" :description="$customer->customer_number.' · '.$customer->name">
         <div class="flex flex-col gap-2 pb-4">
             @can('update', $customer)
                 <x-ui.button class="h-11 justify-start" variant="outline" :href="route('crm.customers.edit', $customer)" wire:navigate><x-lucide-pencil /> {{ __('Edit') }}</x-ui.button>
@@ -176,7 +176,7 @@
         </div>
     </x-shell.sheet>
 
-    <x-shell.sheet id="activity-delete" :title="__('Delete activity?')">
+    <x-shell.sheet id="activity-delete" :title="__('Delete activity?')" :description="__('The activity is removed from the timeline.')">
         <x-slot:footer>
             <x-ui.button variant="outline" x-on:click="$dispatch('close-sheet-activity-delete')">{{ __('Cancel') }}</x-ui.button>
             <x-ui.button variant="destructive" wire:click="deleteActivity">{{ __('Delete') }}</x-ui.button>
