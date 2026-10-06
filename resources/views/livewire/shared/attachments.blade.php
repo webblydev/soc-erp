@@ -61,12 +61,7 @@
             @unless ($replacing)
                 <x-ui.field>
                     <x-ui.field-label for="attachment-type">{{ __('Document type') }}</x-ui.field-label>
-                    <x-ui.select native id="attachment-type" wire:model="documentTypeId" class="h-11 text-base md:h-9 md:text-sm">
-                        <option value="">{{ __('Not set') }}</option>
-                        @foreach ($documentTypes as $type)
-                            <option value="{{ $type->id }}">{{ $type->name }}</option>
-                        @endforeach
-                    </x-ui.select>
+                    <x-lookup-select table="document_types" :include="$documentTypeId" :placeholder="__('Not set')" id="attachment-type" wire:model="documentTypeId" />
                     <x-ui.field-error :messages="$errors->get('document_type_id')" />
                 </x-ui.field>
 
