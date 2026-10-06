@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Crm\Livewire\Teams;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -8,5 +9,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('app')->prefix('crm')->name('crm.')->group(function () {
-    // Screens are added by the tasks that build them.
+    Route::livewire('teams', Teams\Index::class)->middleware('can:crm.teams.view')->name('teams.index');
+    Route::livewire('teams/create', Teams\Form::class)->middleware('can:crm.teams.manage')->name('teams.create');
+    Route::livewire('teams/{team}/edit', Teams\Form::class)->middleware('can:crm.teams.manage')->name('teams.edit');
 });
