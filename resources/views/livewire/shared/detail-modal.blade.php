@@ -1,11 +1,14 @@
-<div x-on:open-detail-modal.window="$wire.show($event.detail.url); $dispatch('open-dialog-detail-modal')">
+<div x-on:open-detail-modal.window="$wire.show($event.detail.url, window.location.href); $dispatch('open-dialog-detail-modal')">
     <x-ui.dialog id="detail-modal" x-init="$watch('open', (isOpen) => isOpen || $wire.close())">
         <x-ui.dialog-content stacked :show-close="false" class="flex max-h-[90dvh] flex-col gap-0 p-0 sm:max-w-[calc(100%-4rem)] xl:max-w-6xl">
             <div class="flex items-center gap-1 border-b px-4 py-2">
                 <div class="flex min-w-0 flex-1 flex-col">
                     <x-ui.dialog-title class="truncate text-base">
                         @if ($detail['heading'] ?? null)
-                            <span class="font-mono text-muted-foreground">{{ $detail['heading']['code'] }}</span> · {{ $detail['heading']['name'] }}
+                            @if ($detail['heading']['code'] !== null)
+                                <span class="font-mono text-muted-foreground">{{ $detail['heading']['code'] }}</span> ·
+                            @endif
+                            {{ $detail['heading']['name'] }}
                         @else
                             {{ __('Details') }}
                         @endif
@@ -22,7 +25,7 @@
                 </x-ui.button>
             </div>
 
-            <div class="min-h-0 flex-1 overflow-y-auto p-6">
+            <div data-detail-modal-body class="min-h-0 flex-1 overflow-y-auto p-6">
                 <div wire:loading.flex wire:target="show" class="flex-col gap-4">
                     <x-ui.skeleton class="h-8 w-64" />
                     <x-ui.skeleton class="h-24 w-full" />
