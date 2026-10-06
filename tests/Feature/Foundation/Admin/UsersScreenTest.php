@@ -222,3 +222,26 @@ test('the users table shows every permitted row action in its actions column', f
         ->assertSeeHtml('href="'.route('admin.users.edit', $target).'"')
         ->assertSeeHtml('wire:click="toggleActive('.$target->id.')"');
 });
+
+test('bulk delete soft-deletes users but never your own account', function () {
+    $actor = superAdmin();
+    $other = User::factory()->create();
+
+    Livewire::actingAs($actor)->test(Index::class)
+        ->set('selected', [(string) $actor->id, (string) $other->id])
+        ->call('deleteSelected')
+        ->assertDispatched('toast', type: 'warning', description: '1 deleted, 1 skipped. You cannot delete your own account.');
+
+    expect($other->fresh()->trashed())->toBeTrue()->and($actor->fresh()->trashed())->toBeFalse();
+});
+
+test('only a super admin can delete a super admin', function () {
+    $admin = superAdmin();
+
+    Livewire::actingAs(userWithPermissions('admin.users.view', 'admin.users.delete'))->test(Index::class)
+        ->set('selected', [(string) $admin->id])
+        ->call('deleteSelected')
+        ->assertDispatched('toast', type: 'error', description: '0 deleted, 1 skipped. Only a super admin can change a super admin account.');
+
+    expect($admin->fresh()->trashed())->toBeFalse();
+});
