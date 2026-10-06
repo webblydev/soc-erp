@@ -43,7 +43,7 @@ class Edit extends Component
     /**
      * Notification key (dots replaced by "__", so wire:model paths stay intact) → channel → enabled.
      *
-     * @var array<string, array<string, bool>>
+     * @var array<string, mixed>
      */
     public array $notifications = [];
 
