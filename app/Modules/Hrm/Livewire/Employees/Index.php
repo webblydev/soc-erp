@@ -3,13 +3,16 @@
 namespace App\Modules\Hrm\Livewire\Employees;
 
 use App\Models\User;
+use App\Modules\Hrm\Actions\DeleteEmployee;
 use App\Modules\Hrm\Models\Employee;
 use App\Modules\Hrm\Models\EmployeeStatus;
 use App\Modules\Hrm\Services\EmployeeFields;
 use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -22,7 +25,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 #[Title('Employees')]
 class Index extends Component
 {
-    use WithListing;
+    use WithBulkActions, WithListing;
 
     #[Url(except: 'list')]
     public string $view = 'list';
@@ -76,7 +79,7 @@ class Index extends Component
     {
         $this->authorize('hrm.employees.export');
 
-        return ListingExport::download('employees', $this->filteredQuery()->with(['type:id,name', 'bloodGroup:id,name']), self::exportColumns($this->actor()));
+        return ListingExport::download('employees', $this->exportQuery()->with(['type:id,name', 'bloodGroup:id,name']), self::exportColumns($this->actor()));
     }
 
     /**
@@ -109,6 +112,17 @@ class Index extends Component
         }
 
         return $columns;
+    }
+
+    protected function authorizeBulkDelete(): void
+    {
+        $this->authorize('hrm.employees.delete');
+    }
+
+    protected function deleteRow(Model $row): void
+    {
+        /** @var Employee $row */
+        app(DeleteEmployee::class)->handle($this->actor(), $row);
     }
 
     private function actor(): User
