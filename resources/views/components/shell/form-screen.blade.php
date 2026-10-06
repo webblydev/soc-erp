@@ -33,9 +33,9 @@
         {{ $alerts }}
     @endisset
 
-    <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
         @if ($hasAside && $asidePosition === 'start')
-            <div class="flex flex-col gap-6 lg:sticky lg:top-6">{{ $aside }}</div>
+            <div class="flex min-w-0 flex-col gap-6 lg:sticky lg:top-6">{{ $aside }}</div>
         @endif
 
         <div class="flex min-w-0 flex-col gap-6 {{ $hasAside ? 'lg:col-span-2' : 'lg:col-span-3' }}">
@@ -43,7 +43,7 @@
         </div>
 
         @if ($hasAside && $asidePosition === 'end')
-            <div class="flex flex-col gap-6 lg:sticky lg:top-6">{{ $aside }}</div>
+            <div class="flex min-w-0 flex-col gap-6 lg:sticky lg:top-6">{{ $aside }}</div>
         @endif
     </div>
 
