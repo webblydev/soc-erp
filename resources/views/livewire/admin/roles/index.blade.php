@@ -82,10 +82,10 @@
         </x-slot:mobile>
     </x-shell.list>
 
-    <x-shell.sheet id="role-delete" :title="__('Delete role?')" :description="$deletingRole ? __('“:name” will be removed permanently.', ['name' => $deletingRole->name]) : __('The role will be removed permanently.')">
+    <x-shell.confirm id="role-delete" :title="__('Delete role?')" :description="$deletingRole ? __('“:name” will no longer be available to assign.', ['name' => $deletingRole->name]) : __('The role will no longer be available to assign.')">
         <x-slot:footer>
             <x-ui.button variant="outline" type="button" x-on:click="$dispatch('close-sheet-role-delete')">{{ __('Cancel') }}</x-ui.button>
             <x-ui.button variant="destructive" wire:click="delete">{{ __('Delete') }}</x-ui.button>
         </x-slot:footer>
-    </x-shell.sheet>
+    </x-shell.confirm>
 </div>
