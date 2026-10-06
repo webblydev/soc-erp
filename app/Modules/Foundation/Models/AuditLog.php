@@ -22,6 +22,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $ip_address
  * @property string|null $user_agent
  * @property Carbon $created_at
+ * @property-read User|null $user
+ * @property-read User|null $impersonator
  */
 #[Fillable(['user_id', 'impersonator_id', 'event', 'auditable_type', 'auditable_id', 'old_values', 'new_values', 'url', 'ip_address', 'user_agent'])]
 class AuditLog extends Model
@@ -71,10 +73,12 @@ class AuditLog extends Model
      */
     public function actorLabel(): string
     {
-        $label = $this->user?->username ?? __('system');
+        $user = $this->user;
+        $impersonator = $this->impersonator;
+        $label = $user instanceof User ? $user->username : __('system');
 
         if ($this->impersonator_id !== null) {
-            $label .= ' '.__('via :username', ['username' => $this->impersonator?->username ?? '#'.$this->impersonator_id]);
+            $label .= ' '.__('via :username', ['username' => $impersonator instanceof User ? $impersonator->username : '#'.$this->impersonator_id]);
         }
 
         return $label;
