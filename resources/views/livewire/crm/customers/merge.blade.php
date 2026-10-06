@@ -10,7 +10,7 @@
         :submit-label="__('Merge customers')">
 
         <x-shell.form-section :title="__('Customers')">
-            <div class="grid items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
+            <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
                 <x-ui.card class="gap-1 p-4">
                     <span class="text-sm text-muted-foreground">{{ __('Keep') }}</span>
                     <p class="font-medium">{{ $survivor->name }}</p>
