@@ -49,4 +49,6 @@ Feature tests: upload rules (extension, size, document type limits), versions an
 
 ## 7. Not in scope
 
-Daily digest (`notifications.daily_digest_time`), SMS gateway, `<x-history>` audit timeline component, editing notes, purging attachment files, image thumbnails.
+Daily digest (`notifications.daily_digest_time`; its content is CRM's `SendDailyDigest`, docs/03), SMS gateway (dropped: all staff have email), editing notes, purging attachment files, image thumbnails.
+
+Added after the build (2026-10-06): the `foundation.history` audit timeline panel and the `<x-lookup-select>` component (docs/01 §5.14).
