@@ -3,12 +3,14 @@
 namespace App\Modules\Foundation\Actions;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Deletes an unused, non-system lookup row; rows referenced elsewhere must be deactivated (FD-BR-06).
+ * Soft-deletes an unused, non-system lookup row; rows referenced elsewhere must be deactivated
+ * (FD-BR-06). A soft delete never trips a foreign key, so every column with a foreign key to the
+ * table is checked, counting deleted records that still point at the row.
  */
 class DeleteLookup
 {
@@ -21,14 +23,27 @@ class DeleteLookup
             throw ValidationException::withMessages(['row' => __('System rows cannot be deleted.')]);
         }
 
-        try {
-            DB::transaction(fn () => $row->delete());
-        } catch (QueryException $exception) {
-            if (str_starts_with((string) ($exception->errorInfo[0] ?? $exception->getCode()), '23')) {
-                throw ValidationException::withMessages(['row' => __('In use — deactivate instead.')]);
-            }
-
-            throw $exception;
+        if ($this->isReferenced($table, (int) $row->getKey())) {
+            throw ValidationException::withMessages(['row' => __('In use — deactivate instead.')]);
         }
+
+        DB::transaction(fn () => $row->delete());
+    }
+
+    private function isReferenced(string $table, int $id): bool
+    {
+        foreach (Schema::getTableListing(Schema::getCurrentSchemaName(), schemaQualified: false) as $referencing) {
+            foreach (Schema::getForeignKeys($referencing) as $foreignKey) {
+                if ($foreignKey['foreign_table'] !== $table || count($foreignKey['columns']) !== 1) {
+                    continue;
+                }
+
+                if (DB::table($referencing)->where($foreignKey['columns'][0], $id)->exists()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
