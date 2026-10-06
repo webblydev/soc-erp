@@ -50,3 +50,36 @@ test('items are marked active for their route family', function () {
 
     expect($this->navigation->for($user)[0]['items'][0]['active'])->toBeTrue();
 });
+
+test('tree nodes keep only permitted children and are dropped when none remain', function () {
+    $navigation = new Navigation([
+        ['key' => 'admin', 'label' => 'Admin', 'icon' => 'shield', 'items' => [
+            ['label' => 'User management', 'icon' => 'users', 'children' => [
+                ['label' => 'Users', 'route' => 'admin.users.index', 'icon' => 'users', 'permission' => 'admin.users.view', 'mobile_primary' => true],
+                ['label' => 'Leads', 'route' => 'crm.leads.index', 'icon' => 'target', 'permission' => 'crm.leads.view_own'],
+            ]],
+            ['label' => 'Master data', 'icon' => 'database', 'children' => [
+                ['label' => 'Pipeline', 'route' => 'crm.pipeline.index', 'icon' => 'kanban'],
+            ]],
+        ]],
+    ]);
+    $user = User::factory()->create();
+    $user->syncDirectPermissions(['admin.users.view']);
+
+    $this->actingAs($user)->get('test/users');
+    $items = $navigation->for($user)[0]['items'];
+
+    expect($items)->toHaveCount(1)
+        ->and($items[0]['label'])->toBe('User management')
+        ->and($items[0]['active'])->toBeTrue()
+        ->and(collect($items[0]['children'])->pluck('label')->all())->toBe(['Users'])
+        ->and(collect($navigation->primaryMobile($user))->pluck('label')->all())->toBe(['Users']);
+});
+
+test('the sidebar renders admin pages as a tree', function () {
+    $this->actingAs(userWithPermissions('admin.users.view'))
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-tree-node"', false)
+        ->assertSeeInOrder([__('User management'), __('Users')]);
+});
