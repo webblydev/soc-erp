@@ -55,7 +55,7 @@ class AuditLog extends Component
      */
     protected function listingQuery(): Builder
     {
-        return AuditEntry::query()->with('user:id,name,username')->latest('id');
+        return AuditEntry::query()->with(['user:id,name,username', 'impersonator:id,username'])->latest('id');
     }
 
     protected function searchColumns(): array
@@ -107,7 +107,7 @@ class AuditLog extends Component
             'mobileRows' => $this->mobileRows(),
             'types' => AuditEntry::query()->distinct()->orderBy('auditable_type')->pluck('auditable_type'),
             'events' => AuditEntry::query()->distinct()->orderBy('event')->pluck('event'),
-            'selected' => $this->selectedId !== null ? AuditEntry::query()->with('user')->find($this->selectedId) : null,
+            'selected' => $this->selectedId !== null ? AuditEntry::query()->with(['user', 'impersonator'])->find($this->selectedId) : null,
         ]);
     }
 }
