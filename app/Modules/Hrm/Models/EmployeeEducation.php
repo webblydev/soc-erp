@@ -5,6 +5,7 @@ namespace App\Modules\Hrm\Models;
 use App\Support\AuditTrail\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * A degree or course an employee completed (docs/09 §3.5).
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable(['institution', 'degree', 'from_year', 'to_year', 'result'])]
 class EmployeeEducation extends Model
 {
-    use Auditable;
+    use Auditable, SoftDeletes;
 
     protected $table = 'employee_education';
 
