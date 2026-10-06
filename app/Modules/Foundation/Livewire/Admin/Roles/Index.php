@@ -4,18 +4,22 @@ namespace App\Modules\Foundation\Livewire\Admin\Roles;
 
 use App\Modules\Foundation\Actions\DeleteRole;
 use App\Modules\Foundation\Models\Role;
+use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 #[Title('Roles')]
 class Index extends Component
 {
-    use WithListing;
+    use WithBulkActions, WithListing;
 
     #[Locked]
     public ?int $deletingRoleId = null;
@@ -50,6 +54,30 @@ class Index extends Component
         $this->deletingRoleId = null;
         $this->dispatch('close-sheet-role-delete');
         $this->dispatch('toast', type: 'success', description: __('Role deleted.'));
+    }
+
+    public function export(): BinaryFileResponse
+    {
+        $this->authorize('admin.roles.view');
+
+        return ListingExport::download('roles', $this->exportQuery(), [
+            'Name' => 'name',
+            'Code' => 'code',
+            'Users' => 'users_count',
+            'System' => fn (Role $role): string => $role->is_system ? 'Yes' : 'No',
+            'Active' => fn (Role $role): string => $role->is_active ? 'Yes' : 'No',
+        ]);
+    }
+
+    protected function authorizeBulkDelete(): void
+    {
+        $this->authorize('admin.roles.delete');
+    }
+
+    protected function deleteRow(Model $row): void
+    {
+        /** @var Role $row */
+        app(DeleteRole::class)->handle($row);
     }
 
     /**
