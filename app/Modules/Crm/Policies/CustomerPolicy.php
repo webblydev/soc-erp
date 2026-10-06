@@ -34,4 +34,9 @@ class CustomerPolicy
     {
         return $user->can('crm.customers.merge') && $this->view($user, $customer);
     }
+
+    public function delete(User $user, Customer $customer): bool
+    {
+        return $user->can('crm.customers.delete') && $this->view($user, $customer);
+    }
 }
