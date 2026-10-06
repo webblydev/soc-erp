@@ -55,3 +55,21 @@ test('the form adds and removes member rows and saves', function () {
 
     expect(SalesTeam::query()->where('name', 'Team North')->first()->activeMembers()->pluck('user_id')->all())->toBe([$member->id]);
 });
+
+test('bulk delete skips teams that have leads and needs teams.manage', function () {
+    $busy = SalesTeam::factory()->create();
+    $empty = SalesTeam::factory()->create();
+    Lead::factory()->create(['sales_team_id' => $busy->id]);
+
+    Livewire::actingAs(userWithPermissions('crm.teams.view'))->test(Index::class)
+        ->set('selected', [(string) $empty->id])
+        ->call('deleteSelected')
+        ->assertForbidden();
+
+    Livewire::actingAs(userWithPermissions('crm.teams.view', 'crm.teams.manage'))->test(Index::class)
+        ->set('selected', [(string) $busy->id, (string) $empty->id])
+        ->call('deleteSelected')
+        ->assertDispatched('toast', type: 'warning', description: '1 deleted, 1 skipped. Teams with leads cannot be deleted. Deactivate them instead.');
+
+    expect(SalesTeam::query()->whereKey([$busy->id, $empty->id])->pluck('id')->all())->toBe([$busy->id]);
+});
