@@ -36,6 +36,7 @@ class StopImpersonation
             AuditTrail::record($target, 'impersonation_ended', null, ['impersonator_id' => $impersonator->id, 'user_id' => $target->id], $impersonator);
         });
 
+        session()->forget('auth.password_confirmed_at');
         Auth::guard('web')->login($impersonator);
         session()->forget(HandleImpersonation::SESSION_KEY);
 
