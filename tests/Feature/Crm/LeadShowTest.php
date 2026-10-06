@@ -41,11 +41,12 @@ test('tabs show activities, documents, notes and history', function () {
 
 test('header actions follow permissions and state', function () {
     Livewire::actingAs($this->owner)->test(Show::class, ['lead' => $this->lead])
-        ->assertSee(__('Log activity'))->assertDontSeeHtml('open-sheet-lead-assign');
+        ->assertSee(__('Edit'))->assertSee(__('Log activity'))->assertDontSeeHtml('open-sheet-lead-assign');
 
     $converted = Lead::factory()->assignedTo($this->owner)->converted(Customer::factory()->create(['name' => 'Rahim Holdings']))->create();
 
     Livewire::actingAs($this->owner)->test(Show::class, ['lead' => $converted])
+        ->assertDontSee(route('crm.leads.edit', $converted))
         ->assertSee(__('Log activity'))
         ->assertSee('Rahim Holdings');
 });
