@@ -24,3 +24,11 @@ test('rounds half up to two decimals', function () {
 test('uses the currency symbol of other currencies', function () {
     expect(Money::format(Money::of('1500', 'USD')))->toBe('$ 1,500.00');
 });
+
+test('rates keep up to four decimals with BD grouping', function () {
+    expect(Money::formatRate('1250.5000'))->toBe('1,250.50')
+        ->and(Money::formatRate('1234567.1250'))->toBe('12,34,567.125')
+        ->and(Money::formatRate('12.3756'))->toBe('12.3756')
+        ->and(Money::formatRate('0'))->toBe('0.00')
+        ->and(Money::formatRate(null))->toBe('—');
+});
