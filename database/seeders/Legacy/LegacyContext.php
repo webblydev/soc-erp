@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Legacy;
 
+use App\Models\User;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,17 @@ class LegacyContext
 
     /** @var array<string, int> */
     private array $lookupIds = [];
+
+    private ?int $fallbackUserId = null;
+
+    /**
+     * Owner of records whose v1 author is unknown: the initial admin, else the first user.
+     */
+    public function fallbackUserId(): int
+    {
+        return $this->fallbackUserId ??= (int) (User::query()->where('username', config('foundation.initial_admin.username'))->value('id')
+            ?? User::query()->orderBy('id')->value('id'));
+    }
 
     public function legacy(): ConnectionInterface
     {
