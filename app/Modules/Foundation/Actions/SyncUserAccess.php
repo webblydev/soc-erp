@@ -35,8 +35,8 @@ class SyncUserAccess
 
         $this->ensureActorMayGrant($user, $permissions, $actor);
 
-        $user->syncRoles(array_values($roles));
-        $user->syncDirectPermissions(array_values($permissions));
+        $user->syncRoles($roles);
+        $user->syncDirectPermissions($permissions);
     }
 
     /**
