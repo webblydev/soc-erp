@@ -15,7 +15,7 @@ return [
             ['label' => 'My activities', 'route' => 'crm.activities.index', 'icon' => 'calendar-check', 'permission' => 'crm.activities.view', 'mobile_primary' => true],
             ['label' => 'Customers', 'route' => 'crm.customers.index', 'icon' => 'contact', 'permission' => 'crm.customers.view', 'mobile_primary' => true],
             ['label' => 'Sales teams', 'route' => 'crm.teams.index', 'icon' => 'users-round', 'permission' => 'crm.teams.view'],
-            ['label' => 'CRM setup', 'icon' => 'database', 'children' => [
+            ['label' => 'Master data', 'icon' => 'database', 'children' => [
                 ['label' => 'Lead sources', 'route' => 'admin.master-data.show', 'params' => ['table' => 'lead_sources'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
                 ['label' => 'Lead statuses', 'route' => 'admin.master-data.show', 'params' => ['table' => 'lead_statuses'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
                 ['label' => 'Lead priorities', 'route' => 'admin.master-data.show', 'params' => ['table' => 'lead_priorities'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
@@ -32,7 +32,7 @@ return [
             ['label' => 'Services', 'route' => 'catalog.services.index', 'icon' => 'clipboard-list', 'permission' => 'catalog.services.view'],
             ['label' => 'Work items', 'route' => 'catalog.work-items.index', 'icon' => 'hammer', 'permission' => 'catalog.work_items.view'],
             ['label' => 'Materials', 'route' => 'catalog.materials.index', 'icon' => 'boxes', 'permission' => 'catalog.materials.view'],
-            ['label' => 'Catalog setup', 'icon' => 'database', 'children' => [
+            ['label' => 'Master data', 'icon' => 'database', 'children' => [
                 ['label' => 'Business lines', 'route' => 'admin.master-data.show', 'params' => ['table' => 'business_lines'], 'icon' => 'briefcase', 'permission' => 'catalog.business_lines.view'],
                 ['label' => 'Units', 'route' => 'admin.master-data.show', 'params' => ['table' => 'units'], 'icon' => 'ruler', 'permission' => 'catalog.units.view'],
                 ['label' => 'Unit kinds', 'route' => 'admin.master-data.show', 'params' => ['table' => 'unit_kinds'], 'icon' => 'shapes', 'permission' => 'catalog.master_data.view'],
@@ -51,7 +51,7 @@ return [
             ['label' => 'Employees', 'route' => 'hrm.employees.index', 'icon' => 'id-card', 'permission' => 'hrm.employees.view_basic'],
             ['label' => 'Org chart', 'route' => 'hrm.org-chart', 'icon' => 'network', 'permission' => 'hrm.employees.view_basic'],
             ['label' => 'Expiring documents', 'route' => 'hrm.documents.expiring', 'icon' => 'file-clock', 'permission' => 'hrm.documents.manage'],
-            ['label' => 'HR setup', 'icon' => 'database', 'children' => [
+            ['label' => 'Master data', 'icon' => 'database', 'children' => [
                 ['label' => 'Departments', 'route' => 'admin.master-data.show', 'params' => ['table' => 'departments'], 'icon' => 'network', 'permission' => 'hrm.masters.view'],
                 ['label' => 'Designations', 'route' => 'admin.master-data.show', 'params' => ['table' => 'designations'], 'icon' => 'badge', 'permission' => 'hrm.masters.view'],
                 ['label' => 'Employee types', 'route' => 'admin.master-data.show', 'params' => ['table' => 'employee_types'], 'icon' => 'tags', 'permission' => 'hrm.masters.view'],
@@ -86,4 +86,10 @@ return [
             ]],
         ]],
     ],
+
+    /*
+    | Detail routes that open in the detail modal at md and up when a link carries
+    | `data-detail-modal` (App\Modules\Foundation\Livewire\Shared\DetailModal).
+    */
+    'detail_modal' => ['crm.leads.show', 'crm.customers.show', 'hrm.employees.show'],
 ];
