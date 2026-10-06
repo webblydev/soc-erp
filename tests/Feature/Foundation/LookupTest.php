@@ -77,7 +77,11 @@ test('every registered table names its model and typed extra fields', function (
         expect($registry->modelFor($table)->getTable())->toBe($table);
 
         foreach ($entry['extra_fields'] as $field) {
-            expect($field['type'])->toBeIn(['text', 'textarea', 'number', 'bool', 'list']);
+            expect($field['type'])->toBeIn(['text', 'textarea', 'number', 'bool', 'list', 'lookup']);
+
+            if ($field['type'] === 'lookup') {
+                expect(array_key_exists($field['table'] ?? '', $registry->all()))->toBeTrue();
+            }
         }
     }
 
