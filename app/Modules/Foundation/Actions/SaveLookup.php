@@ -2,6 +2,7 @@
 
 namespace App\Modules\Foundation\Actions;
 
+use App\Modules\Hrm\Rules\AssignableEmployee;
 use App\Support\Lookups\ActiveLookup;
 use App\Support\Lookups\LookupRegistry;
 use Closure;
@@ -15,8 +16,9 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Creates or edits a row in any registered lookup table (docs/01 §5.8, FD-BR-05). Extra fields
- * may add `rules`, be `unique` in their table, be stored `uppercase`, or be a `lookup` (an id
- * from another lookup table, which must be active unless the row already holds it).
+ * may add `rules`, be `unique` in their table, be stored `uppercase`, be a `lookup` (an id
+ * from another lookup table, which must be active unless the row already holds it) or an
+ * `employee` (an assignable employee, HR-BR-06). A `tree` entry cannot hold a cycle.
  */
 class SaveLookup
 {
@@ -60,6 +62,7 @@ class SaveLookup
                 'textarea' => [$presence, 'string', 'max:2000'],
                 'list' => [$presence, 'array'],
                 'lookup' => [$presence, new ActiveLookup((string) ($definition['table'] ?? ''), $row->getAttribute($field))],
+                'employee' => [$presence, new AssignableEmployee($row->getAttribute($field))],
                 default => [$presence, 'string', 'max:255'],
             };
 
@@ -83,6 +86,10 @@ class SaveLookup
 
         /** @var array<string, mixed> $data */
         $data = Validator::make($input, $rules)->validate();
+
+        if (isset($entry['tree']) && ($data[$entry['tree']] ?? null) !== null && $row->exists) {
+            $this->ensureNotOwnAncestor($table, $entry['tree'], (int) $row->getKey(), (int) $data[$entry['tree']]);
+        }
 
         if ($row->exists && $row->getAttribute('is_system')) {
             if ($data['code'] !== $row->getAttribute('code')) {
@@ -113,6 +120,32 @@ class SaveLookup
 
             return $row;
         });
+    }
+
+    /**
+     * A tree row cannot sit under itself or under one of its descendants. Walks up from the new
+     * parent; the visited list stops a loop on bad existing data.
+     *
+     * @throws ValidationException
+     */
+    private function ensureNotOwnAncestor(string $table, string $column, int $id, int $parentId): void
+    {
+        $visited = [];
+
+        for ($current = $parentId; $current !== null && ! in_array($current, $visited, true); $current = $this->parentOf($table, $column, $current)) {
+            if ($current === $id) {
+                throw ValidationException::withMessages([$column => __('A row cannot be placed under itself.')]);
+            }
+
+            $visited[] = $current;
+        }
+    }
+
+    private function parentOf(string $table, string $column, int $id): ?int
+    {
+        $parent = DB::table($table)->where('id', $id)->value($column);
+
+        return $parent === null ? null : (int) $parent;
     }
 
     /**

@@ -112,6 +112,8 @@
                             <x-ui.field-label for="form-{{ $field }}">{{ __($definition['label']) }}{{ ($definition['required'] ?? false) ? ' *' : '' }}</x-ui.field-label>
                             @if ($definition['type'] === 'lookup')
                                 <x-lookup-select :table="$definition['table']" :include="$form[$field] ?? null" :placeholder="__('Choose…')" id="form-{{ $field }}" wire:model="form.{{ $field }}" />
+                            @elseif ($definition['type'] === 'employee')
+                                <x-employee-select :include="$form[$field] ?? null" :placeholder="__('None')" id="form-{{ $field }}" wire:model="form.{{ $field }}" />
                             @elseif ($definition['type'] === 'textarea')
                                 <x-ui.textarea id="form-{{ $field }}" wire:model="form.{{ $field }}" rows="3" class="text-base md:text-sm" />
                             @else
