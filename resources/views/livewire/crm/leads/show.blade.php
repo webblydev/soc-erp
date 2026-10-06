@@ -268,19 +268,19 @@
     @endcan
 
     @can('delete', $lead)
-        <x-shell.sheet id="lead-delete" :title="__('Delete lead?')" :description="__('The lead is hidden from lists. Its history is kept.')">
+        <x-shell.confirm id="lead-delete" :title="__('Delete lead?')" :description="__('The lead is hidden from lists. Its history is kept.')">
             <x-ui.field-error :messages="$errors->get('lead')" />
             <x-slot:footer>
                 <x-ui.button variant="outline" x-on:click="$dispatch('close-sheet-lead-delete')">{{ __('Cancel') }}</x-ui.button>
                 <x-ui.button variant="destructive" wire:click="deleteLead">{{ __('Delete') }}</x-ui.button>
             </x-slot:footer>
-        </x-shell.sheet>
+        </x-shell.confirm>
     @endcan
 
-    <x-shell.sheet id="activity-delete" :title="__('Delete activity?')" :description="__('The activity is removed from the timeline.')">
+    <x-shell.confirm id="activity-delete" :title="__('Delete activity?')" :description="__('The activity is removed from the timeline.')">
         <x-slot:footer>
             <x-ui.button variant="outline" x-on:click="$dispatch('close-sheet-activity-delete')">{{ __('Cancel') }}</x-ui.button>
             <x-ui.button variant="destructive" wire:click="deleteActivity">{{ __('Delete') }}</x-ui.button>
         </x-slot:footer>
-    </x-shell.sheet>
+    </x-shell.confirm>
 </div>
