@@ -21,7 +21,7 @@
                 </x-ui.select>
                 <x-ui.field-error :messages="$errors->get('employee_id')" />
             </x-ui.field>
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="name">{{ __('Name') }} *</x-ui.field-label>
                     <x-ui.input id="name" wire:model="name" autocomplete="name" class="h-11 text-base md:h-9 md:text-sm" :aria-invalid="$errors->has('name') ? 'true' : null" />
@@ -60,7 +60,7 @@
         <x-shell.form-section :title="__('Roles')" :description="__('Roles decide what the user can see and do. Pick at least one.')">
             <x-ui.field-set>
                 <x-ui.field-legend class="md:sr-only">{{ __('Roles') }} *</x-ui.field-legend>
-                <div class="grid gap-2 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
                     @foreach ($availableRoles as $role)
                         @php($locked = $role->code === \App\Modules\Foundation\Models\Role::SUPER_ADMIN && ! $canGrantSuperAdmin)
                         <label class="flex min-h-11 items-start gap-3 rounded-md border px-3 py-2 has-[:checked]:border-primary has-[:checked]:bg-primary/5 md:py-3 {{ $locked ? 'opacity-50' : 'cursor-pointer' }}">
@@ -90,7 +90,7 @@
                         @foreach ($permissionGroups as $module => $modulePermissions)
                             <div>
                                 <p class="mb-1 text-sm font-semibold uppercase text-muted-foreground">{{ $module }}</p>
-                                <div class="grid gap-1 md:grid-cols-2 xl:grid-cols-3">
+                                <div class="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-3">
                                     @foreach ($modulePermissions as $permission)
                                         <label class="flex min-h-11 items-center gap-3 text-sm md:min-h-8">
                                             <x-ui.checkbox native wire:model="permissions" value="{{ $permission->name }}" />
@@ -133,7 +133,7 @@
     </x-shell.form-screen>
 
     @if ($user && $user->isViewableBy(auth()->user()))
-        <div data-test="user-collaboration" class="mx-auto mt-6 grid w-full max-w-6xl gap-6 pb-28 md:pb-0 lg:grid-cols-2 lg:items-start">
+        <div data-test="user-collaboration" class="mx-auto mt-6 grid w-full grid-cols-1 max-w-6xl gap-6 pb-28 md:pb-0 lg:grid-cols-2 lg:items-start">
             <livewire:foundation.attachments :model="$user" :key="'attachments-'.$user->id" />
             <livewire:foundation.notes :model="$user" :key="'notes-'.$user->id" />
             <div class="lg:col-span-2">
