@@ -3,9 +3,12 @@
 use App\Models\User;
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
+use Database\Seeders\Crm\CrmSeeder;
+use Database\Seeders\Foundation\NumberSequenceFormatSeeder;
 use Database\Seeders\Foundation\PermissionSeeder;
 use Database\Seeders\Foundation\RolePermissionSeeder;
 use Database\Seeders\Foundation\RoleSeeder;
+use Database\Seeders\Foundation\SettingSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -111,6 +114,14 @@ function superAdmin(array $attributes = []): User
 function seedAccessControl(): void
 {
     test()->seed([PermissionSeeder::class, RoleSeeder::class, RolePermissionSeeder::class]);
+}
+
+/**
+ * Seed the CRM lookups and settings, the Foundation settings and the number formats.
+ */
+function seedCrm(): void
+{
+    test()->seed([SettingSeeder::class, NumberSequenceFormatSeeder::class, CrmSeeder::class]);
 }
 
 /**
