@@ -87,7 +87,7 @@
         <x-ui.card class="gap-1 p-4">
             <span class="text-sm text-muted-foreground">{{ __('Manager') }}</span>
             @if ($employee->manager)
-                <a href="{{ route('hrm.employees.show', $employee->manager) }}" wire:navigate class="truncate text-sm font-medium hover:underline">{{ $employee->manager->full_name }}</a>
+                <a data-detail-modal href="{{ route('hrm.employees.show', $employee->manager) }}" wire:navigate class="truncate text-sm font-medium hover:underline">{{ $employee->manager->full_name }}</a>
             @else
                 <span class="text-sm font-medium">—</span>
             @endif
@@ -150,7 +150,7 @@
                 <h2 class="mt-4 text-base font-semibold">{{ __('Direct reports') }}</h2>
                 <x-ui.item-group class="gap-2">
                     @forelse ($employee->reports as $report)
-                        <x-ui.item variant="outline" class="min-h-14 active:bg-accent" :href="route('hrm.employees.show', $report)" wire:navigate wire:key="report-{{ $report->id }}">
+                        <x-ui.item variant="outline" class="min-h-14 active:bg-accent" data-detail-modal :href="route('hrm.employees.show', $report)" wire:navigate wire:key="report-{{ $report->id }}">
                             <x-employee-avatar :employee="$report" class="size-8" />
                             <x-ui.item-content class="min-w-0">
                                 <x-ui.item-title class="text-sm"><span class="truncate">{{ $report->full_name }}</span></x-ui.item-title>
