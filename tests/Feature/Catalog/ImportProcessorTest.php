@@ -108,3 +108,14 @@ test('materials import by category name and unit code', function () {
     expect($outcome->created)->toBe(1)
         ->and(Material::query()->where('code', 'CEM-OPC')->value('standard_rate'))->toBe('550.0000');
 });
+
+test('importing the code of a deleted work item restores it', function () {
+    $item = WorkItem::factory()->create(['code' => 'RCC-01', 'name' => 'Old name']);
+    $item->delete();
+
+    $outcome = app(ImportProcessor::class)->run(app(WorkItemImport::class), 'private', importCsv(['RCC-01,RCC in slab,CONCRETE,cum,nos,1']));
+
+    expect($outcome->failed)->toBeEmpty()
+        ->and($item->fresh())->trashed()->toBeFalse()->name->toBe('RCC in slab')
+        ->and(WorkItem::withTrashed()->where('code', 'RCC-01')->count())->toBe(1);
+});
