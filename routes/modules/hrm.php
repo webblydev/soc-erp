@@ -15,4 +15,5 @@ Route::middleware('app')->prefix('hrm')->name('hrm.')->group(function () {
     Route::livewire('employees/create', Employees\Form::class)->middleware('can:create,'.Employee::class)->name('employees.create');
     Route::livewire('employees/{employee:employee_code}', Employees\Show::class)->middleware('can:view,employee')->name('employees.show');
     Route::livewire('employees/{employee:employee_code}/edit', Employees\Form::class)->middleware('can:update,employee')->name('employees.edit');
+    Route::livewire('employees/{employee:employee_code}/exit', Employees\ExitWizard::class)->middleware('can:deactivate,employee')->name('employees.exit');
 });
