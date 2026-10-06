@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Catalog\Models\BusinessLine;
 use App\Modules\Crm\Actions\SaveCustomer;
 use App\Modules\Crm\Models\Customer;
+use App\Modules\Crm\Models\CustomerContact;
 use App\Modules\Crm\Models\CustomerType;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -56,7 +57,7 @@ class Form extends Component
 
     public string $notes = '';
 
-    /** @var list<array{id?: int|null, name: string, designation: string, phone: string, email: string, is_primary: bool, notes: string}> */
+    /** @var list<array<string, mixed>> */
     public array $contacts = [];
 
     public string $duplicate_reason = '';
@@ -88,7 +89,7 @@ class Form extends Component
         }
 
         $this->credit_limit = $customer->credit_limit !== null ? rtrim(rtrim($customer->credit_limit, '0'), '.') : '';
-        $this->contacts = $customer->contacts()->get()->map(fn ($contact): array => [
+        $this->contacts = array_values($customer->contacts()->get()->map(fn (CustomerContact $contact): array => [
             'id' => $contact->id,
             'name' => $contact->name,
             'designation' => (string) $contact->designation,
@@ -96,7 +97,7 @@ class Form extends Component
             'email' => (string) $contact->email,
             'is_primary' => $contact->is_primary,
             'notes' => (string) $contact->notes,
-        ])->all();
+        ])->all());
     }
 
     public function addContact(): void
@@ -106,8 +107,7 @@ class Form extends Component
 
     public function removeContact(int $index): void
     {
-        unset($this->contacts[$index]);
-        $this->contacts = array_values($this->contacts);
+        $this->contacts = array_values(array_filter($this->contacts, fn (int $i): bool => $i !== $index, ARRAY_FILTER_USE_KEY));
     }
 
     public function makePrimary(int $index): void
