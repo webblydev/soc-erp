@@ -29,6 +29,9 @@ class TwoFactor extends Component
 
     public function enable(EnableTwoFactorAuthentication $enable): void
     {
+        $this->validate(['current_password' => ['required', 'string', 'current_password']]);
+        $this->reset('current_password');
+
         $enable($this->user());
         $this->showingRecoveryCodes = false;
     }
