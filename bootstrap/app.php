@@ -2,7 +2,6 @@
 
 use App\Http\Middleware\EnforceSessionTimeout;
 use App\Http\Middleware\EnsurePasswordChanged;
-use App\Http\Middleware\EnsureTwoFactorEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleImpersonation;
 use Illuminate\Foundation\Application;
@@ -23,7 +22,6 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleImpersonation::class,
             EnforceSessionTimeout::class,
             EnsurePasswordChanged::class,
-            EnsureTwoFactorEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
