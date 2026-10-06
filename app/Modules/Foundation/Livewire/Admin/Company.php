@@ -4,7 +4,6 @@ namespace App\Modules\Foundation\Livewire\Admin;
 
 use App\Modules\Foundation\Actions\UpdateCompanyProfile;
 use App\Modules\Foundation\Models\CompanyProfile;
-use App\Support\Facades\Lookup;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\UploadedFile;
 use Livewire\Attributes\Title;
@@ -79,7 +78,6 @@ class Company extends Component
     {
         return view('livewire.admin.company', [
             'company' => CompanyProfile::current(),
-            'currencies' => Lookup::options('currencies', $this->base_currency_id),
             'readOnly' => ! auth()->user()->can('admin.company.update'),
         ]);
     }
