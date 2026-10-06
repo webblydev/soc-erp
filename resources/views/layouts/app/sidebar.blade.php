@@ -31,7 +31,7 @@
                 <x-ui.sidebar-rail />
             </x-ui.sidebar>
 
-            <x-ui.sidebar-inset class="pt-[calc(3.5rem+env(safe-area-inset-top))] {{ $bottomNav ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : '' }} md:pt-0 md:pb-0">
+            <x-ui.sidebar-inset class="min-w-0 pt-[calc(3.5rem+env(safe-area-inset-top))] {{ $bottomNav ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : '' }} md:pt-0 md:pb-0">
                 @if (session()->has(\App\Http\Middleware\HandleImpersonation::SESSION_KEY))
                     <x-shell.impersonation-banner />
                 @endif
@@ -64,6 +64,17 @@
 
         @if ($bottomNav)
             <x-shell.mobile-bottom-nav />
+        @endif
+
+        <livewire:foundation.detail-modal />
+        {{-- Page-wide CRM sheets, after the detail modal so they stack above a detail page shown in it. --}}
+        @if (Route::has('crm.leads.index'))
+            @can('crm.leads.view')
+                <livewire:crm.change-status />
+            @endcan
+            @canany(['crm.activities.view', 'crm.activities.create'])
+                <livewire:crm.quick-log />
+            @endcanany
         @endif
 
         @persist('toast')
