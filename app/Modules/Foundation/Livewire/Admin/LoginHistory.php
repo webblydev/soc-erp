@@ -54,6 +54,9 @@ class LoginHistory extends Component
         return ['created_at' => 'created_at'];
     }
 
+    /**
+     * @param  Builder<*>  $query
+     */
     protected function applyFilters(Builder $query): void
     {
         $filters = $this->filters;
