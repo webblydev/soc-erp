@@ -12,7 +12,7 @@
             @else
                 <span class="size-11 shrink-0 md:size-9"></span>
             @endif
-            <x-ui.item variant="outline" class="min-h-11 flex-1 py-2 active:bg-accent" :href="route('hrm.employees.show', $employee)" wire:navigate>
+            <x-ui.item variant="outline" class="min-h-11 flex-1 py-2 active:bg-accent" data-detail-modal :href="route('hrm.employees.show', $employee)" wire:navigate>
                 <x-employee-avatar :employee="$employee" class="size-8" />
                 <x-ui.item-content class="min-w-0">
                     <x-ui.item-title class="text-base md:text-sm"><span class="truncate">{{ $employee->full_name }}</span></x-ui.item-title>
