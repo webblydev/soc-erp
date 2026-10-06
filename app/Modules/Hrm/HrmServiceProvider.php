@@ -2,6 +2,7 @@
 
 namespace App\Modules\Hrm;
 
+use App\Modules\Hrm\Livewire\Employees\Documents;
 use App\Modules\Hrm\Models\BloodGroup;
 use App\Modules\Hrm\Models\Department;
 use App\Modules\Hrm\Models\Designation;
@@ -68,5 +69,6 @@ class HrmServiceProvider extends ServiceProvider
         Gate::policy(Employee::class, EmployeePolicy::class);
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Hrm\\Livewire');
+        Livewire::component('hrm.employees.documents', Documents::class);
     }
 }
