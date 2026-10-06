@@ -40,7 +40,7 @@ final class MaterialImport implements ImportDefinition
 
     public function findExisting(string $code): ?Model
     {
-        return Material::query()->where('code', $code)->first();
+        return Material::withTrashed()->where('code', $code)->first();
     }
 
     public function toInput(array $row, ?Model $existing): array
@@ -88,8 +88,17 @@ final class MaterialImport implements ImportDefinition
         return $this->saveMaterial->validator($input, $existing instanceof Material ? $existing : null);
     }
 
+    /**
+     * A deleted material keeps its code, so importing that code restores it.
+     */
     public function save(array $input, ?Model $existing): Model
     {
-        return $this->saveMaterial->handle($input, $existing instanceof Material ? $existing : null);
+        $material = $this->saveMaterial->handle($input, $existing instanceof Material ? $existing : null);
+
+        if ($material->trashed()) {
+            $material->restore();
+        }
+
+        return $material;
     }
 }
