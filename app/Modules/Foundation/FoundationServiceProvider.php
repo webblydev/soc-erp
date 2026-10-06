@@ -6,6 +6,7 @@ use App\Http\Middleware\EnforceSessionTimeout;
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsureTwoFactorEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\HandleImpersonation;
 use App\Models\User;
 use App\Modules\Foundation\Actions\DisableTwoFactorUnlessRequired;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
@@ -59,6 +60,6 @@ class FoundationServiceProvider extends ServiceProvider
 
         Livewire::component('foundation.profile.two-factor', TwoFactor::class);
 
-        Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class, EnsurePasswordChanged::class, EnsureTwoFactorEnabled::class]);
+        Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class, EnsurePasswordChanged::class, EnsureTwoFactorEnabled::class, HandleImpersonation::class]);
     }
 }
