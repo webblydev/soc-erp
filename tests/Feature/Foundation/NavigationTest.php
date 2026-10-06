@@ -51,6 +51,28 @@ test('items are marked active for their route family', function () {
     expect($this->navigation->for($user)[0]['items'][0]['active'])->toBeTrue();
 });
 
+test('links with route params point at that page and are active only there', function () {
+    Route::get('test/tables/{table}', fn () => 'ok')->name('test.tables.show');
+    Route::getRoutes()->refreshNameLookups();
+
+    $navigation = new Navigation([
+        ['key' => 'admin', 'label' => 'Admin', 'icon' => 'shield', 'items' => [
+            ['label' => 'Master data', 'icon' => 'database', 'children' => [
+                ['label' => 'Branches', 'route' => 'test.tables.show', 'params' => ['table' => 'branches'], 'icon' => 'building-2'],
+                ['label' => 'Units', 'route' => 'test.tables.show', 'params' => ['table' => 'units'], 'icon' => 'ruler'],
+            ]],
+        ]],
+    ]);
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->get('test/tables/units');
+    $children = $navigation->for($user)[0]['items'][0]['children'];
+
+    expect($children[0]['url'])->toBe(url('test/tables/branches'))
+        ->and($children[0]['active'])->toBeFalse()
+        ->and($children[1]['active'])->toBeTrue();
+});
+
 test('tree nodes keep only permitted children and are dropped when none remain', function () {
     $navigation = new Navigation([
         ['key' => 'admin', 'label' => 'Admin', 'icon' => 'shield', 'items' => [
