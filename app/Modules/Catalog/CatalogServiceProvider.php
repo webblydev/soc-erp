@@ -5,6 +5,7 @@ namespace App\Modules\Catalog;
 use App\Modules\Catalog\Models\BusinessLine;
 use App\Modules\Catalog\Models\MaterialCategory;
 use App\Modules\Catalog\Models\PricingBasis;
+use App\Modules\Catalog\Models\Service;
 use App\Modules\Catalog\Models\ServiceCategory;
 use App\Modules\Catalog\Models\Unit;
 use App\Modules\Catalog\Models\UnitKind;
@@ -26,6 +27,7 @@ class CatalogServiceProvider extends ServiceProvider
             'business_line' => BusinessLine::class,
             'service_category' => ServiceCategory::class,
             'pricing_basis' => PricingBasis::class,
+            'service' => Service::class,
             'unit_kind' => UnitKind::class,
             'unit' => Unit::class,
             'work_item_category' => WorkItemCategory::class,
