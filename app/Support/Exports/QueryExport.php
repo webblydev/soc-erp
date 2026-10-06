@@ -16,13 +16,13 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 final class QueryExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     /**
-     * @param  Builder<Model>  $query
-     * @param  array<string, string|Closure(Model): mixed>  $columns
+     * @param  Builder<covariant Model>  $query
+     * @param  array<string, string|Closure>  $columns
      */
     public function __construct(private Builder $query, private array $columns) {}
 
     /**
-     * @return Builder<Model>
+     * @return Builder<covariant Model>
      */
     public function query(): Builder
     {
