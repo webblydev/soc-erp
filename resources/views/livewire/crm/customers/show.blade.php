@@ -22,7 +22,7 @@
         </div>
         <div class="hidden flex-wrap justify-end gap-2 md:flex">
             @can('update', $customer)
-                <x-ui.button size="sm" variant="outline" :href="route('crm.customers.edit', $customer)" wire:navigate><x-lucide-pencil /> {{ __('Edit') }}</x-ui.button>
+                <x-ui.button size="sm" variant="outline" :href="route('crm.customers.edit', $customer)" wire:navigate data-detail-modal><x-lucide-pencil /> {{ __('Edit') }}</x-ui.button>
             @endcan
             @can('crm.activities.create')
                 <x-ui.button size="sm" x-on:click="{{ $logEvent }}"><x-lucide-notebook-pen /> {{ __('Log activity') }}</x-ui.button>
