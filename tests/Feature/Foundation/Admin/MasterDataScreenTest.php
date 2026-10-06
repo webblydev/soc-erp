@@ -141,3 +141,18 @@ test('viewers without update permission get no save button', function () {
         ->assertDontSee('form="lookup-row-form"', false)
         ->assertSee('disabled', false);
 });
+
+test('a table opens as its own page without the list of other tables', function () {
+    $this->actingAs(userWithPermissions('admin.branches.view', 'admin.master_data.view'))
+        ->get(route('admin.master-data.show', 'branches'))
+        ->assertOk()
+        ->assertSee('Branches - ', false)
+        ->assertDontSee('aria-label="Lookup tables"', false);
+});
+
+test('the master data index lists the tables the user may open', function () {
+    $this->actingAs(userWithPermissions('admin.branches.view'))
+        ->get(route('admin.master-data.index'))
+        ->assertSee(route('admin.master-data.show', 'branches'), false)
+        ->assertDontSee(route('admin.master-data.show', 'currencies'), false);
+});
