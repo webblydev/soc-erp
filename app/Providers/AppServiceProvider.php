@@ -8,6 +8,8 @@ use App\Modules\Foundation\Models\CompanyProfile;
 use App\Modules\Foundation\Models\Currency;
 use App\Modules\Foundation\Models\Location;
 use App\Modules\Foundation\Models\LocationLevel;
+use App\Modules\Foundation\Models\NumberSequence;
+use App\Modules\Foundation\Models\NumberSequenceFormat;
 use App\Modules\Foundation\Models\Role;
 use App\Modules\Foundation\Models\Setting;
 use App\Support\Database\BlueprintMacros;
@@ -72,6 +74,8 @@ class AppServiceProvider extends ServiceProvider
             'role' => Role::class,
             'location' => Location::class,
             'location_level' => LocationLevel::class,
+            'number_sequence' => NumberSequence::class,
+            'number_sequence_format' => NumberSequenceFormat::class,
         ]);
     }
 }
