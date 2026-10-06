@@ -6,18 +6,21 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Service;
 use App\Modules\Crm\Actions\AssignLead;
 use App\Modules\Crm\Actions\ChangeLeadStatus;
+use App\Modules\Crm\Actions\DeleteLead;
 use App\Modules\Crm\Concerns\FiltersByLocation;
 use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Models\LeadStatus;
 use App\Modules\Crm\Models\SalesTeam;
 use App\Support\Exports\ListingExport;
 use App\Support\Facades\Settings;
+use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Closure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
@@ -32,7 +35,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 #[Title('Leads')]
 class Index extends Component
 {
-    use FiltersByLocation, WithListing;
+    use FiltersByLocation, WithBulkActions, WithListing;
 
     public const PRESETS = ['my_open', 'today', 'overdue', 'unassigned', 'won_month', 'lost_month'];
 
@@ -44,9 +47,6 @@ class Index extends Component
     /** @var list<string> */
     #[Url(except: [])]
     public array $statusFilter = [];
-
-    /** @var list<string> */
-    public array $selected = [];
 
     public string $bulkAssigneeId = '';
 
@@ -310,7 +310,7 @@ class Index extends Component
     {
         $this->authorize('crm.leads.export');
 
-        return ListingExport::download('leads', $this->filteredQuery(), [
+        return ListingExport::download('leads', $this->exportQuery(), [
             'Lead #' => 'lead_number',
             'Date' => fn (Lead $lead): string => $lead->lead_date->format('d-M-Y'),
             'Name' => 'name',
@@ -328,6 +328,17 @@ class Index extends Component
             'Next follow-up' => fn (Lead $lead): ?string => $lead->next_follow_up_at?->format('d-M-Y H:i'),
             'Last activity' => fn (Lead $lead): ?string => $lead->last_activity_at?->format('d-M-Y H:i'),
         ]);
+    }
+
+    protected function authorizeBulkDelete(): void
+    {
+        $this->authorize('crm.leads.delete');
+    }
+
+    protected function deleteRow(Model $row): void
+    {
+        /** @var Lead $row */
+        app(DeleteLead::class)->handle($this->actor(), $row);
     }
 
     #[On('crm-lead-updated')]
