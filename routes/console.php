@@ -1,5 +1,8 @@
 <?php
 
+use App\Modules\Crm\Jobs\FlagStaleLeads;
+use App\Modules\Crm\Jobs\SendDailyDigest;
+use App\Modules\Crm\Jobs\SendDueReminders;
 use App\Support\Imports\ImportStorage;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -10,3 +13,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::call(fn () => ImportStorage::prune())->daily()->name('imports:prune');
+
+Schedule::job(new SendDueReminders)->everyFiveMinutes()->name('crm:reminders')->withoutOverlapping();
+Schedule::job(new SendDailyDigest)->everyMinute()->name('crm:daily-digest')->withoutOverlapping();
+Schedule::job(new FlagStaleLeads)->dailyAt('08:00')->name('crm:stale-leads')->withoutOverlapping();
