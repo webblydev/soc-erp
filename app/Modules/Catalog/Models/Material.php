@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * A construction material (docs/02 §3.8). expense_account_id is filled by Accounting (spec C1).
@@ -32,7 +33,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Material extends Model implements Collaborative
 {
     /** @use HasFactory<MaterialFactory> */
-    use Auditable, HasFactory, TracksAuthors;
+    use Auditable, HasFactory, SoftDeletes, TracksAuthors;
 
     /**
      * @return array<string, string>
