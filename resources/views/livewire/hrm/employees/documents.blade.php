@@ -39,7 +39,7 @@
                     @endif
                     @if ($canManage)
                         <x-ui.button variant="ghost" size="icon" class="size-11 md:size-9" wire:click="edit({{ $document->id }})" :aria-label="__('Edit document')"><x-lucide-pencil /></x-ui.button>
-                        <x-ui.button variant="ghost" size="icon" class="size-11 text-destructive md:size-9" wire:click="delete({{ $document->id }})" wire:confirm="{{ __('Delete this document and its file?') }}" :aria-label="__('Delete document')"><x-lucide-trash-2 /></x-ui.button>
+                        <x-ui.button variant="ghost" size="icon" class="size-11 text-destructive md:size-9" x-on:click="$dispatch('confirm-action', { title: @js(__('Delete this document and its file?')), confirm: () => $wire.delete({{ $document->id }}) })" :aria-label="__('Delete document')"><x-lucide-trash-2 /></x-ui.button>
                     @endif
                 </x-ui.item-actions>
             </x-ui.item>
