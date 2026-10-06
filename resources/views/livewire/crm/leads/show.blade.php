@@ -227,7 +227,7 @@
     </div>
 
     {{-- Mobile actions sheet --}}
-    <x-shell.sheet id="lead-actions" :title="__('Lead actions')">
+    <x-shell.sheet id="lead-actions" :title="__('Lead actions')" :description="$lead->lead_number.' · '.$lead->name">
         <div class="flex flex-col gap-2 pb-4">
             @foreach ($actions as $action)
                 @php($variant = ($action['destructive'] ?? false) ? 'destructive' : 'outline')
@@ -243,7 +243,7 @@
     </x-shell.sheet>
 
     @can('assign', $lead)
-        <x-shell.sheet id="lead-assign" :title="__('Assign lead')">
+        <x-shell.sheet id="lead-assign" :title="__('Assign lead')" :description="__('Choose who follows up :lead. The change is kept in its history.', ['lead' => $lead->lead_number])">
             <form wire:submit="assign" id="lead-assign-form" class="flex flex-col gap-4">
                 <x-ui.field>
                     <x-ui.field-label for="assign-to">{{ __('Assign to') }}</x-ui.field-label>
@@ -277,7 +277,7 @@
         </x-shell.sheet>
     @endcan
 
-    <x-shell.sheet id="activity-delete" :title="__('Delete activity?')">
+    <x-shell.sheet id="activity-delete" :title="__('Delete activity?')" :description="__('The activity is removed from the timeline.')">
         <x-slot:footer>
             <x-ui.button variant="outline" x-on:click="$dispatch('close-sheet-activity-delete')">{{ __('Cancel') }}</x-ui.button>
             <x-ui.button variant="destructive" wire:click="deleteActivity">{{ __('Delete') }}</x-ui.button>
