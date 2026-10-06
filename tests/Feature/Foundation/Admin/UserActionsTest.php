@@ -6,6 +6,7 @@ use App\Modules\Foundation\Actions\SetUserActive;
 use App\Modules\Foundation\Actions\UpdateUser;
 use App\Modules\Foundation\Models\AuditLog;
 use App\Modules\Foundation\Models\Role;
+use App\Modules\Foundation\Services\PermissionRegistrar;
 
 beforeEach(function () {
     ensureRole('accountant');
@@ -139,4 +140,71 @@ test('users can be deactivated through update and reactivated', function () {
 
     app(SetUserActive::class)->handle($user->fresh(), true, $this->actor);
     expect($user->fresh()->is_active)->toBeTrue();
+});
+
+test('a non super admin cannot change their own access', function () {
+    $this->actor->syncRoles(['accountant']);
+
+    expectValidationError(fn () => app(UpdateUser::class)->handle($this->actor, userInput([
+        'username' => $this->actor->username, 'email' => null, 'password' => null, 'roles' => ['accountant'], 'permissions' => ['admin.users.create'],
+    ]), $this->actor), 'roles');
+
+    expect($this->actor->fresh()->directPermissions()->pluck('name')->all())->not->toBe(['admin.users.create']);
+});
+
+test('a non super admin can only assign roles whose permissions they hold', function () {
+    createPermissions('sales.quotes.approve');
+    ensureRole('management')->syncPermissions(['sales.quotes.approve']);
+
+    expectValidationError(fn () => app(CreateUser::class)->handle(userInput(['roles' => ['management']]), $this->actor), 'roles');
+
+    $plain = User::factory()->create();
+    $plain->syncRoles(['accountant']);
+
+    expectValidationError(fn () => app(UpdateUser::class)->handle($plain, userInput([
+        'username' => $plain->username, 'email' => null, 'password' => null, 'roles' => ['accountant', 'management'],
+    ]), $this->actor), 'roles');
+
+    expect($plain->fresh()->hasRole('management'))->toBeFalse();
+});
+
+test('a non super admin cannot change an account with more access than they have', function () {
+    createPermissions('sales.quotes.approve');
+    $stronger = userWithPermissions('sales.quotes.approve');
+    $stronger->syncRoles(['accountant']);
+
+    expectValidationError(fn () => app(UpdateUser::class)->handle($stronger, userInput([
+        'username' => $stronger->username, 'email' => null, 'password' => null, 'name' => 'Changed', 'permissions' => ['sales.quotes.approve'],
+    ]), $this->actor), 'user');
+
+    expect($stronger->fresh()->name)->not->toBe('Changed');
+});
+
+test('an admin can create a user in a role whose permissions they hold', function () {
+    createPermissions('accounting.vouchers.view');
+    ensureRole('accountant')->syncPermissions(['accounting.vouchers.view']);
+    $this->actor->syncDirectPermissions(['admin.users.create', 'admin.users.update', 'admin.users.deactivate', 'accounting.vouchers.view']);
+    app(PermissionRegistrar::class)->forget($this->actor);
+
+    $user = app(CreateUser::class)->handle(userInput(), $this->actor);
+
+    expect($user->hasRole('accountant'))->toBeTrue();
+});
+
+test('super admins are not limited by the delegation rules', function () {
+    createPermissions('sales.quotes.approve');
+    ensureRole('management')->syncPermissions(['sales.quotes.approve']);
+    $super = superAdmin();
+    $stronger = userWithPermissions('sales.quotes.approve');
+
+    app(UpdateUser::class)->handle($stronger, userInput([
+        'username' => $stronger->username, 'email' => null, 'password' => null, 'roles' => ['management'], 'permissions' => ['sales.quotes.approve'],
+    ]), $super);
+
+    app(UpdateUser::class)->handle($super, userInput([
+        'username' => $super->username, 'email' => null, 'password' => null, 'roles' => [Role::SUPER_ADMIN, 'management'],
+    ]), $super);
+
+    expect($stronger->fresh()->hasRole('management'))->toBeTrue()
+        ->and($super->fresh()->hasRole('management'))->toBeTrue();
 });
