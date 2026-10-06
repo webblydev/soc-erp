@@ -32,7 +32,7 @@
         </x-ui.card>
     @endforeach
 
-    <x-shell.sheet id="sequence-format" :title="__('Edit format')">
+    <x-shell.sheet id="sequence-format" :title="__('Edit format')" :description="__('Set how new document numbers are built.')">
         <form wire:submit="saveFormat" id="sequence-format-form" class="flex flex-col gap-3 pb-2">
             <x-ui.field>
                 <x-ui.field-label for="format">{{ __('Format') }}</x-ui.field-label>
@@ -47,7 +47,7 @@
         </x-slot:footer>
     </x-shell.sheet>
 
-    <x-shell.sheet id="sequence-counter" :title="__('Change next number')" :description="$counter ? __(':type · :scope', ['type' => $counter->document_type, 'scope' => $counter->scope_key ?: __('global')]) : null">
+    <x-shell.sheet id="sequence-counter" :title="__('Change next number')" :description="$counter ? __(':type · :scope', ['type' => $counter->document_type, 'scope' => $counter->scope_key ?: __('global')]) : __('Set the next number to issue.')">
         <form wire:submit="saveCounter" id="sequence-counter-form" class="flex flex-col gap-3 pb-2">
             <x-ui.alert>
                 <x-lucide-triangle-alert />
