@@ -33,6 +33,9 @@
         @endisset
 
         <div class="ms-auto flex items-center gap-2">
+            @isset($actions)
+                {{ $actions }}
+            @endisset
             @if ($exportable)
                 <x-ui.button variant="outline" wire:click="export">
                     <x-lucide-download />
@@ -78,6 +81,10 @@
                         </x-ui.drawer-footer>
                     </x-ui.drawer-content>
                 </x-ui.drawer>
+            @endisset
+
+            @isset($actions)
+                {{ $actions }}
             @endisset
 
             @if ($exportable)
