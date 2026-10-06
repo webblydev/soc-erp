@@ -9,6 +9,7 @@ use App\Support\AuditTrail\TracksAuthors;
 use App\Support\Collaboration\Collaborative;
 use App\Support\Collaboration\HasAttachments;
 use App\Support\Collaboration\HasNotes;
+use App\Support\Phone;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -109,13 +110,7 @@ class User extends Authenticatable implements Collaborative
      */
     public static function normalisePhone(?string $phone): ?string
     {
-        $digits = preg_replace('/[\s\-()]/', '', (string) $phone);
-
-        if ($digits === null || $digits === '') {
-            return null;
-        }
-
-        return (string) preg_replace('/^\+?880(?=1)/', '0', $digits);
+        return Phone::normalise($phone);
     }
 
     /**
