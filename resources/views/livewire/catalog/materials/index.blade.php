@@ -3,6 +3,7 @@
         :search-placeholder="__('Search code or name')"
         :create-url="auth()->user()->can('catalog.materials.create') ? route('catalog.materials.create') : null"
         :create-label="__('New material')"
+        :exportable="auth()->user()->can('catalog.materials.export')"
         :has-more="$this->hasMoreRows"
         :active-filters="count(array_filter($filters, 'filled'))"
     >
@@ -41,9 +42,13 @@
         </x-slot:filters>
 
         <x-slot:desktop>
-            <x-ui.table>
+            <x-shell.bulk-bar :exportable="auth()->user()->can('catalog.materials.export')" :deletable="auth()->user()->can('catalog.materials.delete')" />
+
+            <x-ui.table variant="bordered">
                 <x-ui.table-header>
                     <x-ui.table-row>
+                        <x-shell.select-all :ids="$rows->pluck('id')" />
+                        <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="code" :label="__('Code')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="name" :label="__('Name')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head>{{ __('Category') }}</x-ui.table-head>
@@ -55,6 +60,15 @@
                 <x-ui.table-body>
                     @forelse ($rows as $material)
                         <x-ui.table-row wire:key="material-{{ $material->id }}">
+                            <x-shell.select-row :id="$material->id" :label="$material->name" />
+                            <x-shell.row-menu>
+                                @can('catalog.materials.update')
+                                    <x-shell.row-menu-item icon="pencil" :href="route('catalog.materials.edit', $material)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                @endcan
+                                @can('catalog.materials.delete')
+                                    <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $material->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $material->name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                                @endcan
+                            </x-shell.row-menu>
                             <x-ui.table-cell class="font-mono text-sm">{{ $material->code }}</x-ui.table-cell>
                             <x-ui.table-cell class="font-medium">
                                 @can('catalog.materials.update')
@@ -70,13 +84,13 @@
                         </x-ui.table-row>
                     @empty
                         <x-ui.table-row>
-                            <x-ui.table-cell colspan="6" class="py-10 text-center text-muted-foreground">{{ __('No materials found.') }}</x-ui.table-cell>
+                            <x-ui.table-cell colspan="8" class="py-10 text-center text-muted-foreground">{{ __('No materials found.') }}</x-ui.table-cell>
                         </x-ui.table-row>
                     @endforelse
                 </x-ui.table-body>
             </x-ui.table>
 
-            <div class="mt-4 flex items-center justify-between gap-4">
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
                 <x-ui.select native wire:model.live="perPage" class="w-36" :aria-label="__('Rows per page')">
                     @foreach (static::PER_PAGE_OPTIONS as $option)
                         <option value="{{ $option }}">{{ __(':count per page', ['count' => $option]) }}</option>
