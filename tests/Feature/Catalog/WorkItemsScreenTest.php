@@ -7,7 +7,11 @@ use App\Modules\Catalog\Livewire\WorkItems\Index;
 use App\Modules\Catalog\Models\Unit;
 use App\Modules\Catalog\Models\WorkItem;
 use App\Modules\Catalog\Models\WorkItemCategory;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
+
+beforeEach(fn () => Model::preventLazyLoading());
+afterEach(fn () => Model::preventLazyLoading(false));
 
 test('each work items route needs its permission', function () {
     $item = WorkItem::factory()->create();
