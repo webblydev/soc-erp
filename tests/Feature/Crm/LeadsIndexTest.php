@@ -8,7 +8,11 @@ use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Models\LeadStatus;
 use App\Support\Facades\Settings;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
+
+beforeEach(fn () => Model::preventLazyLoading());
+afterEach(fn () => Model::preventLazyLoading(false));
 
 beforeEach(function () {
     seedCrm();
