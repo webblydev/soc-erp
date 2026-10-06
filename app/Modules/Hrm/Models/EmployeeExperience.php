@@ -5,6 +5,7 @@ namespace App\Modules\Hrm\Models;
 use App\Support\AuditTrail\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
@@ -21,7 +22,7 @@ use Illuminate\Support\Carbon;
 #[Fillable(['company', 'position', 'from_date', 'to_date', 'notes'])]
 class EmployeeExperience extends Model
 {
-    use Auditable;
+    use Auditable, SoftDeletes;
 
     protected $table = 'employee_experience';
 
