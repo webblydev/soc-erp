@@ -62,7 +62,7 @@
             <x-ui.alert-title>{{ __('Converted to customer :name on :date', ['name' => $lead->convertedCustomer->name, 'date' => $lead->converted_at?->format('d-M-Y')]) }}</x-ui.alert-title>
             @if ($user->can('view', $lead->convertedCustomer))
                 <x-ui.alert-description>
-                    <a href="{{ route('crm.customers.show', $lead->convertedCustomer) }}" wire:navigate class="font-medium underline">{{ $lead->convertedCustomer->customer_number }}</a>
+                    <a data-detail-modal href="{{ route('crm.customers.show', $lead->convertedCustomer) }}" wire:navigate class="font-medium underline">{{ $lead->convertedCustomer->customer_number }}</a>
                 </x-ui.alert-description>
             @endif
         </x-ui.alert>
@@ -90,7 +90,7 @@
         </nav>
     @endif
 
-    <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
         {{-- Summary rail (cards on mobile, right column on desktop) --}}
         <aside class="grid grid-cols-2 gap-3 lg:order-last lg:grid-cols-1">
             <x-ui.card class="gap-1 p-4">
@@ -147,7 +147,7 @@
                         @if ($lead->referrerLabel())
                             <x-ui.description-item :term="__('Referrer')">
                                 @if ($lead->referrer_type === 'employee' && $lead->referrerEmployee && auth()->user()->can('view', $lead->referrerEmployee))
-                                    <a href="{{ route('hrm.employees.show', $lead->referrerEmployee) }}" wire:navigate class="hover:underline">{{ $lead->referrerLabel() }}</a>
+                                    <a data-detail-modal href="{{ route('hrm.employees.show', $lead->referrerEmployee) }}" wire:navigate class="hover:underline">{{ $lead->referrerLabel() }}</a>
                                 @else
                                     {{ $lead->referrerLabel() }}
                                 @endif
@@ -283,7 +283,4 @@
             <x-ui.button variant="destructive" wire:click="deleteActivity">{{ __('Delete') }}</x-ui.button>
         </x-slot:footer>
     </x-shell.sheet>
-
-    <livewire:crm.change-status />
-    <livewire:crm.quick-log />
 </div>
