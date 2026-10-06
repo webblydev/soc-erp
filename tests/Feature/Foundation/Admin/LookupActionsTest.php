@@ -6,6 +6,8 @@ use App\Modules\Foundation\Actions\ReorderLookup;
 use App\Modules\Foundation\Actions\SaveLookup;
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\Currency;
+use App\Support\Lookups\ActiveLookup;
+use App\Support\Lookups\LookupRegistry;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 test('a new row is appended at the end of the sort order', function () {
@@ -53,4 +55,30 @@ test('reorder moves a row and ignores ids from other tables', function () {
     $currency = Currency::factory()->create();
     expect(fn () => app(ReorderLookup::class)->handle('branches', $currency->id + 1000, 0))
         ->toThrow(ModelNotFoundException::class);
+});
+
+test('deleting an unused row soft-deletes it and drops it from dropdowns', function () {
+    $branch = Branch::factory()->create();
+
+    app(DeleteLookup::class)->handle('branches', $branch);
+
+    $this->assertSoftDeleted($branch);
+    expect(app(LookupRegistry::class)->options('branches')->pluck('id'))->not->toContain($branch->id);
+});
+
+test('a row referenced only by a deleted record still cannot be deleted', function () {
+    $branch = Branch::factory()->create();
+    User::factory()->create(['branch_id' => $branch->id])->delete();
+
+    expectValidationError(fn () => app(DeleteLookup::class)->handle('branches', $branch), 'row');
+    $this->assertNotSoftDeleted($branch);
+});
+
+test('a deleted row fails the active lookup rule', function () {
+    $branch = Branch::factory()->create();
+    $branch->delete();
+
+    $validator = validator(['branch_id' => $branch->id], ['branch_id' => [new ActiveLookup('branches')]]);
+
+    expect($validator->fails())->toBeTrue();
 });
