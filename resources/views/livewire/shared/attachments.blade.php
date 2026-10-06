@@ -47,7 +47,7 @@
         @endif
     </x-shell.form-section>
 
-    <x-shell.sheet id="attachment-upload" :title="$replacing ? __('Upload a new version') : __('Upload a file')" :description="$replacing ? ($replacing->title ?: $replacing->original_name) : null">
+    <x-shell.sheet id="attachment-upload" :title="$replacing ? __('Upload a new version') : __('Upload a file')" :description="$replacing ? ($replacing->title ?: $replacing->original_name) : __('Attach a document to this record.')">
         <form wire:submit="save" id="attachment-upload-form" class="flex flex-col gap-4 pb-2">
             <x-ui.field>
                 <x-ui.field-label for="attachment-file">{{ __('File') }} *</x-ui.field-label>
@@ -77,7 +77,7 @@
         </x-slot:footer>
     </x-shell.sheet>
 
-    <x-shell.sheet id="attachment-actions" :title="$selected ? ($selected->title ?: $selected->original_name) : __('File')" :description="$selected ? __('Version :version', ['version' => $selected->version]) : null">
+    <x-shell.sheet id="attachment-actions" :title="$selected ? ($selected->title ?: $selected->original_name) : __('File')" :description="$selected ? __('Version :version', ['version' => $selected->version]) : __('Download or replace this file.')">
         @if ($selected)
             <div class="flex flex-col gap-2 pb-2">
                 <x-ui.button variant="outline" class="h-11 justify-start md:h-9" :href="$selected->downloadUrl()"><x-lucide-download /> {{ __('Download') }}</x-ui.button>
