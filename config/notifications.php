@@ -1,14 +1,20 @@
 <?php
 
 /*
-| Notification keys users can opt out of (docs/01 §9). Delivery is built in sub-project 3;
-| each module adds its own keys. channels: database, mail, sms.
+| Notification keys users can opt out of (docs/01 §9). Each module adds its own keys.
+| channels: database (in-app inbox), mail, sms (no gateway yet, never sent).
+| user.password_reset and security.login_new_ip also go to the inbox (shared services spec S9).
 */
 
 return [
     'keys' => [
         'user.created' => ['label' => 'Your account was created', 'channels' => ['mail']],
-        'user.password_reset' => ['label' => 'An admin reset your password', 'channels' => ['mail']],
-        'security.login_new_ip' => ['label' => 'Sign-in from a new IP address', 'channels' => ['mail']],
+        'user.password_reset' => ['label' => 'An admin reset your password', 'channels' => ['mail', 'database']],
+        'security.login_new_ip' => ['label' => 'Sign-in from a new IP address', 'channels' => ['mail', 'database']],
     ],
+
+    /*
+    | Roles alerted when they sign in from an IP address they have not used before.
+    */
+    'new_ip_roles' => ['accountant', 'finance_manager'],
 ];
