@@ -4,6 +4,8 @@ namespace Tests\Fixtures;
 
 use App\Models\User;
 use App\Support\DataScope\HasDataScope;
+use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class ScopedRecord extends Model
@@ -12,6 +14,9 @@ class ScopedRecord extends Model
 
     /** @var list<int> */
     public static array $teamUserIds = [];
+
+    /** @var (Closure(Builder<self>): mixed)|null */
+    public static ?Closure $teamExtra = null;
 
     protected $guarded = [];
 
@@ -25,5 +30,12 @@ class ScopedRecord extends Model
     public function dataScopeTeamUserIds(User $user): array
     {
         return static::$teamUserIds;
+    }
+
+    protected function dataScopeTeamExtra(Builder $query, User $user): void
+    {
+        if (static::$teamExtra !== null) {
+            (static::$teamExtra)($query);
+        }
     }
 }

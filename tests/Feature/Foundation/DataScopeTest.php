@@ -27,6 +27,8 @@ beforeEach(function () {
     ScopedRecord::$teamUserIds = [$this->teammate->id];
 });
 
+afterEach(fn () => ScopedRecord::$teamExtra = null);
+
 function visibleLabels(User $user): array
 {
     return ScopedRecord::query()->visibleTo($user, 'crm.leads')->orderBy('label')->pluck('label')->all();
@@ -59,4 +61,12 @@ test('super admin sees everything', function () {
     $this->me->assignRole('super_admin');
 
     expect(visibleLabels($this->me))->toHaveCount(4);
+});
+
+test('view_team adds the model team extra clause', function () {
+    $this->me->syncDirectPermissions(['crm.leads.view_team']);
+    ScopedRecord::$teamUserIds = [];
+    ScopedRecord::$teamExtra = fn ($query) => $query->orWhere('label', 'other');
+
+    expect(visibleLabels($this->me))->toBe(['assigned', 'mine', 'other']);
 });
