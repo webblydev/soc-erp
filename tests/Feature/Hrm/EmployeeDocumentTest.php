@@ -63,3 +63,11 @@ test('documents need the manage permission and deleting removes the file', funct
 
     expect($this->employee->documents()->count())->toBe(0)->and($this->employee->attachments()->count())->toBe(0);
 });
+
+test('a basic viewer cannot download an employee document file', function () {
+    $document = app(SaveEmployeeDocument::class)->handle($this->actor, $this->employee, ['employee_document_type_id' => EmployeeDocumentType::idFor('NID')], UploadedFile::fake()->create('nid.pdf', 20, 'application/pdf'));
+    $url = $document->attachment->downloadUrl();
+
+    $this->actingAs(userWithPermissions('hrm.employees.view_basic'))->get($url)->assertForbidden();
+    $this->actingAs($this->actor)->get($url)->assertOk();
+});

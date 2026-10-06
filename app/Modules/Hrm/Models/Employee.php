@@ -106,9 +106,13 @@ class Employee extends Model implements Collaborative
         return 'employee_code';
     }
 
+    /**
+     * Attachments, notes and history hold personal data (NID scans, salary changes), so the
+     * shared collaboration panels need full visibility, not just the directory view (spec H2).
+     */
     public function isViewableBy(User $user): bool
     {
-        return $user->can('view', $this);
+        return $user->can('viewFull', $this);
     }
 
     /**
