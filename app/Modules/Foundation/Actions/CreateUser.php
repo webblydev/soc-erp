@@ -4,13 +4,15 @@ namespace App\Modules\Foundation\Actions;
 
 use App\Models\User;
 use App\Modules\Foundation\Concerns\ValidatesUserInput;
+use App\Modules\Foundation\Notifications\AccountCreated;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Admin-created account (docs/01 §6.1): starts with must_change_password.
+ * Admin-created account (docs/01 §6.1): starts with must_change_password. A user with an email
+ * is sent user.created.
  */
 class CreateUser
 {
@@ -28,7 +30,7 @@ class CreateUser
         /** @var array{name: string, username: string, email: ?string, phone: ?string, branch_id: ?int, roles: list<string>, permissions?: list<string>, password: string, is_active?: bool} $data */
         $data = Validator::make($this->prepareUserInput($input), $this->userRules(null))->validate();
 
-        return DB::transaction(function () use ($data, $actor): User {
+        $user = DB::transaction(function () use ($data, $actor): User {
             $user = new User(Arr::only($data, ['name', 'username', 'email', 'phone', 'branch_id', 'password']));
             $user->is_active = (bool) ($data['is_active'] ?? true);
             $user->must_change_password = true;
@@ -38,5 +40,11 @@ class CreateUser
 
             return $user;
         });
+
+        if (filled($user->email)) {
+            $user->notify(new AccountCreated);
+        }
+
+        return $user;
     }
 }
