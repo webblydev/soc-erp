@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Crm\Livewire\Activities;
 use App\Modules\Crm\Livewire\Customers;
 use App\Modules\Crm\Livewire\Leads;
 use App\Modules\Crm\Livewire\Teams;
@@ -29,6 +30,8 @@ Route::middleware('app')->prefix('crm')->name('crm.')->group(function () {
     Route::livewire('customers/create', Customers\Form::class)->middleware('can:create,'.Customer::class)->name('customers.create');
     Route::livewire('customers/{customer:customer_number}', Customers\Show::class)->middleware('can:view,customer')->name('customers.show');
     Route::livewire('customers/{customer:customer_number}/edit', Customers\Form::class)->middleware('can:update,customer')->name('customers.edit');
+
+    Route::livewire('activities', Activities\Index::class)->middleware('can:crm.activities.view')->name('activities.index');
 
     Route::livewire('teams', Teams\Index::class)->middleware('can:crm.teams.view')->name('teams.index');
     Route::livewire('teams/create', Teams\Form::class)->middleware('can:crm.teams.manage')->name('teams.create');
