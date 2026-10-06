@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Brick\Math\BigDecimal;
 use Brick\Math\BigNumber;
 use Brick\Math\RoundingMode;
 use Brick\Money\Money as BrickMoney;
@@ -35,6 +36,22 @@ final class Money
         $symbol = $withSymbol ? (self::SYMBOLS[$code] ?? $code).' ' : '';
 
         return ($decimal->isNegative() ? '-' : '').$symbol.self::groupDigits($integer).'.'.$fraction;
+    }
+
+    /**
+     * Format a DECIMAL(18,4) rate with BD grouping: at least 2 and at most 4 decimals, no symbol.
+     */
+    public static function formatRate(?string $rate): string
+    {
+        if ($rate === null || $rate === '') {
+            return '—';
+        }
+
+        $decimal = BigDecimal::of($rate)->toScale(4, RoundingMode::HalfUp);
+        [$integer, $fraction] = explode('.', (string) $decimal->abs());
+        $fraction = str_pad(rtrim($fraction, '0'), 2, '0');
+
+        return ($decimal->isNegative() ? '-' : '').self::groupDigits($integer).'.'.$fraction;
     }
 
     private static function groupDigits(string $integer): string
