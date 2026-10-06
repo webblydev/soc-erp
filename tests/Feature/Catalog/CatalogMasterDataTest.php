@@ -105,9 +105,9 @@ test('the catalog nav group lists only what the user may view, with lookups in a
     $user = userWithPermissions('catalog.units.view', 'catalog.services.view');
 
     $catalog = collect(app(Navigation::class)->for($user))->firstWhere('key', 'catalog');
-    $setup = collect($catalog['items'])->firstWhere('label', 'Catalog setup');
+    $masterData = collect($catalog['items'])->firstWhere('label', 'Master data');
 
-    expect(collect($catalog['items'])->pluck('label')->all())->toBe(['Services', 'Catalog setup'])
-        ->and(collect($setup['children'])->pluck('label')->all())->toBe(['Units'])
-        ->and($setup['children'][0]['url'])->toBe(route('admin.master-data.show', 'units'));
+    expect(collect($catalog['items'])->pluck('label')->all())->toBe(['Services', 'Master data'])
+        ->and(collect($masterData['children'])->pluck('label')->all())->toBe(['Units'])
+        ->and($masterData['children'][0]['url'])->toBe(route('admin.master-data.show', 'units'));
 });
