@@ -4,6 +4,7 @@ namespace App\Modules\Foundation\Livewire\Admin\Users;
 
 use App\Models\User;
 use App\Modules\Foundation\Actions\SetUserActive;
+use App\Modules\Foundation\Actions\StartImpersonation;
 use App\Modules\Foundation\Models\Role;
 use App\Support\Exports\ListingExport;
 use App\Support\Facades\Lookup;
@@ -52,6 +53,21 @@ class Index extends Component
 
         $this->dispatch('close-sheet-user-actions');
         $this->dispatch('toast', type: 'success', description: $user->is_active ? __('User activated.') : __('User deactivated.'));
+    }
+
+    public function impersonate(int $userId, StartImpersonation $startImpersonation): void
+    {
+        $this->authorize('admin.users.impersonate');
+
+        try {
+            $startImpersonation->handle($this->actor(), User::query()->findOrFail($userId));
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', description: (string) collect($exception->errors())->flatten()->first());
+
+            return;
+        }
+
+        $this->redirect(route('dashboard'));
     }
 
     public function export(): BinaryFileResponse
