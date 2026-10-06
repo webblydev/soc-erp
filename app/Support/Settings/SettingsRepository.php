@@ -65,7 +65,6 @@ final class SettingsRepository
             $type === 'int', str_starts_with($type, 'fk:') => (int) $value,
             $type === 'bool' => filter_var($value, FILTER_VALIDATE_BOOL),
             $type === 'decimal', $type === 'string' => (string) $value,
-            $type === 'roles' => array_values(array_map(strval(...), (array) $value)),
             $type === 'json' => (array) $value,
             default => $value,
         };
