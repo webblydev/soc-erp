@@ -6,7 +6,6 @@ use App\Modules\Foundation\Actions\DeleteAttachment;
 use App\Modules\Foundation\Actions\UploadAttachment;
 use App\Modules\Foundation\Concerns\InteractsWithCollaborativeParent;
 use App\Modules\Foundation\Models\Attachment;
-use App\Support\Facades\Lookup;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
@@ -112,7 +111,6 @@ class Attachments extends Component
         return view('livewire.shared.attachments', [
             'attachments' => $parent->morphMany(Attachment::class, 'attachable')->latestVersions()
                 ->with(['documentType:id,name', 'uploader:id,name'])->latest('id')->get(),
-            'documentTypes' => Lookup::options('document_types', $this->documentTypeId),
             'replacing' => $this->replacingId !== null ? $parent->morphMany(Attachment::class, 'attachable')->find($this->replacingId) : null,
             'selected' => $selected,
             'canDeleteSelected' => $selected !== null && DeleteAttachment::allows($selected, $this->actor()),
