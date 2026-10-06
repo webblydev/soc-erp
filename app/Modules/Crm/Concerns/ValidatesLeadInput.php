@@ -195,16 +195,21 @@ trait ValidatesLeadInput
     }
 
     /**
-     * Replace the lead's service lines with the given ones.
+     * Replace the lead's service lines with the given ones. Removed lines are soft-deleted and
+     * restored if their service is picked again (one line per service).
      *
      * @param  list<array{service_id: int|string, estimated_value: ?string, notes: ?string}>  $services
      */
     protected function syncServices(Lead $lead, array $services): void
     {
-        $lead->services()->whereNotIn('service_id', array_column($services, 'service_id'))->delete();
+        $lead->services()->whereNotIn('service_id', array_column($services, 'service_id'))->get()->each->delete();
 
         foreach ($services as $line) {
-            $lead->services()->updateOrCreate(['service_id' => $line['service_id']], ['estimated_value' => $line['estimated_value'], 'notes' => $line['notes']]);
+            $serviceLine = $lead->services()->withTrashed()->updateOrCreate(['service_id' => $line['service_id']], ['estimated_value' => $line['estimated_value'], 'notes' => $line['notes']]);
+
+            if ($serviceLine->trashed()) {
+                $serviceLine->restore();
+            }
         }
     }
 }
