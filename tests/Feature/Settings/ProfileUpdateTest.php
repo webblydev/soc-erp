@@ -68,3 +68,27 @@ test('the profile page does not offer account deletion', function () {
 
     $this->get(route('profile.edit'))->assertDontSee(__('Delete account'));
 });
+
+test('the mobile tab control uses the tab keys as values', function () {
+    $this->actingAs(User::factory()->create())->get(route('profile.edit'))
+        ->assertOk()
+        ->assertSee('value="password"', false)
+        ->assertSee('value="two-factor"', false)
+        ->assertSee('value="notifications"', false);
+});
+
+test('the profile forms show the sticky mobile action bar', function () {
+    $this->actingAs(User::factory()->create())->get(route('profile.edit'))->assertSee('data-test="mobile-action-bar"', false);
+});
+
+test('the profile page works without the two-factor feature', function () {
+    config(['fortify.features' => []]);
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->get(route('profile.edit', ['tab' => 'two-factor']))
+        ->assertOk()
+        ->assertDontSee(__('Turn on two-factor authentication'))
+        ->assertDontSee('value="two-factor"', false);
+
+    Livewire::actingAs($user)->test(Edit::class)->set('tab', 'two-factor')->assertSet('tab', 'details');
+});
