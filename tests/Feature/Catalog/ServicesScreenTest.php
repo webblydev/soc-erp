@@ -6,7 +6,11 @@ use App\Modules\Catalog\Models\BusinessLine;
 use App\Modules\Catalog\Models\PricingBasis;
 use App\Modules\Catalog\Models\Service;
 use App\Modules\Catalog\Models\ServiceCategory;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
+
+beforeEach(fn () => Model::preventLazyLoading());
+afterEach(fn () => Model::preventLazyLoading(false));
 
 test('each services route needs its permission', function () {
     $service = Service::factory()->create();
