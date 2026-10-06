@@ -38,6 +38,8 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
 
+require_once __DIR__.'/Feature/Legacy/LegacySchema.php';
+
 pest()->extend(TestCase::class)
     ->use(DatabaseMigrations::class)
     ->in('Isolated');
