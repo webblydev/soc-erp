@@ -220,7 +220,10 @@ test('the users table shows every permitted row action in its actions column', f
         ->test(Index::class)
         ->assertSeeHtml('data-test="row-actions"')
         ->assertSeeHtml('href="'.route('admin.users.edit', $target).'"')
-        ->assertSeeHtml('wire:click="toggleActive('.$target->id.')"');
+        ->assertSeeHtml('wire:click="toggleActive('.$target->id.')"')
+        ->assertSeeHtml('aria-label="Deactivate"')
+        ->assertSeeHtml('role="tooltip"')
+        ->assertDontSeeHtml('aria-label="Row actions"');
 });
 
 test('bulk delete soft-deletes users but never your own account', function () {
