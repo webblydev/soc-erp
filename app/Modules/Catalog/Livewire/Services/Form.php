@@ -6,11 +6,14 @@ use App\Modules\Catalog\Actions\SaveService;
 use App\Modules\Catalog\Models\BusinessLine;
 use App\Modules\Catalog\Models\PricingBasis;
 use App\Modules\Catalog\Models\Service;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class Form extends Component
 {
+    use SavesFromDetailModal;
+
     public ?Service $service = null;
 
     public string $code = '';
@@ -59,9 +62,7 @@ class Form extends Component
             'default_rate', 'requires_approval_tracking', 'description', 'is_active',
         ]), $this->service);
 
-        session()->flash('success', $this->service === null ? __('Service created.') : __('Service saved.'));
-
-        $this->redirectRoute('catalog.services.index', navigate: true);
+        $this->redirectAfterSave($this->service === null ? __('Service created.') : __('Service saved.'), 'catalog.services.index');
     }
 
     public function render(): View
