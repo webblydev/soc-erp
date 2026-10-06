@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * A BOQ / measurement item (docs/02 §3.6).
@@ -35,7 +36,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class WorkItem extends Model implements Collaborative
 {
     /** @use HasFactory<WorkItemFactory> */
-    use Auditable, HasFactory, TracksAuthors;
+    use Auditable, HasFactory, SoftDeletes, TracksAuthors;
 
     /**
      * @return array<string, string>
