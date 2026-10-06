@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Modules\Foundation\Actions\DisableTwoFactorUnlessRequired;
 use App\Modules\Foundation\Listeners\NotifyNewIpSignIn;
 use App\Modules\Foundation\Listeners\RecordAuthenticationAudit;
+use App\Modules\Foundation\Livewire\Notifications\Bell;
 use App\Modules\Foundation\Livewire\Profile\TwoFactor;
 use App\Modules\Foundation\Livewire\Shared\Attachments;
 use App\Modules\Foundation\Livewire\Shared\Notes;
@@ -65,6 +66,7 @@ class FoundationServiceProvider extends ServiceProvider
         Livewire::component('foundation.profile.two-factor', TwoFactor::class);
         Livewire::component('foundation.attachments', Attachments::class);
         Livewire::component('foundation.notes', Notes::class);
+        Livewire::component('foundation.notifications.bell', Bell::class);
 
         Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnforceSessionTimeout::class, EnsurePasswordChanged::class, EnsureTwoFactorEnabled::class, HandleImpersonation::class]);
     }
