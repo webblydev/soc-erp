@@ -13,6 +13,7 @@ class CatalogSeeder extends Seeder
             CategorySeeder::class,
             PricingBasisSeeder::class,
             UnitSeeder::class,
+            ServiceSeeder::class,
         ]);
     }
 }
