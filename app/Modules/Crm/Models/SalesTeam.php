@@ -55,7 +55,7 @@ class SalesTeam extends Model implements Collaborative
      */
     public static function managedTeamIds(User $user): array
     {
-        return static::query()->where('manager_user_id', $user->id)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
+        return array_values(static::query()->where('manager_user_id', $user->id)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all());
     }
 
     /**
@@ -65,10 +65,10 @@ class SalesTeam extends Model implements Collaborative
      */
     public static function managedMemberIds(User $user): array
     {
-        return SalesTeamMember::query()
+        return array_values(SalesTeamMember::query()
             ->whereNull('left_on')
             ->whereIn('sales_team_id', static::query()->select('id')->where('manager_user_id', $user->id))
-            ->pluck('user_id')->map(fn (mixed $id): int => (int) $id)->unique()->values()->all();
+            ->pluck('user_id')->map(fn (mixed $id): int => (int) $id)->unique()->values()->all());
     }
 
     public static function activeTeamIdFor(int $userId): ?int
