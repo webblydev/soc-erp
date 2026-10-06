@@ -2,17 +2,22 @@
 
 namespace App\Modules\Catalog\Livewire\Services;
 
+use App\Modules\Catalog\Actions\DeleteCatalogItem;
 use App\Modules\Catalog\Models\Service;
+use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 #[Title('Services')]
 class Index extends Component
 {
-    use WithListing;
+    use WithBulkActions, WithListing;
 
     public function mount(): void
     {
@@ -57,6 +62,32 @@ class Index extends Component
         if ($this->filterString('active') !== '') {
             $query->where('is_active', $this->filterString('active') === '1');
         }
+    }
+
+    public function export(): BinaryFileResponse
+    {
+        $this->authorize('catalog.services.export');
+
+        return ListingExport::download('services', $this->exportQuery(), [
+            'Code' => 'code',
+            'Name' => 'name',
+            'Category' => 'category.name',
+            'Business line' => 'businessLine.name',
+            'Pricing' => 'pricingBasis.name',
+            'Default rate' => 'default_rate',
+            'Active' => fn (Service $service): string => $service->is_active ? 'Yes' : 'No',
+        ]);
+    }
+
+    protected function authorizeBulkDelete(): void
+    {
+        $this->authorize('catalog.services.delete');
+    }
+
+    protected function deleteRow(Model $row): void
+    {
+        /** @var Service $row */
+        app(DeleteCatalogItem::class)->handle($row);
     }
 
     public function render(): View
