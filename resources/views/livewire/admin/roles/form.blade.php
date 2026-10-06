@@ -58,7 +58,7 @@
                                     <span class="text-sm font-semibold uppercase">{{ $module }}</span>
                                     <span class="text-xs text-muted-foreground" x-data="{ names: @js($moduleNames) }"><span x-text="$wire.permissions.filter(name => names.includes(name)).length">{{ count(array_intersect($moduleNames, $permissions)) }}</span> / {{ count($moduleNames) }}</span>
                                 </div>
-                                <x-ui.table>
+                                <x-ui.table variant="bordered">
                                     <x-ui.table-header>
                                         <x-ui.table-row>
                                             <x-ui.table-head class="w-1/3">{{ __('Resource') }}</x-ui.table-head>
