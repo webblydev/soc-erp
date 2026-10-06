@@ -2,12 +2,15 @@
 
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\Currency;
+use App\Modules\Foundation\Models\DocumentType;
 use App\Modules\Foundation\Models\LocationLevel;
 
 /*
 | Registry of lookup tables edited through the generic Master Data screen (docs/01 §5.8).
 | Each module appends its own tables. permission is a prefix: {prefix}.view|create|update|deactivate.
-| extra_fields: column => [type (text|textarea|number|bool), label]. single_flags: bool columns only one row may hold.
+| extra_fields: column => [type (text|textarea|number|bool|list), label]. list is edited as
+| comma-separated text and stored as a JSON array of lowercase tokens; `in` names a config list
+| the tokens must come from. single_flags: bool columns only one row may hold.
 */
 
 return [
@@ -41,5 +44,15 @@ return [
         'model' => LocationLevel::class,
         'permission' => 'admin.locations',
         'extra_fields' => [],
+    ],
+    'document_types' => [
+        'label' => 'Document types',
+        'module' => 'admin',
+        'model' => DocumentType::class,
+        'permission' => 'admin.master_data',
+        'extra_fields' => [
+            'allowed_mimes' => ['type' => 'list', 'label' => 'Allowed extensions (blank allows all)', 'in' => 'foundation.attachments.extensions'],
+            'max_size_mb' => ['type' => 'number', 'label' => 'Max size (MB)', 'required' => true],
+        ],
     ],
 ];
