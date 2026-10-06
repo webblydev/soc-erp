@@ -42,7 +42,7 @@ final class WorkItemImport implements ImportDefinition
 
     public function findExisting(string $code): ?Model
     {
-        return WorkItem::query()->where('code', $code)->first();
+        return WorkItem::withTrashed()->where('code', $code)->first();
     }
 
     public function toInput(array $row, ?Model $existing): array
@@ -99,8 +99,17 @@ final class WorkItemImport implements ImportDefinition
         return $this->saveWorkItem->validator($input, $existing instanceof WorkItem ? $existing : null);
     }
 
+    /**
+     * A deleted work item keeps its code, so importing that code restores it.
+     */
     public function save(array $input, ?Model $existing): Model
     {
-        return $this->saveWorkItem->handle($input, $existing instanceof WorkItem ? $existing : null);
+        $workItem = $this->saveWorkItem->handle($input, $existing instanceof WorkItem ? $existing : null);
+
+        if ($workItem->trashed()) {
+            $workItem->restore();
+        }
+
+        return $workItem;
     }
 }
