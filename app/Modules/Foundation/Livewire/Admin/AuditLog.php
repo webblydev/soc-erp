@@ -34,6 +34,19 @@ class AuditLog extends Component
         $this->dispatch('open-sheet-audit-entry');
     }
 
+    /**
+     * Narrow the list to every entry for the same record as the given entry.
+     */
+    public function showRecordHistory(int $id): void
+    {
+        $this->authorize('admin.audit.view');
+
+        $entry = AuditEntry::query()->findOrFail($id);
+
+        $this->filters = [...$this->filters, 'type' => $entry->auditable_type, 'record' => (string) $entry->auditable_id];
+        $this->updatedFilters();
+    }
+
     public function export(): BinaryFileResponse
     {
         $this->authorize('admin.audit.export');
