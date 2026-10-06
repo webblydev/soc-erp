@@ -4,7 +4,7 @@
 **Branch:** `legacy-seed` (from `hrm`)
 **Source:** `docs/legacy_database.sql`, a copy of the v1 production database (35 `tbl_*` tables). It is git-ignored and loaded locally into the `soc_legacy` database.
 **Builds on:** `docs/11-data-migration.md` (mapping and clean-up rules), and the Foundation, Catalog, CRM and HRM specs.
-**Status:** Approved in conversation (user asked to build straight through like HRM; corrections to follow).
+**Status:** Done, 2026-10-06, on branch `legacy-seed`. Plan: `docs/superpowers/plans/2026-10-06-legacy-seed.md`. Run on the dev database: 42 employees, 29 new users (+ admin reused), 4 teams, 1,386 leads (643 won, 742 contacted, 1 new), 643 customers, 6,036 activities.
 
 ## 1. Goal
 
@@ -81,4 +81,11 @@ This is a **dev seeder**, not the cut-over migration. The formal `migrate:legacy
 
 ## 6. Implementation deviations
 
-Where the build differs from the sections above, the build is authoritative. (Filled in at the end of the build.)
+Where the build differs from the sections above, the build is authoritative.
+
+- L3: each importer runs its own small transactions inside the seeder's outer transaction, so an importer can also be run on its own in tests.
+- L4: the sample designations from docs/09 are deleted when unused, else deactivated, so an existing dev database ends up with the 18 posts too.
+- L6: usernames are stored lower-case (the User model does this). A v1 username the user form would refuse is turned into a slug ("HR & Admin" → `hr-admin`); notes written under the v1 name still find the user. An employee goes to the first v1 user pointing at it even when that user maps to an existing account, so `admin` stays unlinked and `lsd` gets no employee. A v1 email already used by another user is dropped; a phone that is not a valid mobile is dropped.
+- L8: a pending client also counts as contacted when it has follow-up notes (`tbl_clientdetails`), not only a note, comment or reminder. Leads keep at most 40 characters of the v1 client code (the column width).
+- L9: follow-up columns are refreshed only on open leads; notes of won clients sit on the customer.
+- §4: no separate `LegacyContext` lookups class beyond `idFor()` and `fallbackUserId()`; test helpers live in `tests/Feature/Legacy/LegacySchema.php`, required from `tests/Pest.php`.
