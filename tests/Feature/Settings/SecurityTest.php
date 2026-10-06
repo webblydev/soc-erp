@@ -1,77 +1,64 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Foundation\Livewire\Profile\Edit;
+use App\Modules\Foundation\Models\NotificationPreference;
+use App\Support\Facades\Settings;
+use Database\Seeders\Foundation\SettingSeeder;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 
-beforeEach(function () {});
-
-test('security settings page can be rendered', function () {
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user)
-        ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('security.edit'));
-
-    $response->assertOk();
-});
-
-test('security settings page requires password confirmation when enabled', function () {
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user)
-        ->get(route('security.edit'));
-
-    $response->assertRedirect(route('password.confirm'));
-});
-
-test('security settings page renders without two factor when feature is disabled', function () {
-    config(['fortify.features' => []]);
-
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('security.edit'))
-        ->assertOk()
-        ->assertSee('Update password')
-        ->assertDontSee('Manage your passkeys for passwordless sign-in')
-        ->assertDontSee('Add a passkey to sign in without a password')
-        ->assertDontSee('Two-factor authentication');
-});
-
-test('two factor authentication disabled when confirmation abandoned between requests', function () {});
-
 test('password can be updated', function () {
-    $user = User::factory()->create([
-        'password' => Hash::make('password'),
-    ]);
+    $user = User::factory()->create(['password' => Hash::make('password')]);
 
-    $this->actingAs($user);
-
-    $response = Livewire::test('pages::settings.security')
+    Livewire::actingAs($user)->test(Edit::class)
         ->set('current_password', 'password')
         ->set('password', 'new-password')
         ->set('password_confirmation', 'new-password')
-        ->call('updatePassword');
-
-    $response->assertHasNoErrors();
+        ->call('savePassword')
+        ->assertHasNoErrors();
 
     expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
 });
 
 test('correct password must be provided to update password', function () {
-    $user = User::factory()->create([
-        'password' => Hash::make('password'),
-    ]);
+    $user = User::factory()->create(['password' => Hash::make('password')]);
 
-    $this->actingAs($user);
-
-    $response = Livewire::test('pages::settings.security')
+    Livewire::actingAs($user)->test(Edit::class)
         ->set('current_password', 'wrong-password')
         ->set('password', 'new-password')
         ->set('password_confirmation', 'new-password')
-        ->call('updatePassword');
+        ->call('savePassword')
+        ->assertHasErrors(['current_password']);
+});
 
-    $response->assertHasErrors(['current_password']);
+test('the new password follows the minimum length setting', function () {
+    $this->seed(SettingSeeder::class);
+    Settings::set('general.password_min_length', 12);
+    $user = User::factory()->create(['password' => Hash::make('password')]);
+
+    Livewire::actingAs($user)->test(Edit::class)
+        ->set('current_password', 'password')
+        ->set('password', 'elevenchars')
+        ->set('password_confirmation', 'elevenchars')
+        ->call('savePassword')
+        ->assertHasErrors(['password']);
+});
+
+test('the two-factor tab renders the 2FA panel', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.edit', ['tab' => 'two-factor']))
+        ->assertOk()
+        ->assertSee(__('Turn on two-factor authentication'));
+});
+
+test('notification preferences are saved from the profile', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)->test(Edit::class)
+        ->set('notifications.security__login_new_ip.mail', false)
+        ->call('saveNotifications')
+        ->assertHasNoErrors();
+
+    expect(NotificationPreference::matrixFor($user)['security.login_new_ip']['mail'])->toBeFalse();
 });
