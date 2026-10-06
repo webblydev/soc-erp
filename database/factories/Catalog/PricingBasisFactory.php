@@ -20,7 +20,7 @@ class PricingBasisFactory extends Factory
     {
         return [
             'code' => fake()->unique()->lexify('basis_????'),
-            'name' => Str::title(fake()->words(2, true)),
+            'name' => Str::title(fake()->word()).' basis',
             'sort_order' => 0,
             'is_active' => true,
         ];
