@@ -14,7 +14,7 @@
         @endforeach
 
         @if (count($primary) < \App\Modules\Foundation\Services\Navigation::MOBILE_PRIMARY_LIMIT)
-            <x-ui.bottom-navigation-item icon="circle-user" :label="__('Profile')" :href="route('profile.edit')" :active="request()->routeIs('profile.*', 'security.*')" wire:navigate class="active:bg-accent" />
+            <x-ui.bottom-navigation-item icon="circle-user" :label="__('Profile')" :href="route('profile.edit')" :active="request()->routeIs('profile.*')" wire:navigate class="active:bg-accent" />
         @endif
 
         <x-ui.drawer class="flex flex-1">
@@ -44,8 +44,8 @@
 
                     <x-ui.item-group>
                         <x-ui.item size="sm" :href="route('profile.edit')" wire:navigate class="min-h-11 active:bg-accent">
-                            <x-lucide-settings class="size-5" />
-                            <span class="flex-1 text-sm">{{ __('Settings') }}</span>
+                            <x-lucide-circle-user class="size-5" />
+                            <span class="flex-1 text-sm">{{ __('Profile') }}</span>
                             <x-lucide-chevron-right class="size-4 text-muted-foreground" />
                         </x-ui.item>
 
