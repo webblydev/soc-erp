@@ -4,10 +4,12 @@ namespace App\Modules\Crm\Actions;
 
 use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Models\SalesTeam;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Deletes a sales team and its memberships. Teams that ever owned a lead are refused; deactivate them instead.
+ * Soft-deletes a sales team and ends its active memberships, so the members can join another
+ * team. Teams that ever owned a lead are refused; deactivate them instead.
  */
 class DeleteSalesTeam
 {
@@ -20,6 +22,9 @@ class DeleteSalesTeam
             throw ValidationException::withMessages(['team' => __('Teams with leads cannot be deleted. Deactivate them instead.')]);
         }
 
-        $team->delete();
+        DB::transaction(function () use ($team): void {
+            $team->members()->whereNull('left_on')->update(['left_on' => today()]);
+            $team->delete();
+        });
     }
 }
