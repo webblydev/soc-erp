@@ -31,8 +31,6 @@ class Attachments extends Component
 
     public ?int $selectedId = null;
 
-    public bool $confirmingDelete = false;
-
     public function mount(Model $model): void
     {
         $this->rememberParent($model);
@@ -57,7 +55,6 @@ class Attachments extends Component
     public function showActions(int $id): void
     {
         $this->selectedId = $this->findAttachment($id)->id;
-        $this->confirmingDelete = false;
         $this->dispatch('open-sheet-attachment-actions');
     }
 
@@ -98,7 +95,6 @@ class Attachments extends Component
         }
 
         $this->selectedId = null;
-        $this->confirmingDelete = false;
         $this->dispatch('close-sheet-attachment-actions');
         $this->dispatch('toast', type: 'success', description: __('File deleted.'));
     }
