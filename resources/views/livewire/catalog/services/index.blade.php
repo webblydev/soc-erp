@@ -3,6 +3,7 @@
         :search-placeholder="__('Search code or name')"
         :create-url="auth()->user()->can('catalog.services.create') ? route('catalog.services.create') : null"
         :create-label="__('New service')"
+        :exportable="auth()->user()->can('catalog.services.export')"
         :has-more="$this->hasMoreRows"
         :active-filters="count(array_filter($filters, 'filled'))"
     >
@@ -34,9 +35,13 @@
         </x-slot:filters>
 
         <x-slot:desktop>
-            <x-ui.table>
+            <x-shell.bulk-bar :exportable="auth()->user()->can('catalog.services.export')" :deletable="auth()->user()->can('catalog.services.delete')" />
+
+            <x-ui.table variant="bordered">
                 <x-ui.table-header>
                     <x-ui.table-row>
+                        <x-shell.select-all :ids="$rows->pluck('id')" />
+                        <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="code" :label="__('Code')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="name" :label="__('Name')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head>{{ __('Category') }}</x-ui.table-head>
@@ -49,6 +54,15 @@
                 <x-ui.table-body>
                     @forelse ($rows as $service)
                         <x-ui.table-row wire:key="service-{{ $service->id }}">
+                            <x-shell.select-row :id="$service->id" :label="$service->name" />
+                            <x-shell.row-menu>
+                                @can('catalog.services.update')
+                                    <x-shell.row-menu-item icon="pencil" :href="route('catalog.services.edit', $service)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                @endcan
+                                @can('catalog.services.delete')
+                                    <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $service->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $service->name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                                @endcan
+                            </x-shell.row-menu>
                             <x-ui.table-cell class="font-mono text-sm">{{ $service->code }}</x-ui.table-cell>
                             <x-ui.table-cell class="font-medium">
                                 @can('catalog.services.update')
@@ -65,13 +79,13 @@
                         </x-ui.table-row>
                     @empty
                         <x-ui.table-row>
-                            <x-ui.table-cell colspan="7" class="py-10 text-center text-muted-foreground">{{ __('No services found.') }}</x-ui.table-cell>
+                            <x-ui.table-cell colspan="9" class="py-10 text-center text-muted-foreground">{{ __('No services found.') }}</x-ui.table-cell>
                         </x-ui.table-row>
                     @endforelse
                 </x-ui.table-body>
             </x-ui.table>
 
-            <div class="mt-4 flex items-center justify-between gap-4">
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
                 <x-ui.select native wire:model.live="perPage" class="w-36" :aria-label="__('Rows per page')">
                     @foreach (static::PER_PAGE_OPTIONS as $option)
                         <option value="{{ $option }}">{{ __(':count per page', ['count' => $option]) }}</option>
