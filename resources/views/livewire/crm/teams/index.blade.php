@@ -42,13 +42,13 @@
                             <x-shell.select-row :id="$team->id" :label="$team->name" />
                             <x-shell.row-menu>
                                 @can('crm.teams.manage')
-                                    <x-shell.row-menu-item icon="pencil" :href="route('crm.teams.edit', $team)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                    <x-shell.row-menu-item icon="pencil" data-detail-modal :href="route('crm.teams.edit', $team)">{{ __('Edit') }}</x-shell.row-menu-item>
                                     <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $team->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $team->name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
                                 @endcan
                             </x-shell.row-menu>
                             <x-ui.table-cell class="font-medium">
                                 @can('crm.teams.manage')
-                                    <a href="{{ route('crm.teams.edit', $team) }}" wire:navigate class="hover:underline">{{ $team->name }}</a>
+                                    <a data-detail-modal href="{{ route('crm.teams.edit', $team) }}" wire:navigate class="hover:underline">{{ $team->name }}</a>
                                 @else
                                     {{ $team->name }}
                                 @endcan
