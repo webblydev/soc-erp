@@ -11,6 +11,7 @@
         $user->can('update', $lead) && Route::has('crm.leads.edit') ? ['label' => __('Edit'), 'icon' => 'pencil', 'href' => route('crm.leads.edit', $lead)] : null,
         $user->can('crm.activities.create') ? ['label' => __('Log activity'), 'icon' => 'notebook-pen', 'click' => $logEvent('log'), 'primary' => true] : null,
         $user->can('crm.activities.create') ? ['label' => __('Schedule follow-up'), 'icon' => 'calendar-plus', 'click' => $logEvent('schedule')] : null,
+        Route::has('crm.leads.convert') && $user->can('convert', $lead) ? ['label' => __('Mark won → convert'), 'icon' => 'trophy', 'href' => route('crm.leads.convert', $lead)] : null,
         $isOpen && $canChangeStatus ? ['label' => __('Change status'), 'icon' => 'arrow-right-left', 'click' => $statusEvent('status')] : null,
         $isOpen && $user->can('assign', $lead) ? ['label' => __('Assign'), 'icon' => 'user-plus', 'click' => "\$dispatch('open-sheet-lead-assign')"] : null,
         $isOpen && $canChangeStatus ? ['label' => __('Mark lost'), 'icon' => 'circle-x', 'click' => $statusEvent('lost')] : null,
