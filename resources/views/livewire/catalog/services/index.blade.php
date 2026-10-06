@@ -57,7 +57,7 @@
                             <x-shell.select-row :id="$service->id" :label="$service->name" />
                             <x-shell.row-menu>
                                 @can('catalog.services.update')
-                                    <x-shell.row-menu-item icon="pencil" :href="route('catalog.services.edit', $service)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                    <x-shell.row-menu-item icon="pencil" data-detail-modal :href="route('catalog.services.edit', $service)">{{ __('Edit') }}</x-shell.row-menu-item>
                                 @endcan
                                 @can('catalog.services.delete')
                                     <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $service->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $service->name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
@@ -66,7 +66,7 @@
                             <x-ui.table-cell class="font-mono text-sm">{{ $service->code }}</x-ui.table-cell>
                             <x-ui.table-cell class="font-medium">
                                 @can('catalog.services.update')
-                                    <a href="{{ route('catalog.services.edit', $service) }}" wire:navigate class="hover:underline">{{ $service->name }}</a>
+                                    <a data-detail-modal href="{{ route('catalog.services.edit', $service) }}" wire:navigate class="hover:underline">{{ $service->name }}</a>
                                 @else
                                     {{ $service->name }}
                                 @endcan
