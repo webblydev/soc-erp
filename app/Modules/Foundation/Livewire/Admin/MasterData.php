@@ -16,7 +16,8 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * Generic editor for every table in config/lookups.php (docs/01 §5.8).
+ * Generic editor for every table in config/lookups.php (docs/01 §5.8). Each table is a plain page
+ * reached from the sidebar tree; the index lists the tables the user may open.
  */
 #[Title('Master data')]
 class MasterData extends Component
@@ -132,7 +133,7 @@ class MasterData extends Component
             'rows' => $this->table !== null ? $registry->modelFor($this->table)->newQuery()->orderBy('sort_order')->orderBy('name')->get() : collect(),
             'colors' => SaveLookup::COLORS,
             'can' => fn (string $action): bool => $this->table !== null && $registry->allows($this->actor(), $this->table, $action),
-        ])->layoutData(['back' => $this->table !== null ? route('admin.master-data.index') : null]);
+        ])->title($this->table !== null ? __($registry->get($this->table)['label']) : __('Master data'));
     }
 
     /**
