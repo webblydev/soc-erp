@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * A group of sales staff under a manager (docs/03 §3.2). A user has at most one active
@@ -33,7 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SalesTeam extends Model implements Collaborative
 {
     /** @use HasFactory<SalesTeamFactory> */
-    use Auditable, HasFactory, TracksAuthors;
+    use Auditable, HasFactory, SoftDeletes, TracksAuthors;
 
     /**
      * @return array<string, string>
