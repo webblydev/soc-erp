@@ -21,6 +21,12 @@ test('an allowed detail URL renders its page component with the bound record and
         ->assertSeeLivewire(Notes::class);
 });
 
+test('the modal header shows the record code, name and type', function () {
+    Livewire::actingAs($this->user)->test(DetailModal::class)
+        ->call('show', route('crm.customers.show', $this->customer))
+        ->assertSeeInOrder([$this->customer->customer_number, 'Rahim Holdings', 'Customer']);
+});
+
 test('closing the modal drops the detail page', function () {
     Livewire::actingAs($this->user)->test(DetailModal::class)
         ->call('show', route('crm.customers.show', $this->customer))
