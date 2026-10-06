@@ -6,7 +6,7 @@
         :submit-label="$material ? __('Save changes') : __('Create material')">
 
         <x-shell.form-section :title="__('Details')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="code">{{ __('Code') }} *</x-ui.field-label>
                     <x-ui.input id="code" wire:model="code" autocapitalize="characters" autocomplete="off" class="h-11 font-mono text-base md:h-9 md:text-sm" :aria-invalid="$errors->has('code') ? 'true' : null" />
@@ -32,7 +32,7 @@
         </x-shell.form-section>
 
         <x-shell.form-section :title="__('Pricing')">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <x-ui.field>
                     <x-ui.field-label for="standard_rate">{{ __('Standard rate') }}</x-ui.field-label>
                     <x-ui.input id="standard_rate" wire:model="standard_rate" inputmode="decimal" class="h-11 text-end text-base tabular-nums md:h-9 md:text-sm" :aria-invalid="$errors->has('standard_rate') ? 'true' : null" />
