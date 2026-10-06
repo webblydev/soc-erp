@@ -37,7 +37,7 @@
         </button>
     @endcan
 
-    <x-shell.sheet id="location" :title="$editingId ? __('Edit location') : __('Add location')" :description="$parentPath ? __('Under :path', ['path' => $parentPath]) : null">
+    <x-shell.sheet id="location" :title="$editingId ? __('Edit location') : __('Add location')" :description="$parentPath ? __('Under :path', ['path' => $parentPath]) : __('A top-level location.')">
         <form wire:submit="save" id="location-form" class="flex flex-col gap-4 pb-2">
             <x-ui.field>
                 <x-ui.field-label for="location-name">{{ __('Name') }} *</x-ui.field-label>
