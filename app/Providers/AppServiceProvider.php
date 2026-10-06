@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Modules\Foundation\Models\Attachment;
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\CompanyProfile;
 use App\Modules\Foundation\Models\Currency;
 use App\Modules\Foundation\Models\DocumentType;
 use App\Modules\Foundation\Models\Location;
 use App\Modules\Foundation\Models\LocationLevel;
+use App\Modules\Foundation\Models\Note;
 use App\Modules\Foundation\Models\NumberSequence;
 use App\Modules\Foundation\Models\NumberSequenceFormat;
 use App\Modules\Foundation\Models\Role;
@@ -78,6 +80,8 @@ class AppServiceProvider extends ServiceProvider
             'number_sequence' => NumberSequence::class,
             'number_sequence_format' => NumberSequenceFormat::class,
             'document_type' => DocumentType::class,
+            'attachment' => Attachment::class,
+            'note' => Note::class,
         ]);
     }
 }
