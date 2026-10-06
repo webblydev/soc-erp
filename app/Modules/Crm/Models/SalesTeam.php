@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Catalog\Models\BusinessLine;
 use App\Support\AuditTrail\Auditable;
 use App\Support\AuditTrail\TracksAuthors;
+use App\Support\Collaboration\Collaborative;
 use Database\Factories\Crm\SalesTeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable(['name', 'manager_user_id', 'business_line_id', 'monthly_target_amount', 'is_active'])]
 #[UseFactory(SalesTeamFactory::class)]
-class SalesTeam extends Model
+class SalesTeam extends Model implements Collaborative
 {
     /** @use HasFactory<SalesTeamFactory> */
     use Auditable, HasFactory, TracksAuthors;
@@ -40,6 +41,11 @@ class SalesTeam extends Model
     protected function casts(): array
     {
         return ['monthly_target_amount' => 'decimal:2', 'is_active' => 'boolean'];
+    }
+
+    public function isViewableBy(User $user): bool
+    {
+        return $user->can('crm.teams.view');
     }
 
     /**
