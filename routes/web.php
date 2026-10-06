@@ -10,4 +10,5 @@ Route::middleware('app')->group(function () {
 });
 
 require __DIR__.'/modules/foundation.php';
+require __DIR__.'/modules/catalog.php';
 require __DIR__.'/settings.php';
