@@ -4,6 +4,8 @@ namespace App\Modules\Foundation\Actions;
 
 use App\Models\User;
 use App\Modules\Foundation\Concerns\ValidatesUserInput;
+use App\Modules\Foundation\Models\Role;
+use App\Modules\Foundation\Services\PermissionRegistrar;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -21,6 +23,7 @@ class UpdateUser
         private SyncUserAccess $syncUserAccess,
         private SetUserActive $setUserActive,
         private EnsureNotLastSuperAdmin $ensureNotLastSuperAdmin,
+        private PermissionRegistrar $registrar,
     ) {}
 
     /**
@@ -37,6 +40,7 @@ class UpdateUser
         return DB::transaction(function () use ($user, $data, $active, $actor): User {
             $this->ensureNotLastSuperAdmin->lockActiveSuperAdmins();
             $this->ensureNotLastSuperAdmin->ensureActorMayChange($user, $actor);
+            $this->ensureActorOutranks($user, $actor);
 
             if ($user->is_active && ! $active) {
                 $this->setUserActive->ensureCanDeactivate($user, $actor);
@@ -56,5 +60,21 @@ class UpdateUser
 
             return $user;
         });
+    }
+
+    /**
+     * A non-super-admin actor may only edit accounts whose access they fully hold themselves.
+     *
+     * @throws ValidationException
+     */
+    private function ensureActorOutranks(User $user, User $actor): void
+    {
+        if ($actor->hasRole(Role::SUPER_ADMIN)) {
+            return;
+        }
+
+        if (array_diff($this->registrar->permissionsFor($user), $this->registrar->permissionsFor($actor)) !== []) {
+            throw ValidationException::withMessages(['user' => __('You cannot change an account with more access than you.')]);
+        }
     }
 }
