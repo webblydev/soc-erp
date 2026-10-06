@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Middleware\EnsurePasswordChanged;
+use App\Http\Middleware\EnsureTwoFactorEnabled;
 use App\Models\User;
 use App\Modules\Foundation\Livewire\Profile\TwoFactor;
+use App\Modules\Foundation\Models\LoginHistory;
 use App\Support\Facades\Settings;
 use Database\Seeders\Foundation\SettingSeeder;
 use Illuminate\Support\Facades\Hash;
@@ -93,4 +96,98 @@ test('turning 2FA off needs the current password', function () {
         ->assertHasNoErrors();
 
     expect($user->fresh()->two_factor_secret)->toBeNull();
+});
+
+test('the 2FA challenge is throttled', function () {
+    User::factory()->withTwoFactor()->create(['username' => 'otpuser', 'password' => Hash::make('password')]);
+    $this->post(route('login.store'), ['login' => 'otpuser', 'password' => 'password']);
+
+    foreach (range(1, 5) as $attempt) {
+        $this->post(route('two-factor.login.store'), ['code' => '000000'])->assertStatus(302);
+    }
+
+    $this->post(route('two-factor.login.store'), ['code' => '000000'])->assertStatus(429);
+});
+
+test('Fortify route cannot turn off 2FA for a required role', function () {
+    Settings::set('general.require_2fa_roles', ['finance_manager']);
+    $user = User::factory()->withTwoFactor()->create();
+    $user->syncRoles(['finance_manager']);
+
+    $this->actingAs($user)->withSession(['auth.password_confirmed_at' => time()])
+        ->deleteJson('/user/two-factor-authentication')->assertStatus(422);
+
+    expect($user->fresh()->two_factor_secret)->not->toBeNull();
+});
+
+test('Fortify route turns off 2FA for other users', function () {
+    $user = User::factory()->withTwoFactor()->create();
+
+    $this->actingAs($user)->withSession(['auth.password_confirmed_at' => time()])
+        ->deleteJson('/user/two-factor-authentication')->assertSuccessful();
+
+    expect($user->fresh()->two_factor_secret)->toBeNull();
+});
+
+test('2FA and password-change middleware also run on Livewire requests', function () {
+    expect(Livewire::getPersistentMiddleware())
+        ->toContain(EnsureTwoFactorEnabled::class, EnsurePasswordChanged::class);
+});
+
+test('a login writes exactly one history row', function () {
+    User::factory()->create(['username' => 'single']);
+
+    $this->post(route('login.store'), ['login' => 'single', 'password' => 'password']);
+    expect(LoginHistory::where('succeeded', true)->count())->toBe(1);
+
+    auth()->logout();
+    $this->post(route('login.store'), ['login' => 'single', 'password' => 'bad']);
+    expect(LoginHistory::where('succeeded', false)->count())->toBe(1);
+});
+
+test('the challenge accepts a valid code', function () {
+    $user = User::factory()->withTwoFactor()->create(['username' => 'otpuser', 'password' => Hash::make('password')]);
+    $this->post(route('login.store'), ['login' => 'otpuser', 'password' => 'password']);
+
+    $code = app(Google2FA::class)->getCurrentOtp(decrypt($user->two_factor_secret));
+    $this->post(route('two-factor.login.store'), ['code' => $code])->assertRedirect();
+
+    $this->assertAuthenticatedAs($user);
+});
+
+test('the challenge accepts a recovery code', function () {
+    $user = User::factory()->withTwoFactor()->create(['username' => 'otpuser', 'password' => Hash::make('password')]);
+    $this->post(route('login.store'), ['login' => 'otpuser', 'password' => 'password']);
+
+    $this->post(route('two-factor.login.store'), ['recovery_code' => 'recovery-code-1'])->assertRedirect();
+
+    $this->assertAuthenticatedAs($user);
+});
+
+test('the challenge rejects a wrong code', function () {
+    User::factory()->withTwoFactor()->create(['username' => 'otpuser', 'password' => Hash::make('password')]);
+    $this->post(route('login.store'), ['login' => 'otpuser', 'password' => 'password']);
+
+    $this->post(route('two-factor.login.store'), ['code' => '000000'])->assertSessionHasErrors('code');
+
+    $this->assertGuest();
+});
+
+test('new recovery codes need the current password', function () {
+    $user = User::factory()->withTwoFactor()->create(['password' => Hash::make('password')]);
+    $before = $user->two_factor_recovery_codes;
+
+    Livewire::actingAs($user)->test(TwoFactor::class)
+        ->set('current_password', 'wrong')
+        ->call('regenerateRecoveryCodes')
+        ->assertHasErrors(['current_password']);
+
+    expect($user->fresh()->two_factor_recovery_codes)->toBe($before);
+
+    Livewire::actingAs($user)->test(TwoFactor::class)
+        ->set('current_password', 'password')
+        ->call('regenerateRecoveryCodes')
+        ->assertHasNoErrors();
+
+    expect($user->fresh()->two_factor_recovery_codes)->not->toBe($before);
 });
