@@ -30,6 +30,7 @@ Route::middleware('app')->prefix('crm')->name('crm.')->group(function () {
     Route::livewire('customers/create', Customers\Form::class)->middleware('can:create,'.Customer::class)->name('customers.create');
     Route::livewire('customers/{customer:customer_number}', Customers\Show::class)->middleware('can:view,customer')->name('customers.show');
     Route::livewire('customers/{customer:customer_number}/edit', Customers\Form::class)->middleware('can:update,customer')->name('customers.edit');
+    Route::livewire('customers/{customer:customer_number}/merge', Customers\Merge::class)->middleware('can:merge,customer')->name('customers.merge');
 
     Route::livewire('activities', Activities\Index::class)->middleware('can:crm.activities.view')->name('activities.index');
 
