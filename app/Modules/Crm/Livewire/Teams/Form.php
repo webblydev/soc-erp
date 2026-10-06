@@ -26,7 +26,7 @@ class Form extends Component
 
     public bool $is_active = true;
 
-    /** @var list<array{user_id: int|string|null, joined_on: string}> */
+    /** @var list<array<string, mixed>> */
     public array $members = [];
 
     public function mount(?SalesTeam $team = null): void
@@ -40,9 +40,9 @@ class Form extends Component
         $this->team = $team;
         $this->fill($team->only(['name', 'manager_user_id', 'business_line_id', 'is_active']));
         $this->monthly_target_amount = (string) $team->monthly_target_amount;
-        $this->members = $team->activeMembers()->orderBy('joined_on')->get()
+        $this->members = array_values($team->activeMembers()->orderBy('joined_on')->get()
             ->map(fn ($member): array => ['user_id' => $member->user_id, 'joined_on' => $member->joined_on->toDateString()])
-            ->all();
+            ->all());
     }
 
     public function addMember(): void
@@ -52,8 +52,7 @@ class Form extends Component
 
     public function removeMember(int $index): void
     {
-        unset($this->members[$index]);
-        $this->members = array_values($this->members);
+        $this->members = array_values(array_filter($this->members, fn (int $i): bool => $i !== $index, ARRAY_FILTER_USE_KEY));
     }
 
     public function save(SaveSalesTeam $saveSalesTeam): void
