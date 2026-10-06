@@ -4,7 +4,7 @@
 **Source specs:** `docs/00-index-and-conventions.md`, `docs/01-foundation-admin.md`
 **Builds on:** `docs/superpowers/specs/2026-10-05-foundation-core-design.md`
 **Date:** 06 Oct 2026
-**Status:** Approved design, awaiting implementation plan.
+**Status:** Done, 2026-10-06. Plan: `docs/superpowers/plans/2026-10-06-admin-screens.md`.
 
 ## 1. Goal
 
@@ -163,3 +163,16 @@ No browser tests. On completion, the screens are listed for the user to check at
 
 ## 8. Out of scope
 Admin password reset and session purge on deactivation (D10); user-created / password-reset emails and all notification delivery; attachments and notes (sub-project 3); employee and sales-team fields; saved views, column chooser and PDF exports; moving locations in the UI; Catalog (sub-project 4).
+
+## 9. Implementation deviations
+Where the build differs from the sections above, the build is authoritative.
+
+- **§4.3:** the `exported` audit row is recorded on the acting user (event `export`, with `export` and `rows` in `new_values`), not on the exported resource type. Export cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'` as a formula-injection guard.
+- **§5.1:** only a super admin may update or deactivate a super-admin account. Non-super admins may only grant direct permissions they hold themselves. Users cannot deactivate themselves.
+- **§5.2:** the mobile permission matrix uses checkbox rows, because `x-ui.switch` cannot bind to arrays.
+- **§5.3:** delete confirmation is `wire:confirm` inside the edit sheet. Master-data routes have no `can:` middleware; the per-table permission is enforced in `mount` and in each action.
+- **§5.7:** number formats must keep the tokens their scope needs (`{yy}` or `{yyyy}` for `fiscal_year`, `{bl_prefix}`, `{branch}`) and contain exactly one `{seq:N}`.
+- **§5.8:** audit entries open in a sheet on both desktop and mobile.
+- **§5.10:** turning 2FA off and generating new recovery codes require the current password. Fortify's own disable route also refuses users whose role requires 2FA. The 2FA challenge is throttled.
+- **Profile:** forms use the sticky mobile action bar, positioned above the bottom nav. The old `/settings/*` URLs redirect to `/profile`.
+- **Permissions:** `admin.branches.deactivate` and `admin.locations.deactivate` were added.
