@@ -35,20 +35,20 @@
     @endif
 
     @if ($enabled)
-        <div class="flex flex-col gap-3 md:flex-row md:items-end">
-            <x-ui.button variant="outline" class="h-11 md:h-9" wire:click="regenerateRecoveryCodes">{{ __('New recovery codes') }}</x-ui.button>
-            @if ($forced)
-                <x-ui.button class="h-11 md:h-9" :href="route('dashboard')">{{ __('Continue') }}</x-ui.button>
-            @else
-                <form wire:submit="disable" class="flex flex-col gap-2 md:flex-row md:items-end">
-                    <x-ui.field>
-                        <x-ui.field-label for="tf-current-password">{{ __('Current password to turn off') }}</x-ui.field-label>
-                        <x-ui.input id="tf-current-password" type="password" wire:model="current_password" autocomplete="current-password" class="h-11 text-base md:h-9 md:text-sm" />
-                        <x-ui.field-error :messages="$errors->get('current_password')" />
-                    </x-ui.field>
-                    <x-ui.button type="submit" variant="destructive" class="h-11 md:h-9">{{ __('Turn off') }}</x-ui.button>
-                </form>
-            @endif
+        <div class="flex flex-col gap-3">
+            <x-ui.field>
+                <x-ui.field-label for="tf-current-password">{{ __('Current password') }}</x-ui.field-label>
+                <x-ui.input id="tf-current-password" type="password" wire:model="current_password" autocomplete="current-password" class="h-11 text-base md:h-9 md:text-sm" />
+                <x-ui.field-error :messages="$errors->get('current_password')" />
+            </x-ui.field>
+            <div class="flex flex-col gap-3 md:flex-row">
+                <x-ui.button variant="outline" class="h-11 md:h-9" wire:click="regenerateRecoveryCodes">{{ __('New recovery codes') }}</x-ui.button>
+                @if ($forced)
+                    <x-ui.button class="h-11 md:h-9" :href="route('dashboard')">{{ __('Continue') }}</x-ui.button>
+                @else
+                    <x-ui.button variant="destructive" class="h-11 md:h-9" wire:click="disable">{{ __('Turn off') }}</x-ui.button>
+                @endif
+            </div>
         </div>
     @endif
 </div>
