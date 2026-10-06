@@ -5,6 +5,11 @@ use App\Modules\Crm\Models\LeadPriority;
 use App\Modules\Crm\Models\LeadSource;
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
+use App\Modules\Hrm\Models\Department;
+use App\Modules\Hrm\Models\Designation;
+use App\Modules\Hrm\Models\Employee;
+use App\Modules\Hrm\Models\EmployeeStatus;
+use App\Modules\Hrm\Models\EmployeeType;
 use Database\Seeders\Crm\CrmSeeder;
 use Database\Seeders\Foundation\NumberSequenceFormatSeeder;
 use Database\Seeders\Foundation\PermissionSeeder;
@@ -133,6 +138,38 @@ function seedCrm(): void
 function seedHrm(): void
 {
     test()->seed([SettingSeeder::class, NumberSequenceFormatSeeder::class, HrmSeeder::class]);
+}
+
+/**
+ * Valid CreateEmployee input for HRM tests (needs seedHrm()).
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function employeeInput(array $overrides = []): array
+{
+    return [
+        'employee_code' => '', 'first_name' => 'Rahima', 'last_name' => 'Khatun', 'phone' => '+880 1712-345678',
+        'department_id' => Department::idFor('DESIGN'), 'designation_id' => Designation::idFor('ARCHITECT'),
+        'employee_type_id' => EmployeeType::idFor('PERMANENT'), 'employee_status_id' => EmployeeStatus::idFor('ACTIVE'),
+        'joining_date' => today()->subMonth()->toDateString(), 'gross_salary' => '45,000', 'education' => [], 'experience' => [],
+        ...$overrides,
+    ];
+}
+
+/**
+ * UpdateEmployee input that keeps the employee's current job fields, with overrides.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function sameJob(Employee $employee, array $overrides = []): array
+{
+    return [
+        ...$employee->only(['first_name', 'last_name', 'phone', 'department_id', 'designation_id', 'employee_type_id', 'employee_status_id', 'manager_id']),
+        'joining_date' => $employee->joining_date->toDateString(), 'gross_salary' => $employee->gross_salary, 'education' => [], 'experience' => [],
+        ...$overrides,
+    ];
 }
 
 /**
