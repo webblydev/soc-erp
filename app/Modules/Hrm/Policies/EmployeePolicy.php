@@ -51,6 +51,11 @@ class EmployeePolicy
         return $user->can('hrm.employees.deactivate');
     }
 
+    public function delete(User $user, Employee $employee): bool
+    {
+        return $user->can('hrm.employees.delete');
+    }
+
     /**
      * NID scans and the like: documents.view alone is not enough, because the viewer role's
      * `*.view` grant includes it (spec H2).
