@@ -11,7 +11,9 @@ use App\Modules\Foundation\Livewire\Admin\Sequences;
 use App\Modules\Foundation\Livewire\Admin\Settings;
 use App\Modules\Foundation\Livewire\Admin\Users;
 use App\Modules\Foundation\Livewire\Profile;
+use App\Modules\Foundation\Models\Attachment;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 /*
 | Foundation & Administration routes (docs/01 §5). Each admin route repeats its permission as
@@ -41,6 +43,11 @@ Route::middleware('app')->prefix('admin')->name('admin.')->group(function () {
 Route::middleware('app')->group(function () {
     Route::livewire('profile', Profile\Edit::class)->name('profile.edit');
     Route::livewire('two-factor/setup', Profile\TwoFactorSetup::class)->name('two-factor.setup');
+    Route::get('attachments/{attachment}/download', function (Attachment $attachment) {
+        abort_unless($attachment->attachable?->isViewableBy(request()->user()), 403);
+
+        return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name);
+    })->middleware('signed')->name('attachments.download');
     Route::post('impersonation/stop', function (StopImpersonation $stopImpersonation) {
         $stopImpersonation->handle();
 
