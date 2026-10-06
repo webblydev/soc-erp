@@ -1,13 +1,13 @@
 domains:
-    - soc-erp
+  - soc-erp
 php_version: "8.4"
 node_version: "22"
 framework: laravel
 framework_version: "13"
 secured: true
 services:
-    - mysql
-    - mailpit
-    - redis
+  - mailpit
+  - mysql
+  - redis
 workers:
-    - vite
+  - vite
