@@ -101,10 +101,13 @@ test('existing lookups keep working without the new keys', function () {
     expect($branch->code)->toBe('ctg');
 });
 
-test('the catalog nav group lists only what the user may view', function () {
-    $user = userWithPermissions('catalog.units.view');
+test('the catalog nav group lists only what the user may view, with lookups in a tree', function () {
+    $user = userWithPermissions('catalog.units.view', 'catalog.services.view');
 
     $catalog = collect(app(Navigation::class)->for($user))->firstWhere('key', 'catalog');
+    $setup = collect($catalog['items'])->firstWhere('label', 'Catalog setup');
 
-    expect(collect($catalog['items'])->pluck('label')->all())->toBe(['Units']);
+    expect(collect($catalog['items'])->pluck('label')->all())->toBe(['Services', 'Catalog setup'])
+        ->and(collect($setup['children'])->pluck('label')->all())->toBe(['Units'])
+        ->and($setup['children'][0]['url'])->toBe(route('admin.master-data.show', 'units'));
 });
