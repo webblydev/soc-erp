@@ -121,3 +121,23 @@ test('editing keeps the services and saves changes', function () {
 
     expect($lead->fresh()->name)->toBe('New Name');
 });
+
+test('a removed service line is soft-deleted and restored when the service is picked again', function () {
+    $other = Service::factory()->create();
+    $lead = Lead::factory()->assignedTo($this->user)->create();
+    $line = $lead->services()->create(['service_id' => $this->service->id]);
+
+    Livewire::actingAs($this->user)->test(Form::class, ['lead' => $lead])
+        ->set('services.0.service_id', (string) $other->id)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $this->assertSoftDeleted($line);
+
+    Livewire::actingAs($this->user)->test(Form::class, ['lead' => $lead->fresh()])
+        ->set('services.0.service_id', (string) $this->service->id)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($lead->services()->pluck('id')->all())->toBe([$line->id]);
+});
