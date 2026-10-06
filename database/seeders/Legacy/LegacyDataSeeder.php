@@ -19,7 +19,13 @@ class LegacyDataSeeder extends Seeder
      *
      * @var list<class-string>
      */
-    public const IMPORTERS = [];
+    public const IMPORTERS = [
+        ImportEmployees::class,
+        ImportUsers::class,
+        ImportSalesTeams::class,
+        ImportClients::class,
+        ImportClientActivities::class,
+    ];
 
     public function run(): void
     {
