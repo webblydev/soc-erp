@@ -41,12 +41,7 @@
 
                 <x-ui.field>
                     <x-ui.field-label for="branch_id">{{ __('Branch') }}</x-ui.field-label>
-                    <x-ui.select native id="branch_id" wire:model="branch_id" class="h-11 text-base md:h-9 md:text-sm">
-                        <option value="">{{ __('No branch') }}</option>
-                        @foreach ($branches as $branch)
-                            <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-                        @endforeach
-                    </x-ui.select>
+                    <x-lookup-select table="branches" :include="$branch_id" :placeholder="__('No branch')" id="branch_id" wire:model="branch_id" />
                     <x-ui.field-error :messages="$errors->get('branch_id')" />
                 </x-ui.field>
             </div>
@@ -131,6 +126,9 @@
         <div data-test="user-collaboration" class="mx-auto mt-6 grid w-full max-w-6xl gap-6 pb-28 md:pb-0 lg:grid-cols-2 lg:items-start">
             <livewire:foundation.attachments :model="$user" :key="'attachments-'.$user->id" />
             <livewire:foundation.notes :model="$user" :key="'notes-'.$user->id" />
+            <div class="lg:col-span-2">
+                <livewire:foundation.history :model="$user" :key="'history-'.$user->id" />
+            </div>
         </div>
     @endif
 </div>
