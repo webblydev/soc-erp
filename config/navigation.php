@@ -10,7 +10,24 @@
 
 return [
     'groups' => [
-        ['key' => 'crm', 'label' => 'CRM', 'icon' => 'handshake', 'items' => []],
+        ['key' => 'crm', 'label' => 'CRM', 'icon' => 'handshake', 'items' => [
+            ['label' => 'Leads', 'route' => 'crm.leads.index', 'icon' => 'target', 'permission' => 'crm.leads.view', 'mobile_primary' => true],
+            ['label' => 'My activities', 'route' => 'crm.activities.index', 'icon' => 'calendar-check', 'permission' => 'crm.activities.view', 'mobile_primary' => true],
+            ['label' => 'Customers', 'route' => 'crm.customers.index', 'icon' => 'contact', 'permission' => 'crm.customers.view', 'mobile_primary' => true],
+            ['label' => 'Sales teams', 'route' => 'crm.teams.index', 'icon' => 'users-round', 'permission' => 'crm.teams.view'],
+            ['label' => 'CRM setup', 'icon' => 'database', 'children' => [
+                ['label' => 'Lead sources', 'route' => 'admin.master-data.show', 'params' => ['table' => 'lead_sources'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
+                ['label' => 'Lead statuses', 'route' => 'admin.master-data.show', 'params' => ['table' => 'lead_statuses'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
+                ['label' => 'Lead priorities', 'route' => 'admin.master-data.show', 'params' => ['table' => 'lead_priorities'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
+                ['label' => 'Lead levels', 'route' => 'admin.master-data.show', 'params' => ['table' => 'lead_levels'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
+                ['label' => 'Lost reasons', 'route' => 'admin.master-data.show', 'params' => ['table' => 'lost_reasons'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
+                ['label' => 'Activity types', 'route' => 'admin.master-data.show', 'params' => ['table' => 'activity_types'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
+                ['label' => 'Activity outcomes', 'route' => 'admin.master-data.show', 'params' => ['table' => 'activity_outcomes'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
+                ['label' => 'Customer types', 'route' => 'admin.master-data.show', 'params' => ['table' => 'customer_types'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
+                ['label' => 'Customer statuses', 'route' => 'admin.master-data.show', 'params' => ['table' => 'customer_statuses'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
+                ['label' => 'Payment terms', 'route' => 'admin.master-data.show', 'params' => ['table' => 'payment_terms'], 'icon' => 'tags', 'permission' => 'crm.master_data.view'],
+            ]],
+        ]],
         ['key' => 'catalog', 'label' => 'Catalog', 'icon' => 'package', 'items' => [
             ['label' => 'Services', 'route' => 'catalog.services.index', 'icon' => 'clipboard-list', 'permission' => 'catalog.services.view'],
             ['label' => 'Work items', 'route' => 'catalog.work-items.index', 'icon' => 'hammer', 'permission' => 'catalog.work_items.view'],
