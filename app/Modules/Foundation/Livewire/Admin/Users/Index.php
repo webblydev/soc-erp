@@ -7,7 +7,6 @@ use App\Modules\Foundation\Actions\SetUserActive;
 use App\Modules\Foundation\Actions\StartImpersonation;
 use App\Modules\Foundation\Models\Role;
 use App\Support\Exports\ListingExport;
-use App\Support\Facades\Lookup;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -130,7 +129,6 @@ class Index extends Component
             'rows' => $this->paginatedRows(),
             'mobileRows' => $this->mobileRows(),
             'roles' => Role::query()->orderBy('name')->get(['code', 'name']),
-            'branches' => Lookup::options('branches'),
             'actionUser' => $this->actionUserId !== null ? User::query()->find($this->actionUserId) : null,
         ]);
     }
