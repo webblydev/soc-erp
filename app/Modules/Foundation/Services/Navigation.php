@@ -9,15 +9,21 @@ use Illuminate\Support\Str;
 /**
  * Filters the navigation registry for a user.
  *
- * @phpstan-type NavItem array{label: string, route: string, icon: string, url: string, active: bool}
- * @phpstan-type NavGroup array{key: string, label: string, icon: string, items: list<NavItem>}
+ * An item is either a link (route) or a branch (children) that renders as a tree node in
+ * the sidebar. Branches with no visible children are dropped, like empty groups.
+ *
+ * @phpstan-type NavLink array{label: string, route: string, icon: string, url: string, active: bool}
+ * @phpstan-type NavBranch array{label: string, icon: string, active: bool, children: list<NavLink>}
+ * @phpstan-type NavGroup array{key: string, label: string, icon: string, items: list<NavLink|NavBranch>}
+ * @phpstan-type LinkConfig array{label: string, route: string, icon: string, permission?: string|null, mobile_primary?: bool}
+ * @phpstan-type BranchConfig array{label: string, icon: string, children: list<LinkConfig>}
  */
 final class Navigation
 {
     public const MOBILE_PRIMARY_LIMIT = 3;
 
     /**
-     * @param  list<array{key: string, label: string, icon: string, items: list<array{label: string, route: string, icon: string, permission?: string|null, mobile_primary?: bool}>}>  $groups
+     * @param  list<array{key: string, label: string, icon: string, items: list<LinkConfig|BranchConfig>}>  $groups
      */
     public function __construct(private array $groups) {}
 
@@ -29,10 +35,24 @@ final class Navigation
         $groups = [];
 
         foreach ($this->groups as $group) {
-            $items = array_map(
-                fn (array $item): array => $this->present($item),
-                array_values(array_filter($group['items'], fn (array $item): bool => $this->isVisible($item, $user))),
-            );
+            $items = [];
+
+            foreach ($group['items'] as $item) {
+                if (isset($item['children'])) {
+                    $children = $this->visibleLinks($item['children'], $user);
+
+                    if ($children !== []) {
+                        $items[] = [
+                            'label' => $item['label'],
+                            'icon' => $item['icon'],
+                            'active' => in_array(true, array_column($children, 'active'), true),
+                            'children' => $children,
+                        ];
+                    }
+                } elseif ($this->isVisible($item, $user)) {
+                    $items[] = $this->present($item);
+                }
+            }
 
             if ($items !== []) {
                 $groups[] = ['key' => $group['key'], 'label' => $group['label'], 'icon' => $group['icon'], 'items' => $items];
@@ -43,14 +63,14 @@ final class Navigation
     }
 
     /**
-     * @return list<NavItem>
+     * @return list<NavLink>
      */
     public function primaryMobile(User $user): array
     {
         $items = [];
 
         foreach ($this->groups as $group) {
-            foreach ($group['items'] as $item) {
+            foreach ($this->links($group['items']) as $item) {
                 if (($item['mobile_primary'] ?? false) && $this->isVisible($item, $user)) {
                     $items[] = $this->present($item);
                 }
@@ -61,7 +81,36 @@ final class Navigation
     }
 
     /**
-     * @param  array{label: string, route: string, icon: string, permission?: string|null, mobile_primary?: bool}  $item
+     * @param  list<LinkConfig>  $links
+     * @return list<NavLink>
+     */
+    private function visibleLinks(array $links, User $user): array
+    {
+        return array_map(
+            fn (array $link): array => $this->present($link),
+            array_values(array_filter($links, fn (array $link): bool => $this->isVisible($link, $user))),
+        );
+    }
+
+    /**
+     * Branches flattened into their links, in order.
+     *
+     * @param  list<LinkConfig|BranchConfig>  $items
+     * @return list<LinkConfig>
+     */
+    private function links(array $items): array
+    {
+        $links = [];
+
+        foreach ($items as $item) {
+            array_push($links, ...(isset($item['children']) ? $item['children'] : [$item]));
+        }
+
+        return $links;
+    }
+
+    /**
+     * @param  LinkConfig  $item
      */
     private function isVisible(array $item, User $user): bool
     {
@@ -75,8 +124,8 @@ final class Navigation
     }
 
     /**
-     * @param  array{label: string, route: string, icon: string, permission?: string|null, mobile_primary?: bool}  $item
-     * @return NavItem
+     * @param  LinkConfig  $item
+     * @return NavLink
      */
     private function present(array $item): array
     {
