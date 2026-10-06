@@ -10,14 +10,14 @@ use Illuminate\Auth\Access\AuthorizationException;
 beforeEach(function () {
     seedHrm();
     $this->actor = userWithPermissions('hrm.employees.view_basic', 'hrm.employees.view_full', 'hrm.employees.update', 'hrm.employees.view_salary', 'hrm.employees.update_salary', 'hrm.history.manage');
-    $this->employee = Employee::factory()->create(['designation_id' => Designation::idFor('SITE_ENGINEER')]);
+    $this->employee = Employee::factory()->create(['designation_id' => Designation::idFor('JR_PROJECT_ENGINEER')]);
     $this->employee->forceFill(['gross_salary' => '30000'])->save();
 });
 
 test('changing the designation without an event is refused', function () {
     expectValidationError(fn () => app(UpdateEmployee::class)->handle($this->actor, $this->employee, sameJob($this->employee, ['designation_id' => Designation::idFor('PROJECT_ENGINEER')])), 'event');
 
-    expect($this->employee->fresh()->designation_id)->toBe(Designation::idFor('SITE_ENGINEER'));
+    expect($this->employee->fresh()->designation_id)->toBe(Designation::idFor('JR_PROJECT_ENGINEER'));
 });
 
 test('a promotion records from and to values and applies them (HR-AC-02)', function () {
@@ -28,7 +28,7 @@ test('a promotion records from and to values and applies them (HR-AC-02)', funct
     $event = $this->employee->events()->first();
 
     expect($this->employee->fresh())->designation_id->toBe(Designation::idFor('PROJECT_ENGINEER'))->gross_salary->toBe('38000.00')
-        ->and($event)->from_designation_id->toBe(Designation::idFor('SITE_ENGINEER'))->to_designation_id->toBe(Designation::idFor('PROJECT_ENGINEER'))
+        ->and($event)->from_designation_id->toBe(Designation::idFor('JR_PROJECT_ENGINEER'))->to_designation_id->toBe(Designation::idFor('PROJECT_ENGINEER'))
         ->from_salary->toBe('30000.00')->to_salary->toBe('38000.00')->approved_by->toBe($this->actor->id)->note->toBe('Annual review');
 });
 

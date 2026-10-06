@@ -5,9 +5,11 @@ namespace Database\Seeders\Hrm;
 use App\Modules\Hrm\Models\BloodGroup;
 use App\Modules\Hrm\Models\Department;
 use App\Modules\Hrm\Models\Designation;
+use App\Modules\Hrm\Models\Employee;
 use App\Modules\Hrm\Models\EmployeeDocumentType;
 use App\Modules\Hrm\Models\EmployeeStatus;
 use App\Modules\Hrm\Models\EmployeeType;
+use App\Modules\Hrm\Models\EmploymentEvent;
 use App\Modules\Hrm\Models\EmploymentEventType;
 use App\Modules\Hrm\Models\ExitReason;
 use App\Modules\Hrm\Models\Gender;
@@ -29,12 +31,7 @@ class HrmLookupSeeder extends Seeder
             ['LOGISTIC', 'Logistic & Estate Management'],
         ]);
 
-        $this->seed(Designation::class, [
-            ['MD', 'Managing Director'], ['DIRECTOR', 'Director'], ['GM', 'General Manager'], ['MANAGER', 'Manager'], ['ARCHITECT', 'Architect'],
-            ['STRUCTURAL_ENGINEER', 'Structural Engineer'], ['PROJECT_ENGINEER', 'Project Engineer'], ['SITE_ENGINEER', 'Site Engineer'],
-            ['DRAFTSMAN', 'Draftsman'], ['SURVEYOR', 'Surveyor'], ['ACCOUNTS_OFFICER', 'Accounts Officer'], ['HR_ADMIN_OFFICER', 'HR & Admin Officer'],
-            ['MARKETING_OFFICER', 'Marketing Officer'], ['CR_OFFICER', 'Customer Relation Officer'], ['OFFICE_ASSISTANT', 'Office Assistant'],
-        ]);
+        $this->seedDesignations();
 
         $this->seed(EmployeeType::class, [
             ['PERMANENT', 'Permanent'], ['PROBATION', 'Probation', ['is_system' => true]], ['CONTRACT', 'Contract'],
@@ -69,6 +66,44 @@ class HrmLookupSeeder extends Seeder
         ]));
 
         $this->seed(ExitReason::class, $this->named(['Resignation', 'Termination', 'Contract end', 'Retirement', 'Other']));
+    }
+
+    /**
+     * The v1 posts (tbl_post, legacy seed spec L4), in v1 order. "Head of …" posts belong to their
+     * department. The earlier sample designations are removed when unused, else deactivated.
+     */
+    private function seedDesignations(): void
+    {
+        $posts = [
+            ['MD', 'Managing Director'], ['CEO', 'CEO'], ['ED', 'Executive Director'], ['CHAIRMAN', 'Chairman'],
+            ['HEAD_DESIGN', 'Head of Design Department', 'DESIGN'],
+            ['HEAD_PROJECT_OPS', 'Head of Project Operation Department', 'PROJECT_OPS'],
+            ['HEAD_ACCOUNTS', 'Head of Accounts & Finance', 'ACCOUNTS'],
+            ['HEAD_HR_ADMIN', 'Head of HR & Admin Department', 'HR_ADMIN'],
+            ['HEAD_SUPPLY_CHAIN', 'Head of Supply Chain Management', 'SUPPLY_CHAIN'],
+            ['HEAD_MKT_SALES', 'Head of Marketing & Sales', 'MKT_SALES'],
+            ['STRUCTURAL_ENGINEER', 'Structural Engineer'],
+            ['HEAD_CUSTOMER_REL', 'Head of Customer Relation', 'CUSTOMER_REL'],
+            ['PROJECT_ENGINEER', 'Project Engineer'], ['ARCHITECT', 'Architect'],
+            ['JR_PROJECT_ENGINEER', 'Jr. Project Engineer'], ['DEPUTY_PROJECT_ENGINEER', 'Deputy Project Engineer'],
+            ['TECH_SUPPORT_ENGINEER', 'Technical Support Engineer'],
+            ['HEAD_LOGISTIC', 'Head of Logistic & Estate', 'LOGISTIC'],
+        ];
+
+        $departments = Department::query()->pluck('id', 'code');
+
+        $this->seed(Designation::class, array_map(fn (array $post): array => [
+            $post[0], $post[1], isset($post[2]) ? ['department_id' => $departments[$post[2]] ?? null] : [],
+        ], $posts));
+
+        $retired = ['DIRECTOR', 'GM', 'MANAGER', 'SITE_ENGINEER', 'DRAFTSMAN', 'SURVEYOR', 'ACCOUNTS_OFFICER', 'HR_ADMIN_OFFICER', 'MARKETING_OFFICER', 'CR_OFFICER', 'OFFICE_ASSISTANT'];
+
+        Designation::query()->whereIn('code', $retired)->get()->each(function (Designation $designation): void {
+            $inUse = Employee::withTrashed()->where('designation_id', $designation->id)->exists()
+                || EmploymentEvent::query()->where('from_designation_id', $designation->id)->orWhere('to_designation_id', $designation->id)->exists();
+
+            $inUse ? $designation->update(['is_active' => false]) : $designation->delete();
+        });
     }
 
     /**

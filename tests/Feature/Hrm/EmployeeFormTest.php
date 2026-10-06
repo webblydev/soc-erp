@@ -29,7 +29,7 @@ test('create and edit routes need their permissions', function () {
 test('creating an employee from the form redirects to the profile', function () {
     Livewire::actingAs($this->hr)->test(Form::class)
         ->set('first_name', 'Tania')->set('phone', '01712999888')
-        ->set('department_id', (string) Department::idFor('DESIGN'))->set('designation_id', (string) Designation::idFor('DRAFTSMAN'))
+        ->set('department_id', (string) Department::idFor('DESIGN'))->set('designation_id', (string) Designation::idFor('ARCHITECT'))
         ->set('employee_type_id', (string) EmployeeType::idFor('PERMANENT'))->set('employee_status_id', (string) EmployeeStatus::idFor('ACTIVE'))
         ->set('joining_date', today()->toDateString())
         ->call('addEducation')->set('education.0.institution', 'BUET')->set('education.0.degree', 'Diploma')
@@ -48,7 +48,7 @@ test('validation errors show on the form', function () {
 });
 
 test('a job change opens the event sheet and saves with the event', function () {
-    $employee = Employee::factory()->create(['designation_id' => Designation::idFor('SITE_ENGINEER')]);
+    $employee = Employee::factory()->create(['designation_id' => Designation::idFor('JR_PROJECT_ENGINEER')]);
 
     Livewire::actingAs($this->hr)->test(Form::class, ['employee' => $employee])
         ->set('designation_id', (string) Designation::idFor('PROJECT_ENGINEER'))
@@ -65,7 +65,7 @@ test('a job change opens the event sheet and saves with the event', function () 
 });
 
 test('event errors show in the sheet', function () {
-    $employee = Employee::factory()->create(['designation_id' => Designation::idFor('SITE_ENGINEER')]);
+    $employee = Employee::factory()->create(['designation_id' => Designation::idFor('JR_PROJECT_ENGINEER')]);
 
     Livewire::actingAs($this->hr)->test(Form::class, ['employee' => $employee])
         ->set('designation_id', (string) Designation::idFor('PROJECT_ENGINEER'))
