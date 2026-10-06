@@ -32,6 +32,9 @@
             </x-ui.sidebar>
 
             <x-ui.sidebar-inset class="pt-[calc(3.5rem+env(safe-area-inset-top))] {{ $bottomNav ? 'pb-[calc(4rem+env(safe-area-inset-bottom))]' : '' }} md:pt-0 md:pb-0">
+                @if (session()->has(\App\Http\Middleware\HandleImpersonation::SESSION_KEY))
+                    <x-shell.impersonation-banner />
+                @endif
                 <header class="hidden h-14 shrink-0 items-center gap-2 border-b px-4 md:flex">
                     <x-ui.sidebar-trigger class="-ms-1" />
                     <x-ui.separator orientation="vertical" class="me-2 h-4!" />
