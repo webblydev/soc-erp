@@ -45,33 +45,35 @@
         </x-slot:filters>
 
         <x-slot:desktop>
-            <x-ui.table>
+            <x-shell.bulk-bar :exportable="auth()->user()->can('admin.audit.export')" />
+
+            <x-ui.table variant="bordered">
                 <x-ui.table-header>
                     <x-ui.table-row>
+                        <x-shell.select-all :ids="$rows->pluck('id')" />
+                        <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="created_at" :label="__('When')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head>{{ __('User') }}</x-ui.table-head>
                         <x-ui.table-head>{{ __('Event') }}</x-ui.table-head>
                         <x-ui.table-head>{{ __('Record') }}</x-ui.table-head>
-                        <x-ui.table-head class="text-end">{{ __('Actions') }}</x-ui.table-head>
                     </x-ui.table-row>
                 </x-ui.table-header>
                 <x-ui.table-body>
                     @forelse ($rows as $entry)
                         <x-ui.table-row wire:key="audit-{{ $entry->id }}">
+                            <x-shell.select-row :id="$entry->id" :label="$entry->auditable_type.' #'.$entry->auditable_id" />
+                            <x-shell.row-menu>
+                                <x-shell.row-menu-item icon="eye" wire:click="show({{ $entry->id }})">{{ __('View changes') }}</x-shell.row-menu-item>
+                                <x-shell.row-menu-item icon="history" wire:click="showRecordHistory({{ $entry->id }})">{{ __('History of this record') }}</x-shell.row-menu-item>
+                            </x-shell.row-menu>
                             <x-ui.table-cell class="whitespace-nowrap">{{ $entry->created_at->format('d-M-Y H:i') }}</x-ui.table-cell>
                             <x-ui.table-cell>{{ $entry->actorLabel() }}</x-ui.table-cell>
                             <x-ui.table-cell><x-ui.badge variant="secondary" class="text-sm">{{ str_replace('_', ' ', $entry->event) }}</x-ui.badge></x-ui.table-cell>
                             <x-ui.table-cell class="font-mono text-sm">{{ $entry->auditable_type }} #{{ $entry->auditable_id }}</x-ui.table-cell>
-                            <x-ui.table-cell>
-                                <div data-test="row-actions" class="flex items-center justify-end gap-1">
-                                    <x-shell.row-action icon="eye" :label="__('View changes')" wire:click="show({{ $entry->id }})" />
-                                    <x-shell.row-action icon="history" :label="__('History of this record')" wire:click="showRecordHistory({{ $entry->id }})" />
-                                </div>
-                            </x-ui.table-cell>
                         </x-ui.table-row>
                     @empty
                         <x-ui.table-row>
-                            <x-ui.table-cell colspan="5" class="py-10 text-center text-muted-foreground">{{ __('No entries found.') }}</x-ui.table-cell>
+                            <x-ui.table-cell colspan="6" class="py-10 text-center text-muted-foreground">{{ __('No entries found.') }}</x-ui.table-cell>
                         </x-ui.table-row>
                     @endforelse
                 </x-ui.table-body>
@@ -97,11 +99,11 @@
         </x-slot:mobile>
     </x-shell.list>
 
-    <x-shell.sheet id="audit-entry" :title="$selected ? $selected->auditable_type.' #'.$selected->auditable_id : null"
-        :description="$selected ? str_replace('_', ' ', $selected->event).' · '.$selected->actorLabel().' · '.$selected->created_at->format('d-M-Y H:i:s') : null">
-        @if ($selected)
+    <x-shell.sheet id="audit-entry" :title="$openEntry ? $openEntry->auditable_type.' #'.$openEntry->auditable_id : null"
+        :description="$openEntry ? str_replace('_', ' ', $openEntry->event).' · '.$openEntry->actorLabel().' · '.$openEntry->created_at->format('d-M-Y H:i:s') : null">
+        @if ($openEntry)
             <div class="flex flex-col gap-3 pb-4">
-                @forelse ($selected->fieldChanges() as $field => $change)
+                @forelse ($openEntry->fieldChanges() as $field => $change)
                     <div class="rounded-md border p-3 text-sm">
                         <p class="font-medium">{{ $field }}</p>
                         <p class="break-all text-destructive line-through">{{ $change['old'] }}</p>
@@ -110,7 +112,7 @@
                 @empty
                     <p class="text-sm text-muted-foreground">{{ __('No field changes recorded for this event.') }}</p>
                 @endforelse
-                <p class="text-sm text-muted-foreground">{{ $selected->ip_address }} · {{ \Illuminate\Support\Str::limit((string) $selected->user_agent, 80) }}</p>
+                <p class="text-sm text-muted-foreground">{{ $openEntry->ip_address }} · {{ \Illuminate\Support\Str::limit((string) $openEntry->user_agent, 80) }}</p>
             </div>
         @endif
     </x-shell.sheet>
