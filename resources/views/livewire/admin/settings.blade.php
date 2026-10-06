@@ -25,16 +25,7 @@
                 @else
                     <x-ui.field>
                         <x-ui.field-label :for="$id">{{ __($setting->label) }}</x-ui.field-label>
-                        @if ($setting->type === 'roles')
-                            <div class="flex flex-col gap-1">
-                                @foreach ($roles as $role)
-                                    <label class="flex min-h-11 items-center gap-3 text-sm md:min-h-8">
-                                        <x-ui.checkbox native wire:model="{{ $model }}" value="{{ $role->code }}" />
-                                        {{ $role->name }}
-                                    </label>
-                                @endforeach
-                            </div>
-                        @elseif ($setting->type === 'json')
+                        @if ($setting->type === 'json')
                             <x-ui.textarea :id="$id" wire:model="{{ $model }}" rows="4" class="font-mono text-base md:text-sm" />
                         @elseif (str_starts_with($setting->type, 'fk:'))
                             <x-ui.select native :id="$id" wire:model="{{ $model }}" class="h-11 text-base md:h-9 md:text-sm">
