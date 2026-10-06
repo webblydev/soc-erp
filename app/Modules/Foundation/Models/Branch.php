@@ -3,6 +3,7 @@
 namespace App\Modules\Foundation\Models;
 
 use App\Models\User;
+use App\Modules\Hrm\Models\Employee;
 use App\Support\AuditTrail\Auditable;
 use App\Support\Lookups\IsLookup;
 use Database\Factories\Foundation\BranchFactory;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -44,5 +46,13 @@ class Branch extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    /**
+     * @return BelongsTo<Employee, $this>
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'manager_employee_id');
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Catalog\Models;
 
+use App\Modules\Hrm\Models\Employee;
 use App\Support\AuditTrail\Auditable;
 use App\Support\Lookups\IsLookup;
 use Database\Factories\Catalog\BusinessLineFactory;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * A division that owns work and numbers its projects (docs/02 §3.1).
@@ -23,7 +25,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $is_active
  * @property bool $is_system
  */
-#[Fillable(['code', 'name', 'description', 'sort_order', 'color', 'is_active', 'is_system', 'project_prefix', 'is_internal'])]
+#[Fillable(['code', 'name', 'description', 'sort_order', 'color', 'is_active', 'is_system', 'project_prefix', 'is_internal', 'manager_employee_id'])]
 #[UseFactory(BusinessLineFactory::class)]
 class BusinessLine extends Model
 {
@@ -36,5 +38,13 @@ class BusinessLine extends Model
     protected function casts(): array
     {
         return ['is_internal' => 'boolean'];
+    }
+
+    /**
+     * @return BelongsTo<Employee, $this>
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'manager_employee_id');
     }
 }

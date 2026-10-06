@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Modules\Foundation\Concerns\HasRoles;
 use App\Modules\Foundation\Models\Branch;
+use App\Modules\Hrm\Models\Employee;
 use App\Support\AuditTrail\Auditable;
 use App\Support\AuditTrail\TracksAuthors;
 use App\Support\Collaboration\Collaborative;
@@ -139,5 +140,15 @@ class User extends Authenticatable implements Collaborative
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * The employee this login belongs to (FD-BR-03).
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
     }
 }
