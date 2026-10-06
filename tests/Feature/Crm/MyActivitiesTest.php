@@ -4,7 +4,11 @@ use App\Models\User;
 use App\Modules\Crm\Livewire\Activities\Index;
 use App\Modules\Crm\Models\CrmActivity;
 use App\Modules\Crm\Models\Lead;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Livewire;
+
+beforeEach(fn () => Model::preventLazyLoading());
+afterEach(fn () => Model::preventLazyLoading(false));
 
 beforeEach(function () {
     seedCrm();
