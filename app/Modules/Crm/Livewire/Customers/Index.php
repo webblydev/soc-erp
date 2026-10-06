@@ -54,7 +54,7 @@ class Index extends Component
     }
 
     /**
-     * @param  Builder<*>  $query
+     * @param  Builder<Customer>  $query
      */
     protected function applyFilters(Builder $query): void
     {
