@@ -1,4 +1,4 @@
-@php($tabs = collect(['details' => __('Details'), 'password' => __('Password'), 'two-factor' => __('Two-factor'), 'notifications' => __('Notifications')])->only($availableTabs)->all())
+@php($tabs = collect(['details' => __('Details'), 'password' => __('Password'), 'notifications' => __('Notifications')])->only($availableTabs)->all())
 
 <div class="flex flex-col gap-4">
     <div class="flex items-center gap-3">
@@ -60,8 +60,6 @@
                     <x-ui.input id="password_confirmation" type="password" wire:model="password_confirmation" autocomplete="new-password" class="h-11 text-base md:h-9 md:text-sm" />
                 </x-ui.field>
             </x-shell.form-page>
-        @elseif ($tab === 'two-factor')
-            <livewire:foundation.profile.two-factor :key="'two-factor-panel'" />
         @else
             <x-shell.form-page wire:submit="saveNotifications" :submit-label="__('Save preferences')" above-nav>
                 @foreach ($notificationKeys as $key => $definition)
