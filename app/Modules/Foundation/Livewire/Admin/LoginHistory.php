@@ -41,7 +41,7 @@ class LoginHistory extends Component
      */
     protected function listingQuery(): Builder
     {
-        return LoginEntry::query()->with('user:id,name')->latest('id');
+        return LoginEntry::query()->with('user:id,name,username')->latest('id');
     }
 
     protected function searchColumns(): array
