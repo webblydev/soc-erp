@@ -5,6 +5,7 @@ namespace App\Modules\Crm\Models;
 use App\Models\User;
 use App\Modules\Catalog\Models\BusinessLine;
 use App\Modules\Foundation\Models\Location;
+use App\Modules\Hrm\Models\Employee;
 use App\Support\AuditTrail\Auditable;
 use App\Support\AuditTrail\TracksAuthors;
 use App\Support\Collaboration\Collaborative;
@@ -148,13 +149,13 @@ class Lead extends Model implements Collaborative
     }
 
     /**
-     * Who referred the lead: a linked customer or user, or the typed name.
+     * Who referred the lead: a linked customer or employee, or the typed name.
      */
     public function referrerLabel(): ?string
     {
         return match ($this->referrer_type) {
             'customer' => $this->referrerCustomer->name ?? $this->referrer_name,
-            'employee' => $this->referrerUser->name ?? $this->referrer_name,
+            'employee' => $this->referrerEmployee->full_name ?? $this->referrer_name,
             default => $this->referrer_name,
         };
     }
@@ -272,13 +273,13 @@ class Lead extends Model implements Collaborative
     }
 
     /**
-     * Read only when referrer_type is employee (see referrerLabel()).
+     * Read only when referrer_type is employee (see referrerLabel(), HRM spec H12).
      *
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Employee, $this>
      */
-    public function referrerUser(): BelongsTo
+    public function referrerEmployee(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'referrer_id');
+        return $this->belongsTo(Employee::class, 'referrer_id');
     }
 
     /**

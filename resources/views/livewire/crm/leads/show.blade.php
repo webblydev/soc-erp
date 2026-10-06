@@ -145,7 +145,13 @@
                         <x-ui.description-item :term="__('Lead date')">{{ $lead->lead_date->format('d-M-Y') }}</x-ui.description-item>
                         <x-ui.description-item :term="__('Source')">{{ $lead->source->name }}</x-ui.description-item>
                         @if ($lead->referrerLabel())
-                            <x-ui.description-item :term="__('Referrer')">{{ $lead->referrerLabel() }}</x-ui.description-item>
+                            <x-ui.description-item :term="__('Referrer')">
+                                @if ($lead->referrer_type === 'employee' && $lead->referrerEmployee && auth()->user()->can('view', $lead->referrerEmployee))
+                                    <a href="{{ route('hrm.employees.show', $lead->referrerEmployee) }}" wire:navigate class="hover:underline">{{ $lead->referrerLabel() }}</a>
+                                @else
+                                    {{ $lead->referrerLabel() }}
+                                @endif
+                            </x-ui.description-item>
                         @endif
                         <x-ui.description-item :term="__('Business line')">{{ $lead->businessLine?->name ?? '—' }}</x-ui.description-item>
                         <x-ui.description-item :term="__('Level')">{{ $lead->level?->name ?? '—' }}</x-ui.description-item>

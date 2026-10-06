@@ -8,6 +8,7 @@ use App\Modules\Crm\Actions\FindDuplicates;
 use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Models\LeadSource;
+use App\Modules\Hrm\Models\Employee;
 use App\Support\AuditTrail\AuditTrail;
 use App\Support\Lookups\ActiveLookup;
 use App\Support\Phone;
@@ -130,7 +131,7 @@ trait ValidatesLeadInput
         if (! empty($input['referrer_id'])) {
             $exists = match ($input['referrer_type'] ?? null) {
                 'customer' => Customer::query()->whereNull('merged_into_id')->whereKey($input['referrer_id'])->exists(),
-                'employee' => User::query()->whereKey($input['referrer_id'])->exists(),
+                'employee' => Employee::query()->whereKey($input['referrer_id'])->exists(),
                 default => false,
             };
 

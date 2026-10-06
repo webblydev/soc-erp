@@ -15,6 +15,7 @@ use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Models\LeadPriority;
 use App\Modules\Crm\Models\LeadSource;
 use App\Modules\Crm\Models\SalesTeam;
+use App\Modules\Hrm\Models\Employee;
 use App\Support\Facades\Settings;
 use Brick\Math\BigDecimal;
 use Illuminate\Contracts\View\View;
@@ -320,7 +321,9 @@ class Form extends Component
                     ->where(fn ($query) => $query->where('customer_number', 'like', "%{$term}%")->orWhere('name', 'like', "%{$term}%")->orWhere('phone', 'like', "%{$term}%"))
                     ->orderBy('name')->limit(8)->get(['id', 'customer_number', 'name', 'phone'])
                 : collect(),
-            'employees' => $this->referrer_type === 'employee' ? User::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']) : collect(),
+            'employees' => $this->referrer_type === 'employee'
+                ? Employee::query()->where(fn ($query) => $query->assignable())->when(is_numeric($this->referrer_id), fn ($query) => $query->orWhere('id', (int) $this->referrer_id))->orderBy('full_name')->get(['id', 'full_name'])
+                : collect(),
             'assignees' => $this->lead === null ? $assignLead->assignableUsers($this->actor()) : collect(),
             'teams' => $roundRobin && $this->lead === null ? SalesTeam::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']) : collect(),
             'serviceOptions' => Service::query()->where(fn ($query) => $query->where('is_active', true)->orWhereIn('id', collect($this->services)->pluck('service_id')->filter()))->orderBy('name')->get(['id', 'name']),

@@ -133,7 +133,7 @@
                         <x-ui.select native wire:model="referrer_id" class="h-11 text-base md:h-9 md:text-sm" :aria-label="__('Employee')">
                             <option value="">{{ __('Choose…') }}</option>
                             @foreach ($employees as $employee)
-                                <option value="{{ $employee->id }}">{{ $employee->name }}</option>
+                                <option value="{{ $employee->id }}">{{ $employee->full_name }}</option>
                             @endforeach
                         </x-ui.select>
                     @elseif ($referrer_type !== null && $referrer_type !== '')
