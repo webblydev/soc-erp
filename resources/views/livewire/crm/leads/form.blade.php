@@ -288,7 +288,7 @@
     </x-shell.form-screen>
 
     @if ($duplicates !== [])
-        <x-shell.sheet id="lead-duplicates" :title="__('Possible duplicate')" class="md:hidden">
+        <x-shell.sheet id="lead-duplicates" :title="__('Possible duplicate')" :description="__('A lead or customer like this one already exists.')" class="md:hidden">
             <div class="flex flex-col gap-3 pb-4">
                 @include('livewire.crm.leads.partials.duplicates')
             </div>
