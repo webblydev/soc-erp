@@ -55,7 +55,7 @@
                             <x-shell.select-row :id="$user->id" :label="$user->name" />
                             <x-shell.row-menu>
                                 @can('admin.users.update')
-                                    <x-shell.row-menu-item icon="pencil" :href="route('admin.users.edit', $user)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                    <x-shell.row-menu-item icon="pencil" data-detail-modal :href="route('admin.users.edit', $user)">{{ __('Edit') }}</x-shell.row-menu-item>
                                 @endcan
                                 @can('admin.users.deactivate')
                                     <x-shell.row-menu-item :icon="$user->is_active ? 'power-off' : 'power'" wire:click="toggleActive({{ $user->id }})">{{ $user->is_active ? __('Deactivate') : __('Activate') }}</x-shell.row-menu-item>
@@ -68,7 +68,7 @@
                                 @endcan
                             </x-shell.row-menu>
                             <x-ui.table-cell class="font-medium">
-                                <a href="{{ route('admin.users.edit', $user) }}" wire:navigate class="hover:underline">{{ $user->name }}</a>
+                                <a data-detail-modal href="{{ route('admin.users.edit', $user) }}" wire:navigate class="hover:underline">{{ $user->name }}</a>
                             </x-ui.table-cell>
                             <x-ui.table-cell>{{ $user->username }}</x-ui.table-cell>
                             <x-ui.table-cell>{{ $user->email }}</x-ui.table-cell>
