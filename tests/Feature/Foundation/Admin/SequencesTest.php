@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Modules\Foundation\Actions\IncreaseSequenceNumber;
 use App\Modules\Foundation\Actions\UpdateSequenceFormat;
 use App\Modules\Foundation\Livewire\Admin\Sequences;
+use App\Modules\Foundation\Models\AuditLog;
 use App\Modules\Foundation\Models\NumberSequence;
 use App\Modules\Foundation\Models\NumberSequenceFormat;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
@@ -33,6 +34,17 @@ test('the next number can only increase (FD-BR-07)', function () {
 
     app(IncreaseSequenceNumber::class)->handle($this->counter, 25);
     expect($this->counter->fresh()->next_number)->toBe(25);
+});
+
+test('format and counter changes are audited', function () {
+    app(UpdateSequenceFormat::class)->handle($this->definition, 'SI-{yyyy}-{seq:6}');
+    app(IncreaseSequenceNumber::class)->handle($this->counter, 25);
+
+    $updates = AuditLog::query()->where('event', 'updated')->get();
+
+    expect($updates->where('auditable_type', 'number_sequence_format')->sole()->new_values)->toBe(['format' => 'SI-{yyyy}-{seq:6}'])
+        ->and($updates->where('auditable_type', 'number_sequence')->pluck('new_values')->all())
+        ->toBe([['format' => 'SI-{yyyy}-{seq:6}'], ['next_number' => 25]]);
 });
 
 test('the screen needs admin.sequences.view and shows a sample number', function () {
