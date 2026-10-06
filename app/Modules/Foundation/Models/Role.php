@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use InvalidArgumentException;
 
 /**
@@ -28,7 +29,7 @@ use InvalidArgumentException;
 class Role extends Model
 {
     /** @use HasFactory<RoleFactory> */
-    use Auditable, HasFactory, TracksAuthors;
+    use Auditable, HasFactory, SoftDeletes, TracksAuthors;
 
     public const SUPER_ADMIN = 'super_admin';
 
