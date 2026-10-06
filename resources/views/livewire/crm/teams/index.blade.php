@@ -3,6 +3,7 @@
         :search-placeholder="__('Search team name')"
         :create-url="auth()->user()->can('crm.teams.manage') ? route('crm.teams.create') : null"
         :create-label="__('New team')"
+        exportable
         :has-more="$this->hasMoreRows"
         :active-filters="count(array_filter($filters, 'filled'))"
     >
@@ -18,9 +19,13 @@
         </x-slot:filters>
 
         <x-slot:desktop>
-            <x-ui.table>
+            <x-shell.bulk-bar exportable :deletable="auth()->user()->can('crm.teams.manage')" />
+
+            <x-ui.table variant="bordered">
                 <x-ui.table-header>
                     <x-ui.table-row>
+                        <x-shell.select-all :ids="$rows->pluck('id')" />
+                        <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                         <x-ui.table-head><x-shell.sort-header key="name" :label="__('Team')" :$sort :$direction /></x-ui.table-head>
                         <x-ui.table-head>{{ __('Manager') }}</x-ui.table-head>
                         <x-ui.table-head class="text-end">{{ __('Members') }}</x-ui.table-head>
@@ -34,6 +39,13 @@
                 <x-ui.table-body>
                     @forelse ($rows as $team)
                         <x-ui.table-row wire:key="team-{{ $team->id }}">
+                            <x-shell.select-row :id="$team->id" :label="$team->name" />
+                            <x-shell.row-menu>
+                                @can('crm.teams.manage')
+                                    <x-shell.row-menu-item icon="pencil" :href="route('crm.teams.edit', $team)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                    <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $team->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $team->name]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                                @endcan
+                            </x-shell.row-menu>
                             <x-ui.table-cell class="font-medium">
                                 @can('crm.teams.manage')
                                     <a href="{{ route('crm.teams.edit', $team) }}" wire:navigate class="hover:underline">{{ $team->name }}</a>
@@ -51,13 +63,13 @@
                         </x-ui.table-row>
                     @empty
                         <x-ui.table-row>
-                            <x-ui.table-cell colspan="8" class="py-10 text-center text-muted-foreground">{{ __('No sales teams found.') }}</x-ui.table-cell>
+                            <x-ui.table-cell colspan="10" class="py-10 text-center text-muted-foreground">{{ __('No sales teams found.') }}</x-ui.table-cell>
                         </x-ui.table-row>
                     @endforelse
                 </x-ui.table-body>
             </x-ui.table>
 
-            <div class="mt-4 flex items-center justify-between gap-4">
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
                 <x-ui.select native wire:model.live="perPage" class="w-36" :aria-label="__('Rows per page')">
                     @foreach (static::PER_PAGE_OPTIONS as $option)
                         <option value="{{ $option }}">{{ __(':count per page', ['count' => $option]) }}</option>
