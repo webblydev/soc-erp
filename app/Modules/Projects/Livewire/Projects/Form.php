@@ -157,7 +157,7 @@ class Form extends Component
             $this->{$field} = (string) $project->getAttribute($field)?->toDateString();
         }
 
-        $this->services = $project->services()->get()->map(fn ($line): array => [
+        $this->services = array_values($project->services()->get()->map(fn ($line): array => [
             'id' => $line->id,
             'service_id' => $line->service_id,
             'description' => (string) $line->description,
@@ -167,7 +167,7 @@ class Form extends Component
             'discount_amount' => (string) (float) $line->discount_amount,
             'status' => $line->status->name,
             'cancelled' => $line->isCancelled(),
-        ])->values()->all();
+        ])->all());
     }
 
     public function updatedProjectTypeId(): void
@@ -210,13 +210,12 @@ class Form extends Component
 
     public function addService(): void
     {
-        $this->services[] = $this->blankService();
+        $this->services = [...$this->services, $this->blankService()];
     }
 
     public function removeService(int $index): void
     {
-        unset($this->services[$index]);
-        $this->services = array_values($this->services);
+        $this->services = array_values(array_filter($this->services, fn (int $key): bool => $key !== $index, ARRAY_FILTER_USE_KEY));
     }
 
     public function save(CreateProject $createProject, UpdateProject $updateProject): void
