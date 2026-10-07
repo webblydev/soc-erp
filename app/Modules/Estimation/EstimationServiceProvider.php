@@ -2,6 +2,8 @@
 
 namespace App\Modules\Estimation;
 
+use App\Modules\Estimation\Events\EstimateApproved;
+use App\Modules\Estimation\Listeners\BuildBudgetOnApproval;
 use App\Modules\Estimation\Models\CostCategory;
 use App\Modules\Estimation\Models\Estimate;
 use App\Modules\Estimation\Models\EstimateKind;
@@ -24,13 +26,23 @@ use App\Modules\Estimation\Policies\MeasurementEntryPolicy;
 use App\Modules\Estimation\Policies\ProjectEstimationPolicy;
 use App\Modules\Estimation\Policies\SiteInspectionFindingPolicy;
 use App\Modules\Estimation\Policies\SiteInspectionPolicy;
+use App\Modules\Estimation\Services\BudgetCostSources;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
 class EstimationServiceProvider extends ServiceProvider
 {
+    /**
+     * Register Estimation services. Purchases and Accounting add their cost sources (spec E2).
+     */
+    public function register(): void
+    {
+        $this->app->singleton(BudgetCostSources::class);
+    }
+
     /**
      * Bootstrap Estimation & Site services.
      */
@@ -66,6 +78,8 @@ class EstimationServiceProvider extends ServiceProvider
         foreach (ProjectEstimationPolicy::ABILITIES as $ability) {
             Gate::define($ability, [ProjectEstimationPolicy::class, $ability]);
         }
+
+        Event::listen(EstimateApproved::class, BuildBudgetOnApproval::class);
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Estimation\\Livewire');
     }
