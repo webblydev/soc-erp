@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Crm\Actions\DeleteActivity;
 use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\Lead;
+use App\Modules\Projects\Models\Project;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
@@ -18,7 +19,7 @@ use Livewire\Component;
  */
 class Show extends Component
 {
-    public const TABS = ['overview', 'activities', 'leads', 'documents', 'notes', 'history'];
+    public const TABS = ['overview', 'projects', 'activities', 'leads', 'documents', 'notes', 'history'];
 
     public Customer $customer;
 
@@ -74,6 +75,9 @@ class Show extends Component
             'activities' => $this->tab === 'activities'
                 ? $this->customer->timeline()->with(['subject', 'type', 'outcome', 'owner:id,name'])
                     ->orderByRaw('completed_at IS NOT NULL')->orderBy('scheduled_at')->orderByDesc('completed_at')->get()
+                : collect(),
+            'projects' => $this->tab === 'projects'
+                ? Project::query()->visibleTo($this->actor())->where('customer_id', $this->customer->id)->with('status:id,name,color')->latest('id')->get()
                 : collect(),
             'leads' => $this->tab === 'leads'
                 ? Lead::query()->with('status:id,name,color')
