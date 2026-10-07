@@ -47,7 +47,7 @@ trait ValidatesProjectInput
         }
 
         foreach (['land_area', 'built_up_area_sft', 'retention_pct'] as $field) {
-            if (is_string($data[$field])) {
+            if (is_string($data[$field] ?? null)) {
                 $data[$field] = str_replace(',', '', $data[$field]);
             }
         }
@@ -116,7 +116,7 @@ trait ValidatesProjectInput
     private function validateCustomerRules(ValidatorInstance $validator, array $input, ?Project $project): void
     {
         $type = is_numeric($input['project_type_id'] ?? null) ? ProjectType::query()->find((int) $input['project_type_id']) : null;
-        $lineId = $project?->business_line_id ?? (is_numeric($input['business_line_id'] ?? null) ? (int) $input['business_line_id'] : null);
+        $lineId = $project !== null ? $project->business_line_id : (is_numeric($input['business_line_id'] ?? null) ? (int) $input['business_line_id'] : null);
         $line = $lineId !== null ? BusinessLine::query()->find($lineId) : null;
 
         if ($type === null) {
