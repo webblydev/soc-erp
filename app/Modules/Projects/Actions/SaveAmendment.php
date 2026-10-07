@@ -48,7 +48,7 @@ class SaveAmendment
             'reason' => ['required', 'string', 'max:2000'],
         ], [], ['amendment_date' => __('amendment date'), 'reason' => __('reason')])->validate();
 
-        $lines = $this->serviceLines->validate($input['services'] ?? [], $project, $project->services()->pluck('service_id')->all(), withStatus: true);
+        $lines = $this->serviceLines->validate($input['services'] ?? [], $project, array_values($project->services()->pluck('service_id')->map(fn (mixed $id): int => (int) $id)->all()), withStatus: true);
         $lines = $this->withDroppedLinesCancelled($project, $lines);
 
         return DB::transaction(function () use ($contract, $amendment, $data, $lines): ProjectContractAmendment {
