@@ -5,6 +5,7 @@ namespace App\Modules\Estimation;
 use App\Modules\Estimation\Events\EstimateApproved;
 use App\Modules\Estimation\Listeners\BuildBudgetOnApproval;
 use App\Modules\Estimation\Livewire\Budget\ProjectTab;
+use App\Modules\Estimation\Livewire\Site\ProjectTab as SiteProjectTab;
 use App\Modules\Estimation\Models\CostCategory;
 use App\Modules\Estimation\Models\Estimate;
 use App\Modules\Estimation\Models\EstimateKind;
@@ -92,5 +93,6 @@ class EstimationServiceProvider extends ServiceProvider
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Estimation\\Livewire');
         Livewire::component('estimation.project-estimates-tab', ProjectTab::class);
+        Livewire::component('estimation.project-site-tab', SiteProjectTab::class);
     }
 }
