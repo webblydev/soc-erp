@@ -54,6 +54,29 @@ final class LegacyMap
         'SOC-AGENT' => 'AGENT', 'SOC-DSW' => 'DSW',
     ];
 
+    /**
+     * tbl_type id → [project type, default business line, task type] (legacy seed spec §7.1).
+     */
+    public const TYPES = [
+        1 => ['RESIDENTIAL', 'BD', 'DESIGN'], 2 => ['RESIDENTIAL', 'BDRA', 'APPROVAL_FILE'], 3 => ['INTERIOR', 'INT', 'DESIGN'],
+        4 => ['RENOVATION', 'CON', 'OTHER'], 5 => ['CONSULTANCY', 'CON', 'STRUCTURAL_CALC'], 6 => ['INTERNAL', 'MGT', 'ACCOUNTS'],
+        7 => ['INTERNAL', 'MGT', 'LOGISTIC'], 8 => ['INTERNAL', 'MGT', 'INVENTORY'], 9 => ['INTERNAL', 'MGT', 'SUPPLY_CHAIN'],
+        10 => ['INTERNAL', 'MGT', 'HR_ADMIN'], 11 => ['INTERNAL', 'MS', 'CUSTOMER_RELATION'], 12 => ['INTERNAL', 'MS', 'OTHER'],
+        13 => ['INTERIOR', 'INT', 'OTHER'], 14 => ['INTERIOR', 'INT', 'OTHER'], 15 => ['ESTIMATE', 'CON-BLE', 'ESTIMATE'],
+        16 => ['ESTIMATE', 'CON-UPS', 'ESTIMATE'], 18 => ['TRAINING', 'CETP', 'OTHER'], 19 => ['SURVEY', 'DSW', 'SURVEY'],
+        20 => ['SURVEY', 'CON', 'SURVEY'], 21 => ['TRAINING', 'CETP', 'OTHER'], 22 => ['ESTIMATE', 'CON', 'ESTIMATE'],
+    ];
+
+    /**
+     * Fallback for unknown types.
+     */
+    public const DEFAULT_TYPE = ['RESIDENTIAL', 'BD', 'OTHER'];
+
+    /**
+     * Project number prefixes only projects use, beyond the client code prefixes.
+     */
+    private const PROJECT_LINES = ['SOC-MANAGEMENT' => 'MGT', 'SOC-M&S' => 'MS', 'ATP-' => 'CETP'];
+
     private const SOURCES = ['L' => 'LEAFLET', 'FF' => 'F2F', 'F' => 'REFERENCE', 'FB' => 'FACEBOOK'];
 
     private const LEVELS = ['entry' => 'ENTRY', 'middle' => 'MID', 'top' => 'TOP'];
@@ -69,6 +92,22 @@ final class LegacyMap
         }
 
         return null;
+    }
+
+    /**
+     * Business line of a v1 project number: the client prefixes plus the project-only ones.
+     */
+    public static function projectBusinessLineFor(string $projectNumber): ?string
+    {
+        $code = Str::upper((string) preg_replace('/\s+/', '', $projectNumber));
+
+        foreach (self::PROJECT_LINES as $prefix => $line) {
+            if (str_starts_with($code, $prefix)) {
+                return $line;
+            }
+        }
+
+        return self::businessLineFor($projectNumber);
     }
 
     public static function sourceFor(?string $code): string
