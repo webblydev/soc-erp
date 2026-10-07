@@ -54,7 +54,7 @@ class Form extends Component
         $items = $template->items()->get();
         $positions = $items->pluck('id')->flip();
 
-        $this->items = $items->map(fn ($item): array => [
+        $this->items = array_values($items->map(fn ($item): array => [
             'id' => $item->id,
             'title' => $item->title,
             'task_type_id' => $item->task_type_id,
@@ -65,20 +65,20 @@ class Form extends Component
             'estimated_hours' => $item->estimated_hours !== null ? rtrim(rtrim($item->estimated_hours, '0'), '.') : '',
             'depends_on' => $item->depends_on_item_id !== null ? (string) $positions[$item->depends_on_item_id] : '',
             'checklist' => implode("\n", $item->checklist ?? []),
-        ])->values()->all();
+        ])->all());
     }
 
     public function addItem(): void
     {
-        $this->items[] = [
+        $this->items = [...$this->items, [
             'id' => null, 'title' => '', 'task_type_id' => TaskType::query()->where('code', TaskType::OTHER)->value('id'), 'project_phase_id' => null,
             'project_role_id' => null, 'offset_days_start' => '0', 'duration_days' => '1', 'estimated_hours' => '', 'depends_on' => '', 'checklist' => '',
-        ];
+        ]];
     }
 
     public function removeItem(int $index): void
     {
-        unset($this->items[$index]);
+        $remaining = array_filter($this->items, fn (int $key): bool => $key !== $index, ARRAY_FILTER_USE_KEY);
         $this->items = array_values(array_map(function (array $item) use ($index): array {
             if ($item['depends_on'] !== '' && (int) $item['depends_on'] === $index) {
                 $item['depends_on'] = '';
@@ -87,7 +87,7 @@ class Form extends Component
             }
 
             return $item;
-        }, $this->items));
+        }, $remaining));
     }
 
     public function save(SaveTaskTemplate $saveTaskTemplate): void
