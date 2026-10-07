@@ -65,25 +65,25 @@ class BuildBudgetFromEstimate
         if ($estimate->kind->code === EstimateKind::MATERIAL) {
             $material = CostCategory::idFor(CostCategory::MATERIAL);
 
-            return $estimate->materialLines()->get()->map(fn ($line): array => [
+            return array_values($estimate->materialLines()->get()->map(fn ($line): array => [
                 'cost_category_id' => $material,
                 'material_id' => $line->material_id,
                 'material_name' => $line->material_name,
                 'budget_qty' => $line->total_qty,
                 'unit_id' => $line->unit_id,
                 'budget_amount' => $line->amount,
-            ])->values()->all();
+            ])->all());
         }
 
         $other = CostCategory::idFor(CostCategory::OTHER);
 
-        return $estimate->lines()->get()
+        return array_values($estimate->lines()->get()
             ->groupBy(fn (EstimateLine $line): int => $line->cost_category_id ?? $other)
             ->map(fn ($lines, int $categoryId): array => [
                 'cost_category_id' => $categoryId,
                 'budget_amount' => (string) $lines->reduce(fn (BigDecimal $sum, EstimateLine $line): BigDecimal => $sum->plus($line->amount), BigDecimal::zero()),
             ])
             ->filter(fn (array $line): bool => BigDecimal::of($line['budget_amount'])->isPositive())
-            ->values()->all();
+            ->all());
     }
 }
