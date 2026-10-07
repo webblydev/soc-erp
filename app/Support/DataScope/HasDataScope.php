@@ -54,11 +54,20 @@ trait HasDataScope
                 $query->orWhereIn($this->qualifyColumn($column), $userIds);
             }
 
+            $this->dataScopeOwnExtra($query, $user);
+
             if ($isTeam) {
                 $this->dataScopeTeamExtra($query, $user);
             }
         });
     }
+
+    /**
+     * Extra OR clauses for view_own and view_team (e.g. records the user works on elsewhere).
+     *
+     * @param  Builder<static>  $query
+     */
+    protected function dataScopeOwnExtra(Builder $query, User $user): void {}
 
     /**
      * Extra OR clauses for view_team (e.g. records filed under a team the user manages).
