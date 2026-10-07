@@ -61,7 +61,7 @@ class Form extends Component
 
     public string $client_representative = '';
 
-    /** @var list<array<string, mixed>> */
+    /** @var array<int, array<string, mixed>> */
     public array $findings = [];
 
     public function mount(?SiteInspection $inspection = null): void
