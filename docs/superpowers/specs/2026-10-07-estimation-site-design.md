@@ -4,7 +4,7 @@
 **Source specs:** `docs/00-index-and-conventions.md`, `docs/05-estimation-site.md`, `docs/11-data-migration.md`
 **Builds on:** `docs/superpowers/specs/2026-10-07-projects-design.md`, `docs/superpowers/specs/2026-10-06-catalog-design.md`, `docs/superpowers/specs/2026-10-06-legacy-seed-design.md`
 **Date:** 07 Oct 2026
-**Status:** Draft, on branch `estimation`. Plan: `docs/superpowers/plans/2026-10-07-estimation-site.md`. Written without review stops at the user's request; corrections to follow.
+**Status:** Done, 2026-10-07, on branch `estimation`. Plan: `docs/superpowers/plans/2026-10-07-estimation-site.md`. Built without review stops at the user's request; corrections to follow.
 
 ## 1. Goal
 
@@ -199,3 +199,31 @@ These continue the legacy seed design (`2026-10-06-legacy-seed-design.md` §7). 
 | L19 | **Project visits → inspections.** Active rows → site inspections, number from the `site_inspection` sequence dated by `inspection_date`; a `0000-00-00` date → `AddTime`'s date. Type: `inspection_type_weekly` = 1 → WEEKLY, else EVENT (v1 "Precipitation Event" is the event box). Contractor name = `constructor_name`, permittee, site address = `location`, field office phone (normalised when valid, else kept trimmed to 30 characters), start / end time (`00:00:00` → empty), progress summary = `description`. Project engineer: `project_eng_name` kept in `project_engineer_name`, and `project_engineer_id` set when exactly one employee's normalised full name contains every word of the v1 name (titles removed, at least 5 letters). `created_at` = `AddTime`, created by = the project's creator, else the admin. `legacy_visit_ref` = v1 id. |
 | L20 | **Visit details → findings.** Active details of imported visits. Location = `visit_location`; description = `visit_description`, else the location, else "Finding"; found by = `visit_finding` (the v1 "Finding by" field holds a name, not a finding); severity MEDIUM; no category. v1 "Regarding taking" sets the status: `yes` → RESOLVED (closed on the inspection date, note "Action taken (v1)"), `no_application` → ACCEPTED (note "Not applicable (v1)"), `no` → OPEN. Then the inspection is CLOSED when no finding is open, else SUBMITTED. `legacy_detail_ref` = v1 id. |
 | L21 | **No events, idempotent.** As L3 and L16: an imported row (by its legacy ref) is skipped, never updated; model events are muted, so there are no audit rows, notifications or budget builds. |
+
+## 10. Implementation deviations
+
+Where the build differs from the sections above, the build is authoritative.
+
+- §3: migrations are dated `2026_10_13_*` so they run after the Projects legacy-ref migration. `HasCodeLookup` moved from Projects to `app/Support/Lookups` and is shared.
+- E6: the dimensions a formula names (other than nos) are required on save; an empty nos counts as 1. The editor's work item picker is a native select, not a search.
+- E8: `SaveEstimate::linesOf()` gives the lines in the saved order, with ids for the editor and without them for "copy lines from".
+- E11: a BOQ builds the budget from its work lines only; its material lines stay a statement, since they would count the same cost twice. The budget total is kept in `projects.budget_cost` through the Projects action `SetBudgetCost`.
+- E13: a rate the entry already had may be kept on edit; when there is no default rate (no BOQ line, no work item rate) the typed rate is accepted. Warnings come back on `RecordMeasurement::$warnings` / `UpdateMeasurement::$warnings` and show as a flash message.
+- E14: bulk verify and reject are all or none; any refused entry stops the batch with the reasons.
+- E15, E16: findings of a DRAFT inspection cannot change status ("submit first"); `AddFinding` also works on drafts. Responsible employees are checked with the assignable-employee rule inside the findings validator.
+- E17: the notification classes are `EstimateAwaitingApproval`, `EstimateDecided` (approved / rejected), `MeasurementsAwaitingVerification`, `FindingAssignedToYou` and `FindingOverdue`.
+- E20: the Excel line import reads work lines only; material lines are typed in the editor.
+- E21: the project tabs are `estimates` (Estimates & Budget) and `site`; the key figure cards Budget and Open findings show with `viewBudget` and `site.inspections.view`.
+- §5.6: the MB list has a mobile selection mode (top-bar button) with a sticky Verify / Reject bar.
+- §9 (L19, L20): v1 text "N/A", "NA" and "Not found" counts as empty. Legacy tests are `tests/Feature/Legacy/ImportEstimatesTest.php` and `ImportProjectVisitsTest.php`.
+
+## 11. Screens to check (390×844 and desktop)
+
+- Estimates: list `estimates`, editor `estimates/create?project=…` (desktop grid and the mobile line sheet), detail `estimates/{number}`, compare `estimates/{number}/compare`, prints (measurement, abstract, materials).
+- Budget: `projects/{number}/budget` and the project page's Estimates & Budget tab.
+- Measurement Book: list `site/mb` (presets, mobile selection mode), form `site/mb/create?project=…` (progress card), detail `site/mb/{number}`.
+- Site inspections: list `site/inspections`, form `site/inspections/create?project=…`, detail `site/inspections/{number}` (status sheet, photo sheet, Add finding), report print.
+- Findings board `site/findings` (drag on desktop, status chips on mobile).
+- Project page: Site tab and the Budget / Open findings cards.
+- Master Data: cost categories, inspection types, finding categories, finding severities.
+
