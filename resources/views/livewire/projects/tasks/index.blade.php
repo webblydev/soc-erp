@@ -178,7 +178,7 @@
                                     <x-ui.table-cell class="tabular-nums whitespace-nowrap">{{ $date($task->created_at) }}</x-ui.table-cell>
                                     <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">
                                         @if ($task->project)
-                                            <a href="{{ route('projects.projects.show', $task->project) }}" wire:navigate class="hover:underline">{{ $task->project->project_number }}</a>
+                                            <a data-detail-modal href="{{ route('projects.projects.show', $task->project) }}" wire:navigate class="hover:underline">{{ $task->project->project_number }}</a>
                                         @else
                                             —
                                         @endif
