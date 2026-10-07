@@ -19,7 +19,13 @@ use App\Modules\Estimation\Models\MeasurementEntry;
 use App\Modules\Estimation\Models\ProjectBudgetLine;
 use App\Modules\Estimation\Models\SiteInspection;
 use App\Modules\Estimation\Models\SiteInspectionFinding;
+use App\Modules\Estimation\Policies\EstimatePolicy;
+use App\Modules\Estimation\Policies\MeasurementEntryPolicy;
+use App\Modules\Estimation\Policies\ProjectEstimationPolicy;
+use App\Modules\Estimation\Policies\SiteInspectionFindingPolicy;
+use App\Modules\Estimation\Policies\SiteInspectionPolicy;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -51,6 +57,15 @@ class EstimationServiceProvider extends ServiceProvider
             'site_inspection' => SiteInspection::class,
             'site_inspection_finding' => SiteInspectionFinding::class,
         ]);
+
+        Gate::policy(Estimate::class, EstimatePolicy::class);
+        Gate::policy(MeasurementEntry::class, MeasurementEntryPolicy::class);
+        Gate::policy(SiteInspection::class, SiteInspectionPolicy::class);
+        Gate::policy(SiteInspectionFinding::class, SiteInspectionFindingPolicy::class);
+
+        foreach (ProjectEstimationPolicy::ABILITIES as $ability) {
+            Gate::define($ability, [ProjectEstimationPolicy::class, $ability]);
+        }
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Estimation\\Livewire');
     }
