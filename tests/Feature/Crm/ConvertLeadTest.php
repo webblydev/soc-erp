@@ -18,6 +18,7 @@ beforeEach(function () {
     seedCrm();
     seedAccessControl();
     Notification::fake();
+    allowConversionWithoutProject();
 
     $this->manager = User::factory()->create();
     $this->manager->assignRole('sales_manager');
@@ -34,7 +35,7 @@ beforeEach(function () {
 
 function newCustomerInput(array $overrides = []): array
 {
-    return ['customer' => [
+    return ['skip_project' => true, 'customer' => [
         'customer_type_id' => CustomerType::idFor('INDIVIDUAL'), 'name' => 'Rahim Uddin', 'phone' => '01711000000',
         'contacts' => [], ...$overrides,
     ]];
@@ -59,7 +60,7 @@ test('linking an existing customer keeps its first attribution (CRM-BR-16, CRM-B
     $first = Lead::factory()->create();
     $customer = Customer::factory()->create(['source_lead_id' => $first->id, 'lead_source_id' => LeadSource::idFor('GOOGLE'), 'acquired_by_user_id' => $this->manager->id]);
 
-    app(ConvertLead::class)->handle($this->seller, $this->lead, ['customer_id' => $customer->id]);
+    app(ConvertLead::class)->handle($this->seller, $this->lead, ['customer_id' => $customer->id, 'skip_project' => true]);
 
     expect($customer->fresh())->source_lead_id->toBe($first->id)->lead_source_id->toBe(LeadSource::idFor('GOOGLE'))->acquired_by_user_id->toBe($this->manager->id)
         ->and($this->lead->fresh()->converted_customer_id)->toBe($customer->id);
@@ -68,7 +69,7 @@ test('linking an existing customer keeps its first attribution (CRM-BR-16, CRM-B
 test('linking fills attribution a manually created customer lacks', function () {
     $customer = Customer::factory()->create();
 
-    app(ConvertLead::class)->handle($this->seller, $this->lead, ['customer_id' => $customer->id]);
+    app(ConvertLead::class)->handle($this->seller, $this->lead, ['customer_id' => $customer->id, 'skip_project' => true]);
 
     expect($customer->fresh())->source_lead_id->toBe($this->lead->id)->acquired_by_user_id->toBe($this->seller->id);
 });
@@ -77,8 +78,8 @@ test('blocked and merged customers cannot be linked', function () {
     $blocked = Customer::factory()->blocked()->create();
     $merged = Customer::factory()->create(['merged_into_id' => Customer::factory()->create()->id]);
 
-    expectValidationError(fn () => app(ConvertLead::class)->handle($this->seller, $this->lead, ['customer_id' => $blocked->id]), 'customer_id');
-    expectValidationError(fn () => app(ConvertLead::class)->handle($this->seller, $this->lead, ['customer_id' => $merged->id]), 'customer_id');
+    expectValidationError(fn () => app(ConvertLead::class)->handle($this->seller, $this->lead, ['customer_id' => $blocked->id, 'skip_project' => true]), 'customer_id');
+    expectValidationError(fn () => app(ConvertLead::class)->handle($this->seller, $this->lead, ['customer_id' => $merged->id, 'skip_project' => true]), 'customer_id');
 });
 
 test('a failure inside conversion leaves no customer and the lead unchanged (CRM-AC-06)', function () {
