@@ -5,13 +5,14 @@ namespace App\Modules\Crm\Actions;
 use App\Models\User;
 use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\Lead;
+use App\Modules\Projects\Models\Project;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Soft-deletes a customer. Customers converted from a lead or holding merged customers are
- * refused, so lead and merge history keep pointing at a live record.
+ * Soft-deletes a customer. Customers converted from a lead, with projects or holding merged
+ * customers are refused, so lead and merge history keep pointing at a live record.
  */
 class DeleteCustomer
 {
@@ -24,6 +25,10 @@ class DeleteCustomer
 
         if (Lead::withTrashed()->where('converted_customer_id', $customer->id)->exists()) {
             throw ValidationException::withMessages(['customer' => __('Customers converted from a lead cannot be deleted.')]);
+        }
+
+        if (Project::withTrashed()->where('customer_id', $customer->id)->exists()) {
+            throw ValidationException::withMessages(['customer' => __('Customers with projects cannot be deleted (CRM-BR-13).')]);
         }
 
         if (Customer::withTrashed()->where('merged_into_id', $customer->id)->exists()) {
