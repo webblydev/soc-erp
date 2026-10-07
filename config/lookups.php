@@ -31,6 +31,17 @@ use App\Modules\Hrm\Models\EmploymentEventType;
 use App\Modules\Hrm\Models\ExitReason;
 use App\Modules\Hrm\Models\Gender;
 use App\Modules\Hrm\Models\MaritalStatus;
+use App\Modules\Projects\Models\ApprovalAuthority;
+use App\Modules\Projects\Models\ApprovalStatus;
+use App\Modules\Projects\Models\ApprovalType;
+use App\Modules\Projects\Models\HoldReason;
+use App\Modules\Projects\Models\ProjectPhase;
+use App\Modules\Projects\Models\ProjectRole;
+use App\Modules\Projects\Models\ProjectStatus;
+use App\Modules\Projects\Models\ProjectType;
+use App\Modules\Projects\Models\TaskPriority;
+use App\Modules\Projects\Models\TaskStatus;
+use App\Modules\Projects\Models\TaskType;
 
 /*
 | Registry of lookup tables edited through the generic Master Data screen (docs/01 §5.8).
@@ -164,4 +175,30 @@ return [
     ],
     'employment_event_types' => ['label' => 'Employment event types', 'module' => 'hrm', 'model' => EmploymentEventType::class, 'permission' => 'hrm.masters', 'extra_fields' => []],
     'exit_reasons' => ['label' => 'Exit reasons', 'module' => 'hrm', 'model' => ExitReason::class, 'permission' => 'hrm.masters', 'extra_fields' => []],
+    'project_types' => [
+        'label' => 'Project types', 'module' => 'projects', 'model' => ProjectType::class, 'permission' => 'projects.master_data',
+        'extra_fields' => [
+            'is_internal' => ['type' => 'bool', 'label' => 'Internal (no customer, not billable)'],
+            'is_billable' => ['type' => 'bool', 'label' => 'Billable'],
+        ],
+    ],
+    'project_statuses' => ['label' => 'Project statuses', 'module' => 'projects', 'model' => ProjectStatus::class, 'permission' => 'projects.master_data', 'extra_fields' => []],
+    'project_phases' => ['label' => 'Project phases', 'module' => 'projects', 'model' => ProjectPhase::class, 'permission' => 'projects.master_data', 'extra_fields' => []],
+    'project_roles' => ['label' => 'Project roles', 'module' => 'projects', 'model' => ProjectRole::class, 'permission' => 'projects.master_data', 'extra_fields' => []],
+    'task_types' => [
+        'label' => 'Task types', 'module' => 'projects', 'model' => TaskType::class, 'permission' => 'projects.master_data',
+        'extra_fields' => ['default_estimated_hours' => ['type' => 'number', 'label' => 'Default estimated hours', 'rules' => ['max:500']]],
+    ],
+    'task_statuses' => ['label' => 'Task statuses', 'module' => 'projects', 'model' => TaskStatus::class, 'permission' => 'projects.master_data', 'extra_fields' => []],
+    'task_priorities' => ['label' => 'Task priorities', 'module' => 'projects', 'model' => TaskPriority::class, 'permission' => 'projects.master_data', 'extra_fields' => []],
+    'approval_authorities' => ['label' => 'Approval authorities', 'module' => 'projects', 'model' => ApprovalAuthority::class, 'permission' => 'projects.master_data', 'extra_fields' => []],
+    'approval_types' => [
+        'label' => 'Approval types', 'module' => 'projects', 'model' => ApprovalType::class, 'permission' => 'projects.master_data',
+        'extra_fields' => [
+            'typical_days' => ['type' => 'number', 'label' => 'Typical days', 'rules' => ['max:730']],
+            'default_checklist' => ['type' => 'textarea', 'label' => 'Default checklist (one item per line)', 'rules' => ['max:5000']],
+        ],
+    ],
+    'approval_statuses' => ['label' => 'Approval statuses', 'module' => 'projects', 'model' => ApprovalStatus::class, 'permission' => 'projects.master_data', 'extra_fields' => []],
+    'hold_reasons' => ['label' => 'Hold reasons', 'module' => 'projects', 'model' => HoldReason::class, 'permission' => 'projects.master_data', 'extra_fields' => []],
 ];
