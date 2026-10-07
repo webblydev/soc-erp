@@ -55,7 +55,7 @@ trait ValidatesEstimateInput
             'lines' => array_values(array_map(fn (mixed $line): array => self::cleanLine(is_array($line) ? $line : []), is_array($section['lines'] ?? null) ? $section['lines'] : [])),
         ], array_filter(is_array($input['sections'] ?? null) ? $input['sections'] : [], 'is_array')));
 
-        $materials = array_values(array_map(fn (mixed $line): array => self::cleanMaterial(is_array($line) ? $line : []), array_filter(is_array($input['material_lines'] ?? null) ? $input['material_lines'] : [], 'is_array')));
+        $materials = array_values(array_map(fn (array $line): array => self::cleanMaterial($line), array_filter(is_array($input['material_lines'] ?? null) ? $input['material_lines'] : [], 'is_array')));
 
         $existingLines = $estimate?->lines()->get(['id', 'unit_id', 'work_item_id', 'cost_category_id', 'origin_line_id'])->keyBy('id') ?? collect();
         $existingMaterials = $estimate?->materialLines()->get(['id', 'unit_id', 'material_id', 'origin_line_id'])->keyBy('id') ?? collect();
