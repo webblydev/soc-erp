@@ -87,6 +87,46 @@ function useLegacyDatabase(): void
         $table->string('added_by')->nullable();
         $table->string('added_date')->nullable();
     });
+
+    $schema->create('tbl_type', function (Blueprint $table) {
+        $table->integer('id')->primary();
+        $table->string('name');
+        $table->string('status')->default('a');
+    });
+
+    $schema->create('tbl_project', function (Blueprint $table) {
+        $table->integer('id')->primary();
+        $table->string('project_id');
+        $table->integer('project_type_id')->default(0);
+        $table->string('name');
+        $table->string('status')->default('a');
+        $table->string('add_by')->nullable();
+        $table->string('add_time')->nullable();
+        $table->string('update_time')->nullable();
+    });
+
+    $schema->create('tbl_task', function (Blueprint $table) {
+        $table->integer('id')->primary();
+        $table->string('client_id')->default('');
+        $table->string('file_number')->default('');
+        $table->string('entry_date')->nullable();
+        $table->string('project_id')->nullable();
+        $table->integer('projectId')->default(0);
+        $table->string('project_name')->default('');
+        $table->string('client_name')->default('');
+        $table->string('client_phone')->default('');
+        $table->text('task_detail')->nullable();
+        $table->integer('type_id')->default(0);
+        $table->integer('client_list_id')->default(0);
+        $table->integer('assign_to')->default(0);
+        $table->integer('support_id')->default(0);
+        $table->string('deadline')->nullable();
+        $table->string('completed_date')->nullable();
+        $table->text('completed_by_comment')->nullable();
+        $table->integer('assign_by')->nullable();
+        $table->string('status')->default('p');
+        $table->string('is_important')->default('false');
+    });
 }
 
 /**
