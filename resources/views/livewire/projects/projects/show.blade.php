@@ -93,7 +93,7 @@
         @can('viewBudget', $project)
             <x-ui.card class="gap-1 p-4">
                 <span class="text-sm text-muted-foreground">{{ __('Budget') }}</span>
-                <span class="text-lg font-semibold tabular-nums">{{ $money($project->budget_cost) }}</span>
+                <span class="text-lg font-semibold tabular-nums">{{ $money($project->budget_cost ?? 0) }}</span>
             </x-ui.card>
         @endcan
         <x-ui.card class="col-span-2 gap-1 p-4 md:col-span-1">
