@@ -132,7 +132,7 @@ class Index extends Component
      */
     private function bulk(\Closure $action, string $message): void
     {
-        $ids = $this->filteredQuery()->whereKey($this->selectedIds())->pluck('measurement_entries.id')->all();
+        $ids = array_values(array_map('intval', $this->filteredQuery()->whereKey($this->selectedIds())->pluck('measurement_entries.id')->all()));
 
         if ($ids === []) {
             return;
