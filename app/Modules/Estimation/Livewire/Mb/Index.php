@@ -3,6 +3,7 @@
 namespace App\Modules\Estimation\Livewire\Mb;
 
 use App\Models\User;
+use App\Modules\Estimation\Actions\DeleteMeasurement;
 use App\Modules\Estimation\Actions\RejectMeasurements;
 use App\Modules\Estimation\Actions\VerifyMeasurements;
 use App\Modules\Estimation\Models\MbStatus;
@@ -14,6 +15,7 @@ use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -161,6 +163,17 @@ class Index extends Component
             'Description' => 'description', 'Location' => 'location', 'Qty' => 'quantity', 'Unit' => 'unit.symbol', 'Rate' => 'rate',
             'Amount' => 'amount', 'Achievement %' => 'achievement_pct', 'Status' => 'status.name',
         ]);
+    }
+
+    protected function authorizeBulkDelete(): void
+    {
+        $this->authorize('site.mb.delete');
+    }
+
+    protected function deleteRow(Model $row): void
+    {
+        /** @var MeasurementEntry $row */
+        app(DeleteMeasurement::class)->handle($this->actor(), $row);
     }
 
     private function actor(): User
