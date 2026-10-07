@@ -88,7 +88,7 @@ return new class extends Migration
             $table->string('notes')->nullable();
             $table->timestamps();
             $table->auditColumns();
-            $table->index(['project_id', 'employee_id', 'project_role_id', 'is_active']);
+            $table->index(['project_id', 'employee_id', 'project_role_id', 'is_active'], 'project_employees_active_role_index');
         });
 
         Schema::create('project_status_histories', function (Blueprint $table) {
