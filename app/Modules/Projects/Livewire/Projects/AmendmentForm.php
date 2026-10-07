@@ -42,24 +42,23 @@ class AmendmentForm extends Component
             $this->amendment = $amendment;
             $this->amendment_date = $amendment->amendment_date->toDateString();
             $this->reason = $amendment->reason;
-            $this->services = $amendment->lines()->get()->map(fn ($line): array => $this->row($line->project_service_id, $line->service_id, $line->description, $line->quantity, $line->unit_id, $line->rate, $line->discount_amount, $line->project_service_status_id))->all();
+            $this->services = array_values($amendment->lines()->get()->map(fn ($line): array => $this->row($line->project_service_id, $line->service_id, $line->description, $line->quantity, $line->unit_id, $line->rate, $line->discount_amount, $line->project_service_status_id))->all());
 
             return;
         }
 
         $this->amendment_date = today()->toDateString();
-        $this->services = $project->services()->get()->map(fn ($line): array => $this->row($line->id, $line->service_id, $line->description, $line->quantity, $line->unit_id, $line->rate, $line->discount_amount, $line->project_service_status_id))->all();
+        $this->services = array_values($project->services()->get()->map(fn ($line): array => $this->row($line->id, $line->service_id, $line->description, $line->quantity, $line->unit_id, $line->rate, $line->discount_amount, $line->project_service_status_id))->all());
     }
 
     public function addService(): void
     {
-        $this->services[] = $this->row(null, null, null, '1', null, '', '0', ProjectServiceStatus::idFor(ProjectServiceStatus::NOT_STARTED));
+        $this->services = [...$this->services, $this->row(null, null, null, '1', null, '', '0', ProjectServiceStatus::idFor(ProjectServiceStatus::NOT_STARTED))];
     }
 
     public function removeService(int $index): void
     {
-        unset($this->services[$index]);
-        $this->services = array_values($this->services);
+        $this->services = array_values(array_filter($this->services, fn (int $key): bool => $key !== $index, ARRAY_FILTER_USE_KEY));
     }
 
     public function save(SaveAmendment $saveAmendment): void
