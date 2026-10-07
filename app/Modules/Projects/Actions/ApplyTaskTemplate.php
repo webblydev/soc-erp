@@ -59,8 +59,8 @@ class ApplyTaskTemplate
 
         foreach ($template->items()->with('type')->get() as $item) {
             $itemStart = $start->copy()->addDays($item->offset_days_start);
-            $assignee = $team->first(fn ($member): bool => $member->project_role_id === $item->project_role_id && in_array($member->employee_id, $assignable, true))?->employee_id
-                ?? $project->project_manager_id;
+            $member = $team->first(fn ($member): bool => $member->project_role_id === $item->project_role_id && in_array($member->employee_id, $assignable, true));
+            $assignee = $member !== null ? $member->employee_id : $project->project_manager_id;
 
             $task = new Task([
                 'project_phase_id' => $item->project_phase_id,
@@ -82,7 +82,7 @@ class ApplyTaskTemplate
                 'updated_by' => $actor->id,
             ])->save();
 
-            foreach (array_values($item->checklist ?? []) as $index => $title) {
+            foreach ($item->checklist ?? [] as $index => $title) {
                 $task->checklist()->create(['title' => $title, 'sort_order' => $index + 1]);
             }
 
