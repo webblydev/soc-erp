@@ -116,10 +116,15 @@ class ChangeTaskStatus
      */
     private function predecessorWarnings(Task $task): array
     {
-        return $task->predecessors()->with('status')->get()
-            ->reject(fn (Task $predecessor): bool => (bool) $predecessor->status->is_done)
-            ->map(fn (Task $predecessor): string => __(':number :title is not done yet.', ['number' => $predecessor->task_number, 'title' => $predecessor->title]))
-            ->values()->all();
+        $warnings = [];
+
+        foreach ($task->predecessors()->with('status')->get() as $predecessor) {
+            if (! $predecessor->status->is_done) {
+                $warnings[] = __(':number :title is not done yet.', ['number' => $predecessor->task_number, 'title' => $predecessor->title]);
+            }
+        }
+
+        return $warnings;
     }
 
     /**
