@@ -3,26 +3,29 @@
 namespace App\Modules\Estimation\Livewire\Estimates;
 
 use App\Models\User;
+use App\Modules\Estimation\Actions\DeleteEstimate;
 use App\Modules\Estimation\Models\Estimate;
 use App\Modules\Estimation\Models\EstimateKind;
 use App\Modules\Estimation\Models\EstimateStatus;
 use App\Modules\Projects\Models\Project;
 use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Estimates list (docs/05 §5.1, spec §5.1). Only the latest revision of each estimate shows
- * unless "All revisions" is chosen.
+ * Estimates list (docs/05 §5.1, spec §5.1): selection, row actions and export. Only the latest
+ * revision of each estimate shows unless "All revisions" is chosen.
  */
 #[Title('Estimates')]
 class Index extends Component
 {
-    use WithListing;
+    use WithBulkActions, WithListing;
 
     private const PROJECT_NUMBER = '(select project_number from projects where projects.id = estimates.project_id)';
 
@@ -89,11 +92,22 @@ class Index extends Component
     {
         abort_unless($this->actor()->can('estimation.estimates.export'), 403);
 
-        return ListingExport::download('estimates', $this->filteredQuery(), [
+        return ListingExport::download('estimates', $this->exportQuery(), [
             'Estimate #' => 'estimate_number', 'Kind' => 'kind.name', 'Project' => 'project.project_number', 'Title' => 'title',
             'Date' => 'estimate_date', 'Revision' => 'revision_no', 'Status' => 'status.name', 'Prepared by' => 'preparer.full_name',
             'Subtotal' => 'subtotal', 'Total' => 'total_amount',
         ]);
+    }
+
+    protected function authorizeBulkDelete(): void
+    {
+        $this->authorize('estimation.estimates.delete');
+    }
+
+    protected function deleteRow(Model $row): void
+    {
+        /** @var Estimate $row */
+        app(DeleteEstimate::class)->handle($this->actor(), $row);
     }
 
     private function actor(): User
