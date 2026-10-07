@@ -5,12 +5,14 @@ use App\Modules\Crm\Models\LeadPriority;
 use App\Modules\Crm\Models\LeadSource;
 use App\Modules\Foundation\Models\Permission;
 use App\Modules\Foundation\Models\Role;
+use App\Modules\Foundation\Models\Setting;
 use App\Modules\Hrm\Models\Department;
 use App\Modules\Hrm\Models\Designation;
 use App\Modules\Hrm\Models\Employee;
 use App\Modules\Hrm\Models\EmployeeStatus;
 use App\Modules\Hrm\Models\EmployeeType;
 use App\Modules\Projects\Models\ProjectType;
+use App\Support\Facades\Settings;
 use Database\Seeders\Crm\CrmSeeder;
 use Database\Seeders\Foundation\NumberSequenceFormatSeeder;
 use Database\Seeders\Foundation\PermissionSeeder;
@@ -134,6 +136,15 @@ function seedAccessControl(): void
 function seedCrm(): void
 {
     test()->seed([SettingSeeder::class, NumberSequenceFormatSeeder::class, CrmSeeder::class]);
+}
+
+/**
+ * Turn on crm.allow_convert_without_project for CRM tests that convert without the project step.
+ */
+function allowConversionWithoutProject(): void
+{
+    Setting::query()->where('group', 'crm')->where('key', 'allow_convert_without_project')->update(['value' => true]);
+    Settings::flush();
 }
 
 /**
