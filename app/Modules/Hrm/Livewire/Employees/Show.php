@@ -9,6 +9,9 @@ use App\Modules\Hrm\Actions\RejoinEmployee;
 use App\Modules\Hrm\Actions\UnlinkUser;
 use App\Modules\Hrm\Models\Employee;
 use App\Modules\Hrm\Models\EmploymentEventType;
+use App\Modules\Projects\Models\Project;
+use App\Modules\Projects\Models\ProjectEmployee;
+use App\Modules\Projects\Models\Task;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -16,12 +19,12 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
- * Employee profile (docs/09 §4.3). Tabs follow field visibility (spec H2); Projects, Tasks and
- * Advances tabs arrive with modules 04 and 08 (spec H18).
+ * Employee profile (docs/09 §4.3). Tabs follow field visibility (spec H2). Projects and Tasks
+ * come from module 04 and list only what the viewer may see; Advances arrive with 08 (spec H18).
  */
 class Show extends Component
 {
-    public const TABS = ['overview', 'documents', 'events', 'education', 'salary', 'notes', 'history'];
+    public const TABS = ['overview', 'projects', 'tasks', 'documents', 'events', 'education', 'salary', 'notes', 'history'];
 
     public Employee $employee;
 
@@ -123,6 +126,8 @@ class Show extends Component
 
         return array_filter([
             'overview' => __('Overview'),
+            'projects' => $actor->can('projects.projects.view') ? __('Projects') : null,
+            'tasks' => $actor->can('projects.tasks.view') ? __('Tasks') : null,
             'documents' => $actor->can('viewDocuments', $this->employee) ? __('Documents') : null,
             'events' => __('Employment history'),
             'education' => $full ? __('Education & experience') : null,
@@ -159,6 +164,16 @@ class Show extends Component
                 ? $this->employee->events()->with(['type', 'fromDepartment', 'toDepartment', 'fromDesignation', 'toDesignation', 'approver:id,name'])->get()
                 : collect(),
             'education' => $this->tab === 'education' ? $this->employee->education()->get() : collect(),
+            'assignments' => $this->tab === 'projects'
+                ? ProjectEmployee::query()->where('employee_id', $this->employee->id)
+                    ->whereIn('project_id', Project::query()->visibleTo($this->actor())->select('projects.id'))
+                    ->with(['project:id,project_number,name,project_status_id', 'project.status:id,name,color', 'role:id,name'])
+                    ->orderByDesc('is_active')->latest('assigned_on')->get()
+                : collect(),
+            'tasks' => $this->tab === 'tasks'
+                ? Task::query()->visibleTo($this->actor())->open()->where('assignee_employee_id', $this->employee->id)
+                    ->with(['status:id,name,color,is_done,is_cancelled', 'project:id,project_number'])->orderByRaw('due_date IS NULL')->orderBy('due_date')->get()
+                : collect(),
             'experience' => $this->tab === 'education' ? $this->employee->experience()->get() : collect(),
             'eventTypes' => EmploymentEventType::query()->active()->whereNotIn('code', EmploymentEventType::RESERVED)->ordered()->get(['id', 'name']),
             'linkableUsers' => $this->employee->user === null && $this->actor()->can('admin.users.update')
