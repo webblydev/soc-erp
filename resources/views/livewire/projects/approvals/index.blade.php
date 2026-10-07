@@ -66,7 +66,7 @@
                         @forelse ($rows as $approval)
                             <x-ui.table-row wire:key="approval-{{ $approval->id }}">
                                 <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">
-                                    <a href="{{ route('projects.projects.show', ['project' => $approval->project, 'tab' => 'approvals']) }}" wire:navigate class="hover:underline">{{ $approval->project->project_number }}</a>
+                                    <a data-detail-modal href="{{ route('projects.projects.show', ['project' => $approval->project, 'tab' => 'approvals']) }}" wire:navigate class="hover:underline">{{ $approval->project->project_number }}</a>
                                 </x-ui.table-cell>
                                 <x-ui.table-cell>{{ $approval->authority->name }}</x-ui.table-cell>
                                 <x-ui.table-cell class="font-medium">
