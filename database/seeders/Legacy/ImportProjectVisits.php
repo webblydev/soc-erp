@@ -15,6 +15,7 @@ use App\Support\Phone;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use stdClass;
 
 /**
  * v1 project visits (tbl_project_visit, tbl_project_visit_details) → site inspections and findings
@@ -57,9 +58,9 @@ class ImportProjectVisits
     }
 
     /**
-     * @param  list<object>  $details
+     * @param  array<int, stdClass>  $details
      */
-    private function import(LegacyContext $context, object $row, Project $project, array $details): void
+    private function import(LegacyContext $context, stdClass $row, Project $project, array $details): void
     {
         $addedAt = LegacyMap::dateTime($row->AddTime);
         $date = LegacyMap::date($row->inspection_date) ?? $addedAt?->toDateString() ?? today()->toDateString();
