@@ -122,3 +122,9 @@ Added after the Projects module (docs/04, `2026-10-07-projects-design.md`). Two 
 
 **Run on the dev database (07 Oct 2026):** 348 projects (BD 169, BD&RA 69, AMZ 28, CON 24, CON-UPS 24, CON-BLE 11, DSW 10, internal 6, others 7), 27 linked to their client and lead, 63 matched by name, 119 with a new customer; 194 have no PM because v1 has no task for them. 508 tasks: 354 done, 42 in progress, 69 to do, 43 cancelled and archived; 109 are general tasks. A second run creates nothing. The run also found that two index names were too long for MySQL (fine on the SQLite tests); the Projects migrations now name them.
 
+
+## 8. Addendum — estimates and site visits (07 Oct 2026)
+
+Added after the Estimation & Site module (docs/05, `2026-10-07-estimation-site-design.md` §9, decisions L17–L21). Three importers run after `ImportTasks`: `ImportWorkEstimates`, `ImportMaterialEstimates` and `ImportProjectVisits`. Shared header and unit matching live in `LegacyEstimates`; `LegacyMap::MATERIALS` maps v1 material ids 3–10 to the catalog names.
+
+**Run on the dev database (07 Oct 2026):** 1 work estimate with 1 line and 7 material estimates with 15 lines (5 on catalog materials, 10 as typed names), all APPROVED with no budget. 450 inspections on 23 projects (419 event, 31 weekly; 416 closed, 34 still submitted), the engineer matched to an employee on 349 of them (416 keep the v1 name as text), and 542 findings (269 resolved, 236 accepted, 37 open). A second run creates nothing.
