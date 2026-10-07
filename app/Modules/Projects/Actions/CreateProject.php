@@ -47,7 +47,7 @@ class CreateProject
 
         $data = $this->validateProject($this->normaliseProject($input), null);
         $extra = Validator::make($input, [
-            'project_status_id' => ['nullable', Rule::exists('project_statuses', 'id')->where('is_closed', false)->whereNull('deleted_at')],
+            'project_status_id' => ['nullable', Rule::exists('project_statuses', 'id')->where('is_closed', 0)->whereNull('deleted_at')],
             'project_phase_id' => ['nullable', Rule::exists('project_phases', 'id')->where('is_active', true)->whereNull('deleted_at')],
             'source_lead_id' => ['nullable', 'integer', 'exists:leads,id'],
             'task_template_id' => ['nullable', Rule::exists('task_templates', 'id')->where('is_active', true)->whereNull('deleted_at')],
