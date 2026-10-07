@@ -4,7 +4,7 @@
 **Source specs:** `docs/00-index-and-conventions.md`, `docs/04-projects.md`, `docs/03-crm.md` §5.7 (conversion project step)
 **Builds on:** `docs/superpowers/specs/2026-10-06-crm-design.md`, `docs/superpowers/specs/2026-10-06-hrm-design.md`, `docs/superpowers/specs/2026-10-06-shared-services-design.md`
 **Date:** 07 Oct 2026
-**Status:** In progress, on branch `projects`. Plan: `docs/superpowers/plans/2026-10-07-projects.md`. Built without review stops at the user's request ("do not wait for approval").
+**Status:** Done, 2026-10-07, on branch `projects`. Plan: `docs/superpowers/plans/2026-10-07-projects.md`. Built without review stops at the user's request ("do not wait for approval"); corrections to follow.
 
 ## 1. Goal
 
@@ -202,3 +202,25 @@ No browser tests. When the build is done, the screens are listed for the user to
 ## 8. Out of scope
 
 Everything in P1, plus customer portal / SMS updates (docs/04 open question 4), a contract PDF template (open question 2: contracts print as part of the project sheet), and recurring tasks.
+
+## 9. Implementation deviations
+
+Where the build differs from the sections above, the build is authoritative.
+
+- P2: completion checks live in `Services\CompletionChecks` (`OpenTasksCheck`, `OpenApprovalsCheck`); HRM exit checks in `Services\ExitChecks`.
+- P6: the PM gets `projects.assigned_pm`, not `projects.team_added`, when added as a team member through the project form.
+- P9: COMPLETED needs the `close` permission and `view_all` for the override; a PM can complete only when the checks pass.
+- P10: signing sets the deed amount to the contract value and refuses a zero contract value. `projects.contracts.manage` covers create, sign, terminate, schedule and amendments.
+- P11: only one draft amendment per contract at a time.
+- P12: `SavePaymentSchedule` re-runs the triggers after saving, so a past DATE milestone becomes due at once.
+- P14: tasks created by a template send no assignment notifications. Bulk "Reassign" and "Set due date" use the small `ReassignTask` and `RescheduleTask` actions.
+- P16: watchers are picked on the task form (a multi-select of active users).
+- P21: project validation errors from `ConvertLead` come back under `project.*`, and the wizard returns to the Project step. The CRM tests that convert without a project turn on `crm.allow_convert_without_project`.
+- P22: `HasDataScope` gained a `dataScopeOwnExtra()` hook, used by `Customer` for "customers of my projects". The customer timeline includes the activities of the customer's projects; `project_manager` and `engineer` got `crm.activities.view_own`, `create`, `update`, and `engineer` got `crm.customers.view_own`.
+- P23: `approval_type_checklists` is the `approval_types.default_checklist` text column (one item per line).
+- P25: the tasks export is open to anyone who can see the task list (docs/04 has no task export permission); approvals export is open to approval viewers.
+- §4.3: on mobile, CRM's three primary items still come first in the bottom bar (limit 3); users without CRM access get Projects and Tasks.
+- §5.1: bulk actions are Change PM, Export and Delete (empty enquiries only).
+- §5.3: the 05–08 tabs and money KPI cards are not shown; KPI cards are contract value, tasks done, overdue tasks, approvals pending and next milestone.
+- §5.7 / §5.3: the task boards use Livewire `wire:sort` (as the CRM Kanban), the global board shows at most 50 cards per column, and the Gantt-lite is a CSS timeline on desktop and a phase-grouped list on mobile.
+
