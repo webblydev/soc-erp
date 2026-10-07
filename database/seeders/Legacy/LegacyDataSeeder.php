@@ -27,6 +27,8 @@ class LegacyDataSeeder extends Seeder
         ImportClientActivities::class,
         ImportProjects::class,
         ImportTasks::class,
+        ImportWorkEstimates::class,
+        ImportMaterialEstimates::class,
     ];
 
     public function run(): void
