@@ -3,9 +3,12 @@
 use App\Modules\Estimation\Exports\EstimateLinesExport;
 use App\Modules\Estimation\Livewire\Budget;
 use App\Modules\Estimation\Livewire\Estimates;
+use App\Modules\Estimation\Livewire\Findings;
+use App\Modules\Estimation\Livewire\Inspections;
 use App\Modules\Estimation\Livewire\Mb;
 use App\Modules\Estimation\Models\Estimate;
 use App\Modules\Estimation\Models\MeasurementEntry;
+use App\Modules\Estimation\Models\SiteInspection;
 use App\Modules\Foundation\Models\CompanyProfile;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
@@ -45,6 +48,17 @@ Route::middleware('app')->group(function () {
         Route::livewire('mb/create', Mb\Form::class)->middleware('can:create,'.MeasurementEntry::class)->name('mb.create');
         Route::livewire('mb/{entry:mb_number}', Mb\Show::class)->middleware('can:view,entry')->name('mb.show');
         Route::livewire('mb/{entry:mb_number}/edit', Mb\Form::class)->middleware('can:update,entry')->name('mb.edit');
+
+        Route::livewire('inspections', Inspections\Index::class)->middleware('can:viewAny,'.SiteInspection::class)->name('inspections.index');
+        Route::livewire('inspections/create', Inspections\Form::class)->middleware('can:create,'.SiteInspection::class)->name('inspections.create');
+        Route::livewire('inspections/{inspection:inspection_number}', Inspections\Show::class)->middleware('can:view,inspection')->name('inspections.show');
+        Route::livewire('inspections/{inspection:inspection_number}/edit', Inspections\Form::class)->middleware('can:update,inspection')->name('inspections.edit');
+        Route::get('inspections/{inspection:inspection_number}/print', fn (SiteInspection $inspection) => view('estimation.inspection-print', [
+            'inspection' => $inspection->load(['project', 'type', 'status', 'engineer', 'findings.severity', 'findings.status', 'findings.responsibleEmployee', 'findings.attachments']),
+            'company' => CompanyProfile::current(),
+        ]))->middleware('can:print,inspection')->name('inspections.print');
+
+        Route::livewire('findings', Findings\Board::class)->middleware('can:viewAny,'.SiteInspection::class)->name('findings.index');
     });
 
     Route::livewire('projects/{project:project_number}/budget', Budget\Show::class)->middleware('can:viewBudget,project')->name('estimation.budget.show');
