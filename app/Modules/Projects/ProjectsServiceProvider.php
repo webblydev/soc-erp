@@ -3,10 +3,13 @@
 namespace App\Modules\Projects;
 
 use App\Models\User;
+use App\Modules\Crm\Events\CustomersMerging;
+use App\Modules\Hrm\Services\ExitChecks;
 use App\Modules\Projects\Events\ApprovalStatusChanged;
 use App\Modules\Projects\Events\ProjectPhaseChanged;
 use App\Modules\Projects\Events\TaskCompleted;
 use App\Modules\Projects\Listeners\EvaluateScheduleTriggers;
+use App\Modules\Projects\Listeners\MoveMergedCustomerProjects;
 use App\Modules\Projects\Livewire\Projects\ContractTab;
 use App\Modules\Projects\Livewire\Projects\TasksTab;
 use App\Modules\Projects\Livewire\Projects\TeamTab;
@@ -41,6 +44,8 @@ use App\Modules\Projects\Policies\ProjectPolicy;
 use App\Modules\Projects\Policies\TaskPolicy;
 use App\Modules\Projects\Services\CompletionChecks\OpenApprovalsCheck;
 use App\Modules\Projects\Services\CompletionChecks\OpenTasksCheck;
+use App\Modules\Projects\Services\ExitChecks\ManagedProjectsCheck;
+use App\Modules\Projects\Services\ExitChecks\OpenTasksCheck as OpenTasksExitCheck;
 use App\Modules\Projects\Services\ProjectCompletionChecks;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
@@ -61,6 +66,11 @@ class ProjectsServiceProvider extends ServiceProvider
             $checks->register(OpenApprovalsCheck::class);
 
             return $checks;
+        });
+
+        $this->app->resolving(ExitChecks::class, function (ExitChecks $checks): void {
+            $checks->register(OpenTasksExitCheck::class);
+            $checks->register(ManagedProjectsCheck::class);
         });
     }
 
@@ -111,6 +121,7 @@ class ProjectsServiceProvider extends ServiceProvider
             || $user->hasPermission('projects.tasks.view_all'));
 
         Event::listen([ProjectPhaseChanged::class, ApprovalStatusChanged::class, TaskCompleted::class], EvaluateScheduleTriggers::class);
+        Event::listen(CustomersMerging::class, MoveMergedCustomerProjects::class);
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Projects\\Livewire');
         Livewire::component('projects.contract-tab', ContractTab::class);
