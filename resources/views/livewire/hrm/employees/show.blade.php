@@ -166,7 +166,7 @@
         @elseif ($tab === 'projects')
             <x-ui.item-group class="gap-2">
                 @forelse ($assignments as $assignment)
-                    <x-ui.item variant="outline" class="min-h-16 active:bg-accent" :href="route('projects.projects.show', $assignment->project)" wire:navigate wire:key="assignment-{{ $assignment->id }}">
+                    <x-ui.item variant="outline" class="min-h-16 active:bg-accent" data-detail-modal :href="route('projects.projects.show', $assignment->project)" wire:navigate wire:key="assignment-{{ $assignment->id }}">
                         <x-ui.item-content class="min-w-0">
                             <x-ui.item-title class="text-sm"><span class="truncate">{{ $assignment->project->name }}</span></x-ui.item-title>
                             <x-ui.item-description class="text-sm">
