@@ -166,6 +166,36 @@ function useLegacyDatabase(): void
         $table->string('purpose_estimate')->default('');
         $table->string('status')->default('a');
     });
+
+    $schema->create('tbl_project_visit', function (Blueprint $table) {
+        $table->integer('Project_Visit_SlNo')->primary();
+        $table->string('project_id');
+        $table->string('construction_id')->default('');
+        $table->string('constructor_name')->nullable();
+        $table->string('project_eng_name')->nullable();
+        $table->string('permitee_name')->nullable();
+        $table->string('inspection_type_weekly')->nullable();
+        $table->string('location')->nullable();
+        $table->string('field_office_phone')->default('');
+        $table->string('inspection_date')->default('0000-00-00');
+        $table->string('start_time')->nullable();
+        $table->string('end_time')->nullable();
+        $table->string('inspection_type')->default('');
+        $table->string('inspection_type_event')->nullable();
+        $table->text('description')->nullable();
+        $table->string('status')->default('a');
+        $table->string('AddTime')->nullable();
+    });
+
+    $schema->create('tbl_project_visit_details', function (Blueprint $table) {
+        $table->integer('Project_Visit_Details_SlNo')->primary();
+        $table->string('project_visit_id');
+        $table->string('visit_location')->nullable();
+        $table->string('visit_description')->nullable();
+        $table->string('visit_finding')->default('');
+        $table->string('visit_regarding')->default('');
+        $table->string('status')->default('a');
+    });
 }
 
 /**
