@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Catalog\Models\Service;
+use App\Modules\Foundation\Livewire\Shared\DetailModal;
 use App\Modules\Hrm\Models\Employee;
 use App\Modules\Projects\Livewire\Projects\AmendmentForm;
 use App\Modules\Projects\Livewire\Projects\ContractTab;
@@ -152,4 +153,13 @@ test('the tasks tab applies a template and shows the timeline', function () {
 
 test('the project sheet prints', function () {
     $this->actingAs($this->pm)->get(route('projects.projects.print', $this->project))->assertOk()->assertSee($this->project->project_number)->assertSee('Contract value');
+});
+
+test('the project page opens in the detail modal with its tab', function () {
+    Livewire::actingAs($this->pm)->test(DetailModal::class)
+        ->call('show', route('projects.projects.show', [$this->project, 'tab' => 'team']))
+        ->assertOk()
+        ->assertSeeLivewire(Show::class)
+        ->assertSeeLivewire(TeamTab::class)
+        ->assertSeeInOrder([$this->project->project_number, $this->project->name, 'Project']);
 });
