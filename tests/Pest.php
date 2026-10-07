@@ -10,6 +10,7 @@ use App\Modules\Hrm\Models\Designation;
 use App\Modules\Hrm\Models\Employee;
 use App\Modules\Hrm\Models\EmployeeStatus;
 use App\Modules\Hrm\Models\EmployeeType;
+use App\Modules\Projects\Models\ProjectType;
 use Database\Seeders\Crm\CrmSeeder;
 use Database\Seeders\Foundation\NumberSequenceFormatSeeder;
 use Database\Seeders\Foundation\PermissionSeeder;
@@ -161,6 +162,23 @@ function staffUser(string ...$roles): User
     Employee::factory()->linkedTo($user)->create();
 
     return $user->refresh();
+}
+
+/**
+ * Valid CreateProject input for Projects tests. Needs $this->line, $this->customer, $this->pm and $this->service.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function projectInput(array $overrides = []): array
+{
+    return [
+        'name' => 'Md. Mokbul Hossain, S. Bonosree', 'business_line_id' => test()->line->id, 'customer_id' => test()->customer->id,
+        'project_type_id' => ProjectType::idFor('RESIDENTIAL'), 'project_manager_id' => test()->pm->id,
+        'start_date' => today()->toDateString(), 'site_address' => 'Plot 12, Road 3, South Banasree',
+        'services' => [['service_id' => test()->service->id, 'quantity' => '1', 'rate' => '5,00,000', 'discount_amount' => '']],
+        ...$overrides,
+    ];
 }
 
 /**
