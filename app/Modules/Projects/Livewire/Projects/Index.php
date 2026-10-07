@@ -9,11 +9,13 @@ use App\Modules\Hrm\Models\Employee;
 use App\Modules\Hrm\Models\EmployeeStatus;
 use App\Modules\Projects\Actions\ChangeProjectManager;
 use App\Modules\Projects\Actions\DeleteProject;
+use App\Modules\Projects\Models\ApprovalStatus;
 use App\Modules\Projects\Models\Project;
 use App\Modules\Projects\Models\ProjectApproval;
 use App\Modules\Projects\Models\ProjectStatus;
 use App\Modules\Projects\Models\ProjectType;
 use App\Modules\Projects\Models\Task;
+use App\Modules\Projects\Models\TaskStatus;
 use App\Support\Exports\ListingExport;
 use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
@@ -69,12 +71,20 @@ class Index extends Component
             ->visibleTo($this->actor())
             ->with(['customer:id,name,customer_number', 'businessLine:id,name', 'type:id,name', 'status:id,name,color,code', 'phase:id,name', 'manager:id,full_name,employee_status_id', 'manager.status:id,is_active_employment'])
             ->withCount([
-                'tasks as open_tasks_count' => fn (Builder $query) => $query->open(),
-                'tasks as overdue_tasks_count' => fn (Builder $query) => $query->overdue(),
-                'approvals as pending_approvals_count' => fn (Builder $query) => $query->pending(),
+                'tasks as open_tasks_count' => fn (Builder $query) => $query->whereIn('tasks.task_status_id', $this->openTaskStatusIds()),
+                'tasks as overdue_tasks_count' => fn (Builder $query) => $query->whereIn('tasks.task_status_id', $this->openTaskStatusIds())->whereDate('tasks.due_date', '<', today()),
+                'approvals as pending_approvals_count' => fn (Builder $query) => $query->whereIn('project_approvals.approval_status_id', ApprovalStatus::query()->select('id')->where('is_final', false)),
             ])
             ->latest('projects.created_at')
             ->orderByDesc('projects.id');
+    }
+
+    /**
+     * @return Builder<TaskStatus>
+     */
+    private function openTaskStatusIds(): Builder
+    {
+        return TaskStatus::query()->select('id')->where('is_done', false)->where('is_cancelled', false);
     }
 
     protected function searchColumns(): array
@@ -155,7 +165,7 @@ class Index extends Component
         $changed = 0;
         $skipped = 0;
 
-        foreach ($this->filteredQuery()->whereIn('projects.id', array_map('intval', $this->selected))->get() as $project) {
+        foreach (Project::query()->visibleTo($this->actor())->whereIn('projects.id', array_map('intval', $this->selected))->get() as $project) {
             try {
                 $changeManager->handle($this->actor(), $project, (int) $this->bulkManagerId);
                 $changed++;
