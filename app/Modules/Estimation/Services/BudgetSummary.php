@@ -28,13 +28,13 @@ final class BudgetSummary
         $actual = $this->sources->actual($project);
         $categoryIds = collect($lines->keys())->merge(array_keys($committed))->merge(array_keys($actual))->unique();
 
-        $rows = CostCategory::query()->withTrashed()->whereIn('id', $categoryIds)->ordered()->get()
+        $rows = array_values(CostCategory::query()->withTrashed()->whereIn('id', $categoryIds)->ordered()->get()
             ->map(function (CostCategory $category) use ($lines, $committed, $actual): array {
                 $categoryLines = $lines->get($category->id, collect());
                 $budget = $categoryLines->reduce(fn (BigDecimal $sum, ProjectBudgetLine $line): BigDecimal => $sum->plus($line->budget_amount), BigDecimal::zero());
 
                 return ['category' => $category, ...self::figures($budget, $committed[$category->id] ?? '0', $actual[$category->id] ?? '0'), 'lines' => $categoryLines];
-            })->values()->all();
+            })->all());
 
         $sum = fn (string $key): BigDecimal => array_reduce($rows, fn (BigDecimal $total, array $row): BigDecimal => $total->plus($row[$key]), BigDecimal::zero());
 
