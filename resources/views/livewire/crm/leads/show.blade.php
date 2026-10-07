@@ -60,11 +60,18 @@
         <x-ui.alert tone="success">
             <x-lucide-badge-check />
             <x-ui.alert-title>{{ __('Converted to customer :name on :date', ['name' => $lead->convertedCustomer->name, 'date' => $lead->converted_at?->format('d-M-Y')]) }}</x-ui.alert-title>
-            @if ($user->can('view', $lead->convertedCustomer))
-                <x-ui.alert-description>
+            <x-ui.alert-description class="flex flex-wrap gap-3">
+                @if ($user->can('view', $lead->convertedCustomer))
                     <a data-detail-modal href="{{ route('crm.customers.show', $lead->convertedCustomer) }}" wire:navigate class="font-medium underline">{{ $lead->convertedCustomer->customer_number }}</a>
-                </x-ui.alert-description>
-            @endif
+                @endif
+                @if ($lead->convertedProject)
+                    @can('view', $lead->convertedProject)
+                        <a href="{{ route('projects.projects.show', $lead->convertedProject) }}" wire:navigate class="font-medium underline">{{ __('Project :number', ['number' => $lead->convertedProject->project_number]) }}</a>
+                    @else
+                        <span>{{ __('Project :number', ['number' => $lead->convertedProject->project_number]) }}</span>
+                    @endcan
+                @endif
+            </x-ui.alert-description>
         </x-ui.alert>
     @endif
 
