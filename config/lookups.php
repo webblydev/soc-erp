@@ -17,6 +17,10 @@ use App\Modules\Crm\Models\LeadSource;
 use App\Modules\Crm\Models\LeadStatus;
 use App\Modules\Crm\Models\LostReason;
 use App\Modules\Crm\Models\PaymentTerm;
+use App\Modules\Estimation\Models\CostCategory;
+use App\Modules\Estimation\Models\FindingCategory;
+use App\Modules\Estimation\Models\FindingSeverity;
+use App\Modules\Estimation\Models\InspectionType;
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\Currency;
 use App\Modules\Foundation\Models\DocumentType;
@@ -201,4 +205,8 @@ return [
     ],
     'approval_statuses' => ['label' => 'Approval statuses', 'module' => 'projects', 'model' => ApprovalStatus::class, 'permission' => 'projects.master_data', 'extra_fields' => []],
     'hold_reasons' => ['label' => 'Hold reasons', 'module' => 'projects', 'model' => HoldReason::class, 'permission' => 'projects.master_data', 'extra_fields' => []],
+    'cost_categories' => ['label' => 'Cost categories', 'module' => 'estimation', 'model' => CostCategory::class, 'permission' => 'estimation.master_data', 'extra_fields' => []],
+    'inspection_types' => ['label' => 'Inspection types', 'module' => 'estimation', 'model' => InspectionType::class, 'permission' => 'estimation.master_data', 'extra_fields' => []],
+    'finding_categories' => ['label' => 'Finding categories', 'module' => 'estimation', 'model' => FindingCategory::class, 'permission' => 'estimation.master_data', 'extra_fields' => []],
+    'finding_severities' => ['label' => 'Finding severities', 'module' => 'estimation', 'model' => FindingSeverity::class, 'permission' => 'estimation.master_data', 'extra_fields' => []],
 ];
