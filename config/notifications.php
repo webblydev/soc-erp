@@ -5,6 +5,7 @@
 | channels: database (in-app inbox), mail, sms (no gateway yet, never sent).
 | user.password_reset and security.login_new_ip also go to the inbox (shared services spec S9).
 | CRM keys: docs/03 §9, spec R14. HRM keys: docs/09 §7, spec H15. Projects keys: docs/04 §10, spec P20.
+| Estimation & Site keys: docs/05 §9, spec E17.
 */
 
 return [
@@ -30,6 +31,12 @@ return [
         'projects.approvals.overdue' => ['label' => 'An approval is overdue', 'channels' => ['database', 'mail']],
         'projects.approvals.status_changed' => ['label' => 'An approval status changed', 'channels' => ['database']],
         'projects.milestone_due' => ['label' => 'A payment milestone is due', 'channels' => ['database', 'mail']],
+        'estimation.estimates.submitted' => ['label' => 'An estimate is waiting for your approval', 'channels' => ['database', 'mail']],
+        'estimation.estimates.approved' => ['label' => 'Your estimate was approved', 'channels' => ['database']],
+        'estimation.estimates.rejected' => ['label' => 'Your estimate was rejected', 'channels' => ['database', 'mail']],
+        'site.mb.awaiting_verification' => ['label' => 'Measurements waiting for verification (daily)', 'channels' => ['database', 'mail']],
+        'site.findings.assigned' => ['label' => 'A site finding was assigned to you', 'channels' => ['database', 'mail']],
+        'site.findings.overdue' => ['label' => 'A site finding is overdue', 'channels' => ['database', 'mail']],
     ],
 
     /*
