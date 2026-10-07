@@ -16,7 +16,7 @@
 <div class="flex flex-col gap-6 pb-24 md:pb-0">
     <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div class="flex min-w-0 flex-col gap-1">
-            <a href="{{ route('projects.projects.show', ['project' => $approval->project, 'tab' => 'approvals']) }}" wire:navigate class="font-mono text-sm text-muted-foreground hover:underline">{{ $approval->project->project_number }} · {{ $approval->project->name }}</a>
+            <a data-detail-modal href="{{ route('projects.projects.show', ['project' => $approval->project, 'tab' => 'approvals']) }}" wire:navigate class="font-mono text-sm text-muted-foreground hover:underline">{{ $approval->project->project_number }} · {{ $approval->project->name }}</a>
             <h1 class="text-xl font-semibold tracking-tight md:text-2xl">{{ $approval->type->name }}</h1>
             <div class="flex flex-wrap items-center gap-2 text-sm">
                 <x-ui.badge :tone="$approval->status->color ?? 'neutral'" class="text-sm">{{ $approval->status->name }}</x-ui.badge>
