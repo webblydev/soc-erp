@@ -58,7 +58,7 @@ final class ServiceLines
      */
     public function validate(mixed $input, ?Project $project = null, array $currentServiceIds = [], string $key = 'services', bool $withStatus = false): array
     {
-        $lines = array_values(array_map(fn (mixed $line): array => is_array($line) ? $this->clean($line) : [], is_array($input) ? $input : []));
+        $lines = array_values(array_map(fn (mixed $line): array => $this->clean(is_array($line) ? $line : []), is_array($input) ? $input : []));
         $existing = $project?->services()->pluck('project_service_status_id', 'id')->all() ?? [];
         $existingIds = array_keys($existing);
 
@@ -86,7 +86,7 @@ final class ServiceLines
                 }
 
                 if (is_numeric($line['quantity']) && is_numeric($line['rate']) && is_numeric($line['discount_amount'])
-                    && BigDecimal::of(self::amount($line['quantity'], $line['rate'], $line['discount_amount']))->isNegative()) {
+                    && BigDecimal::of(self::amount((string) $line['quantity'], (string) $line['rate'], (string) $line['discount_amount']))->isNegative()) {
                     $validator->errors()->add("{$key}.{$index}.discount_amount", __('The discount is larger than the line value.'));
                 }
             }
