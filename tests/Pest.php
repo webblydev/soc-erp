@@ -17,6 +17,7 @@ use Database\Seeders\Foundation\RolePermissionSeeder;
 use Database\Seeders\Foundation\RoleSeeder;
 use Database\Seeders\Foundation\SettingSeeder;
 use Database\Seeders\Hrm\HrmSeeder;
+use Database\Seeders\Projects\ProjectsSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -140,6 +141,14 @@ function seedCrm(): void
 function seedHrm(): void
 {
     test()->seed([SettingSeeder::class, NumberSequenceFormatSeeder::class, HrmSeeder::class]);
+}
+
+/**
+ * Seed the Projects lookups, settings and template with the CRM, HRM and Foundation data they use.
+ */
+function seedProjects(): void
+{
+    test()->seed([SettingSeeder::class, NumberSequenceFormatSeeder::class, CrmSeeder::class, HrmSeeder::class, ProjectsSeeder::class]);
 }
 
 /**
