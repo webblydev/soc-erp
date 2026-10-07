@@ -115,7 +115,7 @@ return [
         'crm.customers.show', 'crm.customers.create', 'crm.customers.edit',
         'crm.teams.create', 'crm.teams.edit',
         'hrm.employees.show', 'hrm.employees.create', 'hrm.employees.edit',
-        'projects.projects.create', 'projects.projects.edit',
+        'projects.projects.show', 'projects.projects.create', 'projects.projects.edit',
         'projects.tasks.show', 'projects.tasks.create', 'projects.tasks.edit',
         'projects.templates.create', 'projects.templates.edit',
         'projects.approvals.show', 'projects.approvals.create', 'projects.approvals.edit',
