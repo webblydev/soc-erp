@@ -30,7 +30,7 @@
             <h1 class="text-xl font-semibold tracking-tight md:text-2xl">{{ $entry->description }}</h1>
             <div class="flex flex-wrap items-center gap-2 text-sm">
                 <x-ui.badge :tone="$entry->status->color ?? 'neutral'" class="text-sm">{{ $entry->status->name }}</x-ui.badge>
-                <a href="{{ route('projects.projects.show', ['project' => $entry->project, 'tab' => 'site']) }}" wire:navigate class="font-medium hover:underline"><span class="font-mono">{{ $entry->project->project_number }}</span> · {{ $entry->project->name }}</a>
+                <a data-detail-modal href="{{ route('projects.projects.show', ['project' => $entry->project, 'tab' => 'site']) }}" wire:navigate class="font-medium hover:underline"><span class="font-mono">{{ $entry->project->project_number }}</span> · {{ $entry->project->name }}</a>
             </div>
         </div>
         @include('livewire.estimation.partials.action-buttons', ['actions' => $actions])

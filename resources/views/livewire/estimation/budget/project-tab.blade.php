@@ -5,12 +5,12 @@
         <div class="flex items-center justify-between gap-2">
             <h2 class="text-base font-semibold">{{ __('Estimates') }}</h2>
             @if ($canCreate)
-                <x-ui.button size="sm" class="h-11 md:h-8" :href="route('estimation.estimates.create', ['project' => $project->project_number])" wire:navigate><x-lucide-plus /> {{ __('New estimate') }}</x-ui.button>
+                <x-ui.button size="sm" class="h-11 md:h-8" :href="route('estimation.estimates.create', ['project' => $project->project_number])" wire:navigate data-detail-modal><x-lucide-plus /> {{ __('New estimate') }}</x-ui.button>
             @endif
         </div>
         <x-ui.item-group class="gap-2">
             @forelse ($estimates as $estimate)
-                <x-ui.item variant="outline" class="min-h-16 py-2 active:bg-accent" wire:key="project-estimate-{{ $estimate->id }}" :href="route('estimation.estimates.show', $estimate)" wire:navigate>
+                <x-ui.item variant="outline" class="min-h-16 py-2 active:bg-accent" wire:key="project-estimate-{{ $estimate->id }}" :href="route('estimation.estimates.show', $estimate)" wire:navigate data-detail-modal>
                     <x-ui.item-content class="min-w-0">
                         <x-ui.item-title class="text-base"><span class="truncate">{{ $estimate->title }}</span></x-ui.item-title>
                         <x-ui.item-description class="text-sm"><span class="font-mono">{{ $estimate->estimate_number }}</span> · {{ $estimate->kind->name }} · {{ $estimate->estimate_date->format('d-M-Y') }}</x-ui.item-description>

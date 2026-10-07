@@ -10,7 +10,7 @@
                 <div class="flex gap-2">
                     <x-ui.button size="sm" variant="outline" class="h-11 md:h-8" :href="route('site.mb.index', ['project' => $project->project_number])" wire:navigate>{{ __('All entries') }}</x-ui.button>
                     @if ($canRecord)
-                        <x-ui.button size="sm" class="h-11 md:h-8" :href="route('site.mb.create', ['project' => $project->project_number])" wire:navigate><x-lucide-plus /> {{ __('New measurement') }}</x-ui.button>
+                        <x-ui.button size="sm" class="h-11 md:h-8" :href="route('site.mb.create', ['project' => $project->project_number])" wire:navigate data-detail-modal><x-lucide-plus /> {{ __('New measurement') }}</x-ui.button>
                     @endif
                 </div>
             </div>
@@ -30,7 +30,7 @@
             @endif
             <x-ui.item-group class="gap-2">
                 @forelse ($entries as $entry)
-                    <x-ui.item variant="outline" class="min-h-16 py-2 active:bg-accent" wire:key="site-mb-{{ $entry->id }}" :href="route('site.mb.show', $entry)" wire:navigate>
+                    <x-ui.item variant="outline" class="min-h-16 py-2 active:bg-accent" wire:key="site-mb-{{ $entry->id }}" :href="route('site.mb.show', $entry)" wire:navigate data-detail-modal>
                         <x-ui.item-content class="min-w-0">
                             <x-ui.item-title class="text-base"><span class="truncate">{{ $entry->description }}</span></x-ui.item-title>
                             <x-ui.item-description class="text-sm"><span class="font-mono">{{ $entry->mb_number }}</span> · {{ $entry->measured_on->format('d-M-Y') }} · {{ $qty($entry->quantity) }} {{ $entry->unit->symbol }}</x-ui.item-description>
@@ -52,13 +52,13 @@
                 <div class="flex gap-2">
                     <x-ui.button size="sm" variant="outline" class="h-11 md:h-8" :href="route('site.inspections.index', ['project' => $project->project_number])" wire:navigate>{{ __('All inspections') }}</x-ui.button>
                     @if ($canInspect)
-                        <x-ui.button size="sm" class="h-11 md:h-8" :href="route('site.inspections.create', ['project' => $project->project_number])" wire:navigate><x-lucide-plus /> {{ __('New inspection') }}</x-ui.button>
+                        <x-ui.button size="sm" class="h-11 md:h-8" :href="route('site.inspections.create', ['project' => $project->project_number])" wire:navigate data-detail-modal><x-lucide-plus /> {{ __('New inspection') }}</x-ui.button>
                     @endif
                 </div>
             </div>
             <x-ui.item-group class="gap-2">
                 @forelse ($inspections as $inspection)
-                    <x-ui.item variant="outline" class="min-h-16 py-2 active:bg-accent" wire:key="site-inspection-{{ $inspection->id }}" :href="route('site.inspections.show', $inspection)" wire:navigate>
+                    <x-ui.item variant="outline" class="min-h-16 py-2 active:bg-accent" wire:key="site-inspection-{{ $inspection->id }}" :href="route('site.inspections.show', $inspection)" wire:navigate data-detail-modal>
                         <x-ui.item-content class="min-w-0">
                             <x-ui.item-title class="text-base">{{ $inspection->type->name }} · {{ $inspection->inspection_date->format('d-M-Y') }}</x-ui.item-title>
                             <x-ui.item-description class="text-sm"><span class="font-mono">{{ $inspection->inspection_number }}</span>@if ($inspection->open_findings_count > 0) · {{ trans_choice(':count open finding|:count open findings', $inspection->open_findings_count) }}@endif</x-ui.item-description>

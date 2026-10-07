@@ -51,7 +51,7 @@
                 <div class="flex min-h-24 flex-col gap-2" wire:sort="moveFinding" wire:sort:group="findings" wire:sort:group-id="{{ $column['status']->id }}">
                     @foreach ($column['findings'] as $finding)
                         <x-ui.card class="cursor-grab gap-1 p-3 active:cursor-grabbing" wire:key="board-finding-{{ $finding->id }}" wire:sort:item="{{ $finding->id }}">
-                            <a href="{{ route('site.inspections.show', $finding->inspection->inspection_number) }}" wire:navigate class="font-medium hover:underline">{{ $finding->location ?: \Illuminate\Support\Str::limit($finding->description, 40) }}</a>
+                            <a data-detail-modal href="{{ route('site.inspections.show', $finding->inspection->inspection_number) }}" wire:navigate class="font-medium hover:underline">{{ $finding->location ?: \Illuminate\Support\Str::limit($finding->description, 40) }}</a>
                             <span class="line-clamp-2 text-sm">{{ $finding->description }}</span>
                             <span class="text-sm text-muted-foreground"><span class="font-mono">{{ $finding->project->project_number }}</span> · {{ $finding->responsibleName() ?? __('Nobody') }}</span>
                             <div class="flex items-center justify-between gap-2 text-sm">

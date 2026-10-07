@@ -11,7 +11,7 @@
     $isLatest = $family->last()?->id === $estimate->id;
 
     $actions = array_values(array_filter([
-        $editable && $user->can('update', $estimate) ? ['label' => __('Edit'), 'icon' => 'pencil', 'href' => route('estimation.estimates.edit', $estimate), 'primary' => true] : null,
+        $editable && $user->can('update', $estimate) ? ['label' => __('Edit'), 'icon' => 'pencil', 'href' => route('estimation.estimates.edit', $estimate), 'modal' => true, 'primary' => true] : null,
         $status === EstimateStatus::DRAFT && $user->can('submit', $estimate) ? ['label' => __('Submit'), 'icon' => 'send', 'click' => '$wire.submit()'] : null,
         $status === EstimateStatus::SUBMITTED && $user->can('approve', $estimate) ? ['label' => __('Approve'), 'icon' => 'check', 'click' => '$wire.approve()', 'primary' => true] : null,
         $status === EstimateStatus::SUBMITTED && $user->can('approve', $estimate) ? ['label' => __('Reject'), 'icon' => 'x', 'click' => "\$dispatch('open-sheet-estimate-reject')"] : null,
@@ -41,7 +41,7 @@
                 <x-ui.badge :tone="$estimate->status->color ?? 'neutral'" class="text-sm">{{ $estimate->status->name }}</x-ui.badge>
                 <x-ui.badge variant="outline" class="text-sm">{{ __('Rev. :n', ['n' => $estimate->revision_no]) }}</x-ui.badge>
                 <span>{{ $estimate->kind->name }}</span>
-                <a href="{{ route('projects.projects.show', ['project' => $estimate->project, 'tab' => 'estimates']) }}" wire:navigate class="font-medium hover:underline">
+                <a data-detail-modal href="{{ route('projects.projects.show', ['project' => $estimate->project, 'tab' => 'estimates']) }}" wire:navigate class="font-medium hover:underline">
                     <span class="font-mono">{{ $estimate->project->project_number }}</span> · {{ $estimate->project->name }}
                 </a>
             </div>

@@ -7,7 +7,7 @@
     $canUpdate = $user->can('update', $inspection);
 
     $actions = array_values(array_filter([
-        $status !== InspectionStatus::CLOSED && $canUpdate ? ['label' => __('Edit'), 'icon' => 'pencil', 'href' => route('site.inspections.edit', $inspection)] : null,
+        $status !== InspectionStatus::CLOSED && $canUpdate ? ['label' => __('Edit'), 'icon' => 'pencil', 'href' => route('site.inspections.edit', $inspection), 'modal' => true] : null,
         $status === InspectionStatus::DRAFT && $canUpdate ? ['label' => __('Submit'), 'icon' => 'send', 'click' => '$wire.submit()', 'primary' => true] : null,
         $status !== InspectionStatus::CLOSED && $canUpdate ? ['label' => __('Add finding'), 'icon' => 'plus', 'click' => "\$dispatch('open-sheet-finding-add')", 'primary' => $status === InspectionStatus::SUBMITTED] : null,
         $status === InspectionStatus::SUBMITTED && $user->can('close', $inspection) ? ['label' => __('Close inspection'), 'icon' => 'circle-check', 'click' => '$wire.close()'] : null,
@@ -30,7 +30,7 @@
             <h1 class="text-xl font-semibold tracking-tight md:text-2xl">{{ $inspection->type->name }} · {{ $inspection->inspection_date->format('d-M-Y') }}</h1>
             <div class="flex flex-wrap items-center gap-2 text-sm">
                 <x-ui.badge :tone="$inspection->status->color ?? 'neutral'" class="text-sm">{{ $inspection->status->name }}</x-ui.badge>
-                <a href="{{ route('projects.projects.show', ['project' => $inspection->project, 'tab' => 'site']) }}" wire:navigate class="font-medium hover:underline"><span class="font-mono">{{ $inspection->project->project_number }}</span> · {{ $inspection->project->name }}</a>
+                <a data-detail-modal href="{{ route('projects.projects.show', ['project' => $inspection->project, 'tab' => 'site']) }}" wire:navigate class="font-medium hover:underline"><span class="font-mono">{{ $inspection->project->project_number }}</span> · {{ $inspection->project->name }}</a>
             </div>
         </div>
         @include('livewire.estimation.partials.action-buttons', ['actions' => $actions])

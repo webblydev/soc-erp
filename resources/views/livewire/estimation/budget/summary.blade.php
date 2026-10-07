@@ -43,7 +43,7 @@
                                                     {{ $line->displayName() }}
                                                     @if ($line->budget_qty) <span class="text-muted-foreground">· {{ (float) $line->budget_qty }} {{ $line->unit?->symbol }}</span>@endif
                                                     @if ($line->sourceEstimate)
-                                                        · <a href="{{ route('estimation.estimates.show', $line->sourceEstimate) }}" wire:navigate class="font-mono hover:underline">{{ $line->sourceEstimate->estimate_number }}</a>
+                                                        · <a data-detail-modal href="{{ route('estimation.estimates.show', $line->sourceEstimate) }}" wire:navigate class="font-mono hover:underline">{{ $line->sourceEstimate->estimate_number }}</a>
                                                     @endif
                                                 </span>
                                                 <span class="tabular-nums">{{ $money($line->budget_amount) }}</span>
