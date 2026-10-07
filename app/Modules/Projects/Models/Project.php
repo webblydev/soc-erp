@@ -8,6 +8,11 @@ use App\Modules\Catalog\Models\Unit;
 use App\Modules\Crm\Models\CrmActivity;
 use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\Lead;
+use App\Modules\Estimation\Models\Estimate;
+use App\Modules\Estimation\Models\MeasurementEntry;
+use App\Modules\Estimation\Models\ProjectBudgetLine;
+use App\Modules\Estimation\Models\ProjectBudgetRevision;
+use App\Modules\Estimation\Models\SiteInspection;
 use App\Modules\Foundation\Models\Branch;
 use App\Modules\Foundation\Models\Location;
 use App\Modules\Hrm\Models\Employee;
@@ -343,6 +348,46 @@ class Project extends Model implements Collaborative
     public function approvals(): HasMany
     {
         return $this->hasMany(ProjectApproval::class);
+    }
+
+    /**
+     * @return HasMany<Estimate, $this>
+     */
+    public function estimates(): HasMany
+    {
+        return $this->hasMany(Estimate::class);
+    }
+
+    /**
+     * @return HasMany<ProjectBudgetLine, $this>
+     */
+    public function budgetLines(): HasMany
+    {
+        return $this->hasMany(ProjectBudgetLine::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * @return HasMany<ProjectBudgetRevision, $this>
+     */
+    public function budgetRevisions(): HasMany
+    {
+        return $this->hasMany(ProjectBudgetRevision::class)->orderByDesc('revision_no');
+    }
+
+    /**
+     * @return HasMany<MeasurementEntry, $this>
+     */
+    public function measurementEntries(): HasMany
+    {
+        return $this->hasMany(MeasurementEntry::class);
+    }
+
+    /**
+     * @return HasMany<SiteInspection, $this>
+     */
+    public function siteInspections(): HasMany
+    {
+        return $this->hasMany(SiteInspection::class);
     }
 
     /**
