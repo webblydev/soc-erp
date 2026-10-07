@@ -260,6 +260,8 @@ class Convert extends Component
             : collect();
         $linked = $this->customerId ? Customer::query()->with('status')->find($this->customerId) : null;
 
+        $projectServiceIds = collect(is_array($this->project['services'] ?? null) ? $this->project['services'] : [])->pluck('service_id')->filter();
+
         return view('livewire.crm.leads.convert', [
             'suggestions' => $suggestions,
             'results' => $results,
@@ -269,7 +271,7 @@ class Convert extends Component
             'canEditFinance' => $this->actor()->can('crm.customers.update_finance'),
             'allowsSkip' => $this->allowsSkip(),
             'projectLines' => BusinessLine::query()->where(fn ($query) => $query->where('is_active', true)->orWhere('id', $this->project['business_line_id'] ?? null))->ordered()->get(['id', 'name', 'project_prefix']),
-            'serviceOptions' => Service::query()->where(fn ($query) => $query->where('is_active', true)->orWhereIn('id', collect($this->project['services'] ?? [])->pluck('service_id')->filter()))->orderBy('name')->get(['id', 'name']),
+            'serviceOptions' => Service::query()->where(fn ($query) => $query->where('is_active', true)->orWhereIn('id', $projectServiceIds))->orderBy('name')->get(['id', 'name']),
             'templates' => TaskTemplate::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
         ])
             ->title(__('Convert :number', ['number' => $this->lead->lead_number]))
