@@ -97,7 +97,7 @@ class Show extends Component
 
         $this->lead->load([
             'status', 'source', 'priority', 'level', 'businessLine', 'location', 'assignee', 'team', 'lostReason',
-            'convertedCustomer', 'referrerCustomer', 'referrerEmployee', 'services.service',
+            'convertedCustomer', 'convertedProject', 'referrerCustomer', 'referrerEmployee', 'services.service',
         ]);
 
         $activities = $this->lead->activities()->with(['type', 'outcome', 'owner:id,name'])
