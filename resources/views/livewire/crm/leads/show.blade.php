@@ -66,7 +66,7 @@
                 @endif
                 @if ($lead->convertedProject)
                     @can('view', $lead->convertedProject)
-                        <a href="{{ route('projects.projects.show', $lead->convertedProject) }}" wire:navigate class="font-medium underline">{{ __('Project :number', ['number' => $lead->convertedProject->project_number]) }}</a>
+                        <a data-detail-modal href="{{ route('projects.projects.show', $lead->convertedProject) }}" wire:navigate class="font-medium underline">{{ __('Project :number', ['number' => $lead->convertedProject->project_number]) }}</a>
                     @else
                         <span>{{ __('Project :number', ['number' => $lead->convertedProject->project_number]) }}</span>
                     @endcan
