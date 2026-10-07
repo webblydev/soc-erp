@@ -107,7 +107,7 @@ trait ValidatesMeasurementInput
             'remarks' => ['nullable', 'string', 'max:255'],
         ], [], ['measured_by' => __('measured by'), 'unit_id' => __('unit'), 'estimate_line_id' => __('BOQ line')])
             ->after(function (ValidatorInstance $validator) use ($data): void {
-                $formula = MeasurementFormula::tryFrom((string) ($data['measurement_formula'] ?? ''));
+                $formula = MeasurementFormula::tryFrom((string) $data['measurement_formula']);
 
                 foreach ($formula?->dimensions() ?? [] as $dimension) {
                     if ($dimension !== 'nos' && ($data[$dimension] ?? null) === null) {
