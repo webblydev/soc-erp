@@ -13,7 +13,7 @@ class UnverifiedMeasurementsCheck implements ProjectCompletionCheck
 {
     public function check(Project $project): array
     {
-        $waiting = $project->measurementEntries()->where('mb_status_id', MbStatus::idFor(MbStatus::RECORDED))->count();
+        $waiting = $project->measurementEntries()->whereHas('status', fn ($query) => $query->where('code', MbStatus::RECORDED))->count();
 
         return $waiting === 0 ? [] : [trans_choice(':count measurement is not verified yet.|:count measurements are not verified yet.', $waiting)];
     }
