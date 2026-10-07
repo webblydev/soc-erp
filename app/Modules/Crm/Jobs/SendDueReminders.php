@@ -6,6 +6,7 @@ use App\Modules\Crm\Models\CrmActivity;
 use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Notifications\FollowUpReminder;
+use App\Modules\Projects\Models\Project;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -27,7 +28,7 @@ class SendDueReminders implements ShouldQueue
             ->whereNotNull('reminder_at')
             ->whereNull('reminder_sent_at')
             ->where('reminder_at', '<=', now())
-            ->whereHasMorph('subject', [Lead::class, Customer::class])
+            ->whereHasMorph('subject', [Lead::class, Customer::class, Project::class])
             ->with(['owner', 'subject', 'type'])
             ->chunkById(100, function (Collection $activities): void {
                 foreach ($activities as $activity) {
