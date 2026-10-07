@@ -3,6 +3,10 @@
 namespace App\Modules\Projects;
 
 use App\Models\User;
+use App\Modules\Projects\Events\ApprovalStatusChanged;
+use App\Modules\Projects\Events\ProjectPhaseChanged;
+use App\Modules\Projects\Events\TaskCompleted;
+use App\Modules\Projects\Listeners\EvaluateScheduleTriggers;
 use App\Modules\Projects\Models\ApprovalAuthority;
 use App\Modules\Projects\Models\ApprovalStatus;
 use App\Modules\Projects\Models\ApprovalType;
@@ -36,6 +40,7 @@ use App\Modules\Projects\Services\CompletionChecks\OpenApprovalsCheck;
 use App\Modules\Projects\Services\CompletionChecks\OpenTasksCheck;
 use App\Modules\Projects\Services\ProjectCompletionChecks;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
@@ -101,6 +106,8 @@ class ProjectsServiceProvider extends ServiceProvider
         Gate::define('projects.tasks.view', fn (User $user): bool => $user->hasPermission('projects.tasks.view_own')
             || $user->hasPermission('projects.tasks.view_project')
             || $user->hasPermission('projects.tasks.view_all'));
+
+        Event::listen([ProjectPhaseChanged::class, ApprovalStatusChanged::class, TaskCompleted::class], EvaluateScheduleTriggers::class);
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Projects\\Livewire');
     }
