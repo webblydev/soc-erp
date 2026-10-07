@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Projects\Concerns;
+namespace App\Support\Lookups;
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 

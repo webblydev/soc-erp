@@ -2,8 +2,8 @@
 
 namespace App\Modules\Projects\Models;
 
-use App\Modules\Projects\Concerns\HasCodeLookup;
 use App\Support\AuditTrail\Auditable;
+use App\Support\Lookups\HasCodeLookup;
 use App\Support\Lookups\IsLookup;
 use Database\Factories\Projects\TaskPriorityFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
