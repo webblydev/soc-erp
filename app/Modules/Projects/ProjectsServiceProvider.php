@@ -29,6 +29,9 @@ use App\Modules\Projects\Models\TaskStatus;
 use App\Modules\Projects\Models\TaskTemplate;
 use App\Modules\Projects\Models\TaskTimeLog;
 use App\Modules\Projects\Models\TaskType;
+use App\Modules\Projects\Policies\ProjectApprovalPolicy;
+use App\Modules\Projects\Policies\ProjectPolicy;
+use App\Modules\Projects\Policies\TaskPolicy;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -71,6 +74,10 @@ class ProjectsServiceProvider extends ServiceProvider
             'task_template' => TaskTemplate::class,
             'project_approval' => ProjectApproval::class,
         ]);
+
+        Gate::policy(Project::class, ProjectPolicy::class);
+        Gate::policy(Task::class, TaskPolicy::class);
+        Gate::policy(ProjectApproval::class, ProjectApprovalPolicy::class);
 
         Gate::define('projects.projects.view', fn (User $user): bool => $user->hasPermission('projects.projects.view_own')
             || $user->hasPermission('projects.projects.view_all'));
