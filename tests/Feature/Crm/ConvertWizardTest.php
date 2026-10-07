@@ -13,6 +13,7 @@ use Livewire\Livewire;
 beforeEach(function () {
     seedCrm();
     Notification::fake();
+    allowConversionWithoutProject();
     $this->seller = userWithPermissions('crm.leads.view_own', 'crm.leads.update', 'crm.leads.convert', 'crm.customers.view_own', 'crm.customers.create');
     $this->lead = Lead::factory()->assignedTo($this->seller)->create(['name' => 'Rahim Uddin', 'phone' => '01711000000', 'site_location_text' => 'Mirpur 10']);
 });
@@ -43,6 +44,9 @@ test('creating a new customer through the wizard converts and redirects to the c
         ->set('customer.customer_type_id', (string) CustomerType::idFor('INDIVIDUAL'))
         ->call('next')
         ->assertSet('step', 2)
+        ->set('skipProject', true)
+        ->call('next')
+        ->assertSet('step', 3)
         ->call('convert')
         ->assertHasNoErrors()
         ->assertRedirect(route('crm.customers.show', Customer::query()->first()));
@@ -55,6 +59,8 @@ test('linking a customer outside the user scope lands on the lead page', functio
 
     Livewire::actingAs($this->seller)->test(Convert::class, ['lead' => $this->lead])
         ->assertSet('customerId', $match->id)
+        ->call('next')
+        ->set('skipProject', true)
         ->call('next')
         ->call('convert')
         ->assertHasNoErrors()
