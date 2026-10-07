@@ -4,6 +4,7 @@ namespace App\Modules\Projects\Livewire\Projects;
 
 use App\Models\User;
 use App\Modules\Crm\Actions\DeleteActivity;
+use App\Modules\Estimation\Models\SiteInspectionFinding;
 use App\Modules\Projects\Actions\ChangeProjectStatus;
 use App\Modules\Projects\Actions\DeleteProject;
 use App\Modules\Projects\Actions\SetServiceStatus;
@@ -135,6 +136,7 @@ class Show extends Component
             'tasks' => $actor->can('projects.tasks.view') ? (string) __('Tasks') : null,
             'approvals' => $actor->can('viewApprovals', $this->project) ? (string) __('Approvals') : null,
             'estimates' => $actor->can('viewEstimates', $this->project) ? (string) __('Estimates & Budget') : null,
+            'site' => $actor->can('viewSite', $this->project) ? (string) __('Site') : null,
             'activities' => $actor->can('crm.activities.view') ? (string) __('Activities') : null,
             'documents' => (string) __('Documents'),
             'notes' => (string) __('Notes'),
@@ -175,6 +177,7 @@ class Show extends Component
                 'tasks_done' => (clone $tasks)->whereHas('status', fn ($query) => $query->where('is_done', true))->count(),
                 'tasks_overdue' => (clone $tasks)->overdue()->count(),
                 'approvals_pending' => $project->approvals()->pending()->count(),
+                'open_findings' => SiteInspectionFinding::query()->where('project_id', $project->id)->open()->count(),
                 'next_milestone' => $project->schedules()->whereIn('schedule_status_id', [ScheduleStatus::idFor(ScheduleStatus::PENDING), ScheduleStatus::idFor(ScheduleStatus::DUE)])
                     ->with('status')->orderByRaw('due_date IS NULL')->orderBy('due_date')->orderBy('sort_order')->first(),
             ],

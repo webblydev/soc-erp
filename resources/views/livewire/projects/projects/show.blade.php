@@ -72,7 +72,7 @@
         </x-ui.alert>
     @endif
 
-    <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
         <x-ui.card class="gap-1 p-4">
             <span class="text-sm text-muted-foreground">{{ __('Contract value') }}</span>
             <span class="text-lg font-semibold tabular-nums">{{ $money($project->contract_value) }}</span>
@@ -94,6 +94,12 @@
             <x-ui.card class="gap-1 p-4">
                 <span class="text-sm text-muted-foreground">{{ __('Budget') }}</span>
                 <span class="text-lg font-semibold tabular-nums">{{ $money($project->budget_cost ?? 0) }}</span>
+            </x-ui.card>
+        @endcan
+        @can('site.inspections.view')
+            <x-ui.card class="gap-1 p-4">
+                <span class="text-sm text-muted-foreground">{{ __('Open findings') }}</span>
+                <span @class(['text-lg font-semibold tabular-nums', 'text-destructive' => $figures['open_findings'] > 0])>{{ $figures['open_findings'] }}</span>
             </x-ui.card>
         @endcan
         <x-ui.card class="col-span-2 gap-1 p-4 md:col-span-1">
@@ -255,6 +261,8 @@
             </div>
         @elseif ($tab === 'estimates')
             <livewire:estimation.project-estimates-tab :project="$project" :key="'estimates-'.$project->id" />
+        @elseif ($tab === 'site')
+            <livewire:estimation.project-site-tab :project="$project" :key="'site-'.$project->id" />
         @elseif ($tab === 'activities')
             @if ($canLog)
                 <x-ui.button class="h-11 self-start md:h-9" x-on:click="$dispatch('crm-log-activity', { subjectType: 'project', subjectId: {{ $project->id }}, mode: 'log' })"><x-lucide-plus /> {{ __('Log activity') }}</x-ui.button>
