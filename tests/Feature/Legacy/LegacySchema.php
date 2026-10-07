@@ -127,10 +127,49 @@ function useLegacyDatabase(): void
         $table->string('status')->default('p');
         $table->string('is_important')->default('false');
     });
+
+    foreach (['tbl_work_estimate' => 'Work_Estimate_SlNo', 'tbl_project_material_estimate' => 'Material_Estimate_SlNo'] as $name => $key) {
+        $schema->create($name, function (Blueprint $table) use ($key) {
+            $table->integer($key)->primary();
+            $table->string('project_id');
+            $table->string('work_name')->nullable();
+            $table->string('address')->nullable();
+            $table->string('date')->nullable();
+            $table->string('status')->default('a');
+            $table->string('AddTime')->nullable();
+        });
+    }
+
+    $schema->create('tbl_work_estimate_details', function (Blueprint $table) {
+        $table->integer('Work_Estimate_Details_SlNo')->primary();
+        $table->string('work_estimate_id');
+        $table->string('work_description')->nullable();
+        $table->string('level')->nullable();
+        $table->string('location')->default('');
+        $table->string('measurement')->default('');
+        $table->float('length')->default(0);
+        $table->float('width')->default(0);
+        $table->float('height')->default(0);
+        $table->float('nose')->default(0);
+        $table->string('unit')->default('');
+        $table->decimal('quantity', 12, 2)->default(0);
+        $table->string('status')->default('a');
+    });
+
+    $schema->create('tbl_project_material_estimate_details', function (Blueprint $table) {
+        $table->integer('Estimate_Details_SlNo')->primary();
+        $table->string('material_estimate_id');
+        $table->string('material_name')->nullable();
+        $table->integer('material_id')->default(0);
+        $table->string('unit')->nullable();
+        $table->string('total_estimated_qty')->default('');
+        $table->string('purpose_estimate')->default('');
+        $table->string('status')->default('a');
+    });
 }
 
 /**
- * Insert a v1 row and return its id.
+ * Insert a v1 row and return its id (the `id` column, else the first column given).
  *
  * @param  array<string, mixed>  $attributes
  */
@@ -138,5 +177,5 @@ function legacyRow(string $table, array $attributes): int
 {
     DB::connection('legacy')->table($table)->insert($attributes);
 
-    return (int) $attributes['id'];
+    return (int) ($attributes['id'] ?? reset($attributes));
 }
