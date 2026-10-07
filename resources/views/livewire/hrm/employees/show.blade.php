@@ -163,6 +163,41 @@
                     @endforelse
                 </x-ui.item-group>
             </x-ui.card>
+        @elseif ($tab === 'projects')
+            <x-ui.item-group class="gap-2">
+                @forelse ($assignments as $assignment)
+                    <x-ui.item variant="outline" class="min-h-16 active:bg-accent" :href="route('projects.projects.show', $assignment->project)" wire:navigate wire:key="assignment-{{ $assignment->id }}">
+                        <x-ui.item-content class="min-w-0">
+                            <x-ui.item-title class="text-sm"><span class="truncate">{{ $assignment->project->name }}</span></x-ui.item-title>
+                            <x-ui.item-description class="text-sm">
+                                <span class="font-mono">{{ $assignment->project->project_number }}</span> · {{ $assignment->role->name }}
+                                @if ($assignment->allocation_pct !== null) · {{ rtrim(rtrim($assignment->allocation_pct, '0'), '.') }} % @endif
+                                · <span class="tabular-nums">{{ $assignment->assigned_on->format('d-M-Y') }}{{ $assignment->released_on ? ' – '.$assignment->released_on->format('d-M-Y') : '' }}</span>
+                            </x-ui.item-description>
+                        </x-ui.item-content>
+                        <x-ui.badge :tone="$assignment->is_active ? ($assignment->project->status->color ?? 'neutral') : 'neutral'" class="shrink-0 text-sm">{{ $assignment->is_active ? $assignment->project->status->name : __('Released') }}</x-ui.badge>
+                    </x-ui.item>
+                @empty
+                    <p class="py-8 text-center text-sm text-muted-foreground">{{ __('No project assignments.') }}</p>
+                @endforelse
+            </x-ui.item-group>
+        @elseif ($tab === 'tasks')
+            <x-ui.item-group class="gap-2">
+                @forelse ($tasks as $task)
+                    <x-ui.item variant="outline" class="min-h-16 active:bg-accent" :href="route('projects.tasks.show', $task)" wire:navigate wire:key="employee-task-{{ $task->id }}">
+                        <x-ui.item-content class="min-w-0">
+                            <x-ui.item-title class="text-sm"><span class="truncate">{{ $task->title }}</span></x-ui.item-title>
+                            <x-ui.item-description class="text-sm"><span class="font-mono">{{ $task->task_number }}</span>@if ($task->project) · {{ $task->project->project_number }}@endif</x-ui.item-description>
+                        </x-ui.item-content>
+                        <div class="flex shrink-0 flex-col items-end gap-1">
+                            <x-ui.badge :tone="$task->status->color ?? 'neutral'" class="text-sm">{{ $task->status->name }}</x-ui.badge>
+                            <span @class(['text-sm tabular-nums', 'text-destructive' => $task->isOverdue(), 'text-muted-foreground' => ! $task->isOverdue()])>{{ $task->due_date?->format('d-M-Y') ?? '—' }}</span>
+                        </div>
+                    </x-ui.item>
+                @empty
+                    <p class="py-8 text-center text-sm text-muted-foreground">{{ __('No open tasks.') }}</p>
+                @endforelse
+            </x-ui.item-group>
         @elseif ($tab === 'documents')
             <livewire:hrm.employees.documents :employee="$employee" :key="'documents-'.$employee->id" />
         @elseif ($tab === 'events')
