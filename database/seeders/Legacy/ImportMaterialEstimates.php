@@ -8,6 +8,7 @@ use App\Modules\Estimation\Models\EstimateKind;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use stdClass;
 
 /**
  * v1 material estimates (tbl_project_material_estimate and its details) → approved MATERIAL
@@ -59,7 +60,7 @@ class ImportMaterialEstimates
     /**
      * @return array<string, mixed>
      */
-    private function line(object $line): array
+    private function line(stdClass $line): array
     {
         $material = $this->material((int) $line->material_id, $line->material_name);
         $qtyText = trim((string) $line->total_estimated_qty);
@@ -73,7 +74,7 @@ class ImportMaterialEstimates
         }
 
         $unitWord = trim((string) preg_replace('/^[\d.,\s]+/', '', $qtyText));
-        $unit = $this->estimates->unitFor($line->unit) ?? $this->estimates->unitFor($unitWord) ?? $material?->unit_id ?? $this->estimates->defaultUnit();
+        $unit = $this->estimates->unitFor($line->unit) ?? $this->estimates->unitFor($unitWord) ?? $material->unit_id ?? $this->estimates->defaultUnit();
         $name = trim((string) $line->material_name);
 
         return [
