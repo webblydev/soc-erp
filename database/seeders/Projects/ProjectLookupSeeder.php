@@ -140,7 +140,7 @@ class ProjectLookupSeeder extends Seeder
     private function seed(string $model, array $rows): void
     {
         foreach ($rows as $index => $row) {
-            $model::query()->withTrashed()->firstOrCreate(['code' => $row[0]], ['name' => $row[1], 'sort_order' => $index + 1, ...($row[2] ?? [])]);
+            $model::query()->withoutGlobalScopes()->firstOrCreate(['code' => $row[0]], ['name' => $row[1], 'sort_order' => $index + 1, ...($row[2] ?? [])]);
         }
     }
 
