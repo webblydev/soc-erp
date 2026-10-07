@@ -5,6 +5,7 @@ namespace App\Modules\Crm\Notifications;
 use App\Models\User;
 use App\Modules\Crm\Models\CrmActivity;
 use App\Modules\Crm\Models\Lead;
+use App\Modules\Projects\Models\Project;
 use App\Support\Notifications\PreferenceNotification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -68,7 +69,11 @@ class DailyDigest extends PreferenceNotification
     private function itemLine(CrmActivity $activity): string
     {
         $subject = $activity->subject;
-        $number = $subject instanceof Lead ? $subject->lead_number : $subject?->getAttribute('customer_number');
+        $number = match (true) {
+            $subject instanceof Lead => $subject->lead_number,
+            $subject instanceof Project => $subject->project_number,
+            default => $subject?->getAttribute('customer_number'),
+        };
 
         return trim(sprintf('%s %s — %s (%s)', $activity->scheduled_at?->format('H:i'), $activity->type->name, $subject?->getAttribute('name'), $number));
     }
