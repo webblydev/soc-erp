@@ -46,12 +46,12 @@ return new class extends Migration
             $table->timestamps();
             $table->auditColumns();
             $table->softDeletes();
-            $table->unique(['project_contract_id', 'amendment_no']);
+            $table->unique(['project_contract_id', 'amendment_no'], 'contract_amendments_number_unique');
         });
 
         Schema::create('project_contract_amendment_lines', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_contract_amendment_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('project_contract_amendment_id')->constrained(indexName: 'amendment_lines_amendment_foreign')->cascadeOnDelete();
             $table->foreignId('project_service_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('service_id')->constrained()->restrictOnDelete();
             $table->string('description', 500)->nullable();
@@ -60,7 +60,7 @@ return new class extends Migration
             $table->decimal('rate', 18, 4)->default(0);
             $table->decimal('discount_amount', 18, 2)->default(0);
             $table->decimal('amount', 18, 2)->default(0);
-            $table->foreignId('project_service_status_id')->constrained()->restrictOnDelete();
+            $table->foreignId('project_service_status_id')->constrained(indexName: 'amendment_lines_status_foreign')->restrictOnDelete();
             $table->smallInteger('sort_order')->default(0);
             $table->timestamps();
         });
