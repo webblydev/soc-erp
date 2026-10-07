@@ -9,6 +9,7 @@ use App\Modules\Estimation\Models\FindingSeverity;
 use App\Modules\Estimation\Models\InspectionStatus;
 use App\Modules\Estimation\Models\InspectionType;
 use App\Modules\Estimation\Models\SiteInspection;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use App\Modules\Projects\Models\Project;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -21,6 +22,8 @@ use Livewire\Component;
  */
 class Form extends Component
 {
+    use SavesFromDetailModal;
+
     private const FIELDS = [
         'inspection_type_id', 'inspection_date', 'start_time', 'end_time', 'site_address', 'permittee_name', 'contractor_name',
         'project_engineer_id', 'field_office_phone', 'weather', 'workers_on_site', 'work_progress_summary', 'client_representative',
@@ -30,8 +33,8 @@ class Form extends Component
 
     public ?SiteInspection $inspection = null;
 
-    #[Url(as: 'project', except: '')]
-    public string $projectNumber = '';
+    #[Url(except: '')]
+    public string $project = '';
 
     public int|string|null $project_id = null;
 
@@ -68,7 +71,7 @@ class Form extends Component
     {
         if ($inspection === null || ! $inspection->exists) {
             $this->authorize('create', SiteInspection::class);
-            $project = $this->projectNumber !== '' ? $this->projects()->firstWhere('project_number', $this->projectNumber) : null;
+            $project = $this->project !== '' ? $this->projects()->firstWhere('project_number', $this->project) : null;
             $this->project_id = $project?->id;
             $this->site_address = (string) $project?->site_address;
             $this->inspection_type_id = InspectionType::query()->where('code', InspectionType::WEEKLY)->value('id');
@@ -126,8 +129,7 @@ class Form extends Component
         $inspection = $this->persist($saveInspection);
 
         if ($inspection !== null) {
-            session()->flash('success', __('Inspection :number saved.', ['number' => $inspection->inspection_number]));
-            $this->redirectRoute('site.inspections.show', $inspection, navigate: true);
+            $this->redirectAfterSave(__('Inspection :number saved.', ['number' => $inspection->inspection_number]), 'site.inspections.show', $inspection);
         }
     }
 
@@ -143,8 +145,7 @@ class Form extends Component
             $submitInspection->handle($this->actor(), $inspection);
         }
 
-        session()->flash('success', __('Inspection :number submitted.', ['number' => $inspection->inspection_number]));
-        $this->redirectRoute('site.inspections.show', $inspection, navigate: true);
+        $this->redirectAfterSave(__('Inspection :number submitted.', ['number' => $inspection->inspection_number]), 'site.inspections.show', $inspection);
     }
 
     private function persist(SaveInspection $saveInspection): ?SiteInspection
