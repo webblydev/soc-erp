@@ -4,7 +4,7 @@
 | Notification keys users can opt out of (docs/01 §9). Each module adds its own keys.
 | channels: database (in-app inbox), mail, sms (no gateway yet, never sent).
 | user.password_reset and security.login_new_ip also go to the inbox (shared services spec S9).
-| CRM keys: docs/03 §9, spec R14. HRM keys: docs/09 §7, spec H15.
+| CRM keys: docs/03 §9, spec R14. HRM keys: docs/09 §7, spec H15. Projects keys: docs/04 §10, spec P20.
 */
 
 return [
@@ -20,6 +20,16 @@ return [
         'hrm.document_expiring' => ['label' => 'An employee document is expiring', 'channels' => ['database', 'mail']],
         'hrm.probation_ending' => ['label' => 'A probation period is ending', 'channels' => ['database', 'mail']],
         'hrm.exit_checklist' => ['label' => 'An employee has left', 'channels' => ['database']],
+        'projects.assigned_pm' => ['label' => 'You were made project manager', 'channels' => ['database', 'mail']],
+        'projects.team_added' => ['label' => 'You were added to a project team', 'channels' => ['database']],
+        'projects.tasks.assigned' => ['label' => 'A task was assigned to you', 'channels' => ['database', 'mail']],
+        'projects.tasks.mentioned' => ['label' => 'You were mentioned in a task comment', 'channels' => ['database']],
+        'projects.tasks.review_requested' => ['label' => 'A task is waiting for your review', 'channels' => ['database']],
+        'projects.tasks.due_tomorrow' => ['label' => 'A task is due tomorrow', 'channels' => ['database']],
+        'projects.tasks.overdue' => ['label' => 'Overdue tasks summary', 'channels' => ['database', 'mail']],
+        'projects.approvals.overdue' => ['label' => 'An approval is overdue', 'channels' => ['database', 'mail']],
+        'projects.approvals.status_changed' => ['label' => 'An approval status changed', 'channels' => ['database']],
+        'projects.milestone_due' => ['label' => 'A payment milestone is due', 'channels' => ['database', 'mail']],
     ],
 
     /*
