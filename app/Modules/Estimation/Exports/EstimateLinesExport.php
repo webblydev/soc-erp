@@ -33,10 +33,18 @@ final class EstimateLinesExport implements FromCollection, ShouldAutoSize, WithH
     public function collection(): Collection
     {
         return $this->estimate->lines()->with(['section', 'workItem', 'unit', 'costCategory'])->get()
-            ->map(fn (EstimateLine $line): array => array_map(QueryExport::neutralise(...), [
-                $line->section?->name, $line->line_no, $line->workItem?->code, $line->description, $line->level, $line->location,
-                $line->measurement_formula->value, $line->nos, $line->length, $line->width, $line->height, $line->deduction ? 'yes' : '',
-                $line->unit->code, $line->quantity, $line->rate, $line->amount, $line->costCategory?->code, $line->remarks,
-            ]));
+            ->map(fn (EstimateLine $line): array => $this->row($line));
+    }
+
+    /**
+     * @return list<mixed>
+     */
+    private function row(EstimateLine $line): array
+    {
+        return array_map(QueryExport::neutralise(...), [
+            $line->section?->name, $line->line_no, $line->workItem?->code, $line->description, $line->level, $line->location,
+            $line->measurement_formula->value, $line->nos, $line->length, $line->width, $line->height, $line->deduction ? 'yes' : '',
+            $line->unit->code, $line->quantity, $line->rate, $line->amount, $line->costCategory?->code, $line->remarks,
+        ]);
     }
 }
