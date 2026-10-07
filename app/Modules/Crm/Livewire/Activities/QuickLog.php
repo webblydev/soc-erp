@@ -10,6 +10,7 @@ use App\Modules\Crm\Models\ActivityType;
 use App\Modules\Crm\Models\CrmActivity;
 use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\Lead;
+use App\Modules\Projects\Models\Project;
 use App\Support\Facades\Settings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -25,7 +26,7 @@ class QuickLog extends Component
 {
     public const MODES = ['log', 'schedule', 'complete', 'reschedule'];
 
-    public const SUBJECT_TYPES = ['lead', 'customer'];
+    public const SUBJECT_TYPES = ['lead', 'customer', 'project'];
 
     #[Locked]
     public string $subjectType = '';
@@ -164,17 +165,17 @@ class QuickLog extends Component
         return in_array($minutes, LogActivity::REMINDER_OPTIONS, true) ? (string) $minutes : '';
     }
 
-    private function findSubject(string $type, int $id): Lead|Customer
+    private function findSubject(string $type, int $id): Lead|Customer|Project
     {
         abort_unless(in_array($type, self::SUBJECT_TYPES, true), 404);
 
-        /** @var class-string<Lead|Customer> $class */
+        /** @var class-string<Lead|Customer|Project> $class */
         $class = Relation::getMorphedModel($type);
 
         return $class::query()->findOrFail($id);
     }
 
-    private function findActivity(Lead|Customer $subject, int $id): CrmActivity
+    private function findActivity(Lead|Customer|Project $subject, int $id): CrmActivity
     {
         return $subject->activities()->findOrFail($id);
     }
