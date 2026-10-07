@@ -128,7 +128,8 @@ class TasksTab extends Component
             'tasks' => $tasks,
             'statuses' => $statuses,
             'columns' => $statuses->map(fn (TaskStatus $status): array => ['status' => $status, 'tasks' => $tasks->where('task_status_id', $status->id)->values()]),
-            'phases' => $tasks->groupBy(fn (Task $task): string => $task->phase?->name ?? __('No phase'))->sortBy(fn ($group) => $group->first()->phase?->sort_order ?? PHP_INT_MAX),
+            'phases' => $tasks->groupBy(fn (Task $task): string => $task->project_phase_id === null ? (string) __('No phase') : $task->phase->name)
+                ->sortBy(fn ($group) => $group->first()->project_phase_id === null ? PHP_INT_MAX : $group->first()->phase->sort_order),
             'range' => $from !== null ? ['from' => $from, 'days' => max(1, (int) $from->diffInDays($to) + 1)] : null,
             'assignees' => $this->project->team()->with('employee:id,full_name')->get()->pluck('employee')->unique('id')->sortBy('full_name')->values(),
             'templates' => TaskTemplate::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
