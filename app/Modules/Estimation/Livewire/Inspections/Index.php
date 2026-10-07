@@ -43,7 +43,7 @@ class Index extends Component
         return SiteInspection::query()
             ->visibleTo($this->actor())
             ->with(['project:id,project_number,name', 'type:id,name', 'status:id,name,color', 'engineer:id,full_name'])
-            ->withCount(['findings', 'findings as open_findings_count' => fn (Builder $query) => $query->open()])
+            ->withCount(['findings', 'findings as open_findings_count' => fn ($query) => $query->open()])
             ->latest('site_inspections.inspection_date')
             ->orderByDesc('site_inspections.id');
     }
