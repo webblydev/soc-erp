@@ -33,7 +33,7 @@ class SaveBudget
         Gate::forUser($actor)->authorize('manageBudget', $project);
 
         $existing = $project->budgetLines()->whereNull('source_estimate_id')->get()->keyBy('id');
-        $lines = array_values(array_map(fn (mixed $line): array => self::clean(is_array($line) ? $line : []), array_filter($lines, 'is_array')));
+        $lines = array_values(array_map(fn (array $line): array => self::clean($line), array_filter($lines, 'is_array')));
         $reason = is_string($reason) && trim($reason) !== '' ? trim($reason) : null;
 
         $rules = [
