@@ -55,6 +55,7 @@ use Illuminate\Support\Carbon;
  * @property-read Project|null $project
  * @property-read Task|null $parent
  * @property-read TaskType $type
+ * @property-read ProjectPhase|null $phase
  * @property-read TaskStatus $status
  * @property-read TaskPriority $priority
  * @property-read Employee|null $assignee
