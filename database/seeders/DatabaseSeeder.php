@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Database\Seeders\Catalog\CatalogSeeder;
 use Database\Seeders\Crm\CrmSeeder;
+use Database\Seeders\Estimation\EstimationSeeder;
 use Database\Seeders\Foundation\FoundationSeeder;
 use Database\Seeders\Hrm\HrmSeeder;
 use Database\Seeders\Projects\ProjectsSeeder;
@@ -19,6 +20,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([FoundationSeeder::class, CatalogSeeder::class, CrmSeeder::class, HrmSeeder::class, ProjectsSeeder::class]);
+        $this->call([FoundationSeeder::class, CatalogSeeder::class, CrmSeeder::class, HrmSeeder::class, ProjectsSeeder::class, EstimationSeeder::class]);
     }
 }
