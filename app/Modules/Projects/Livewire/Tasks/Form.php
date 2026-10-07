@@ -110,8 +110,8 @@ class Form extends Component
         $this->start_date = (string) $task->start_date?->toDateString();
         $this->due_date = (string) $task->due_date?->toDateString();
         $this->estimated_hours = $task->estimated_hours !== null ? rtrim(rtrim($task->estimated_hours, '0'), '.') : '';
-        $this->checklist = $task->checklist()->get(['id', 'title'])->map(fn ($item): array => ['id' => $item->id, 'title' => $item->title])->all();
-        $this->watcher_ids = $task->watchers()->pluck('users.id')->all();
+        $this->checklist = array_values($task->checklist()->get(['id', 'title'])->map(fn ($item): array => ['id' => $item->id, 'title' => $item->title])->all());
+        $this->watcher_ids = array_values($task->watchers()->pluck('users.id')->map(fn (mixed $id): int => (int) $id)->all());
     }
 
     public function updatedProjectId(): void
@@ -121,13 +121,12 @@ class Form extends Component
 
     public function addChecklistItem(): void
     {
-        $this->checklist[] = ['id' => null, 'title' => ''];
+        $this->checklist = [...$this->checklist, ['id' => null, 'title' => '']];
     }
 
     public function removeChecklistItem(int $index): void
     {
-        unset($this->checklist[$index]);
-        $this->checklist = array_values($this->checklist);
+        $this->checklist = array_values(array_filter($this->checklist, fn (int $key): bool => $key !== $index, ARRAY_FILTER_USE_KEY));
     }
 
     public function save(CreateTask $createTask, UpdateTask $updateTask): void
