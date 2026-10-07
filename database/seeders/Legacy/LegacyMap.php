@@ -77,6 +77,14 @@ final class LegacyMap
      */
     private const PROJECT_LINES = ['SOC-MANAGEMENT' => 'MGT', 'SOC-M&S' => 'MS', 'ATP-' => 'CETP'];
 
+    /**
+     * tbl_material id → catalog material name, as MaterialSeeder seeds them (legacy seed spec L4, L18).
+     */
+    public const MATERIALS = [
+        3 => 'Grey Cement (OPC)', 4 => 'Grey Cement (PCC)', 5 => 'Sylhet Sand (FM-2.5)', 6 => 'Local Sand (FM-2.0)',
+        7 => 'Local Sand (FM-1.5)', 8 => 'Single Stone Chips', 9 => 'Stone Chips (LC)', 10 => 'Stone Chips (Vutu Bhanga)',
+    ];
+
     private const SOURCES = ['L' => 'LEAFLET', 'FF' => 'F2F', 'F' => 'REFERENCE', 'FB' => 'FACEBOOK'];
 
     private const LEVELS = ['entry' => 'ENTRY', 'middle' => 'MID', 'top' => 'TOP'];
@@ -118,6 +126,30 @@ final class LegacyMap
     public static function levelFor(?string $level): ?string
     {
         return self::LEVELS[Str::lower(trim((string) $level))] ?? null;
+    }
+
+    /**
+     * The catalog material name of a v1 material id; null for 0, test rows and unknown ids.
+     */
+    public static function materialFor(int $legacyId): ?string
+    {
+        return self::MATERIALS[$legacyId] ?? null;
+    }
+
+    /**
+     * A name reduced to lower-case letters and digits, for matching v1 free text to catalog names.
+     */
+    public static function nameKey(?string $name): string
+    {
+        return (string) preg_replace('/[^a-z0-9]/', '', Str::lower((string) $name));
+    }
+
+    /**
+     * The leading number of a v1 text quantity ("10 bag" → "10"), or null.
+     */
+    public static function leadingNumber(?string $value): ?string
+    {
+        return preg_match('/^\s*(\d+(?:\.\d+)?)/', str_replace(',', '', (string) $value), $match) === 1 ? $match[1] : null;
     }
 
     /**
