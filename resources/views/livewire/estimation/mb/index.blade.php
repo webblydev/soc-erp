@@ -72,7 +72,7 @@
         @endif
 
         <x-slot:desktop>
-            <x-shell.bulk-bar :exportable="true">
+            <x-shell.bulk-bar :exportable="true" :deletable="$user->can('site.mb.delete')">
                 @if ($canVerify)
                     <x-ui.button size="sm" variant="outline" wire:click="verifySelected"><x-lucide-check /> {{ __('Verify') }}</x-ui.button>
                     <x-ui.button size="sm" variant="outline" x-on:click="$dispatch('open-sheet-mb-reject')"><x-lucide-x /> {{ __('Reject') }}</x-ui.button>
@@ -83,7 +83,8 @@
                 <x-ui.table variant="bordered">
                     <x-ui.table-header>
                         <x-ui.table-row>
-                            <x-ui.table-head class="w-10"><x-shell.select-all :ids="$rows->pluck('id')" /></x-ui.table-head>
+                            <x-shell.select-all :ids="$rows->pluck('id')" />
+                            <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                             <x-ui.table-head><x-shell.sort-header key="number" :label="__('MB #')" :$sort :$direction /></x-ui.table-head>
                             <x-ui.table-head>{{ __('Project') }}</x-ui.table-head>
                             <x-ui.table-head>{{ __('Book / page') }}</x-ui.table-head>
@@ -99,16 +100,28 @@
                     </x-ui.table-header>
                     <x-ui.table-body>
                         @forelse ($rows as $entry)
+                            @php($editable = in_array($entry->status->code, ['RECORDED', 'REJECTED'], true))
                             <x-ui.table-row wire:key="mb-{{ $entry->id }}">
-                                <x-ui.table-cell><x-shell.select-row :id="$entry->id" :label="$entry->mb_number" /></x-ui.table-cell>
+                                <x-shell.select-row :id="$entry->id" :label="$entry->mb_number" />
+                                <x-shell.row-menu>
+                                    <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('site.mb.show', $entry)">{{ __('View') }}</x-shell.row-menu-item>
+                                    @if ($editable && $user->can('update', $entry))
+                                        <x-shell.row-menu-item icon="pencil" data-detail-modal :href="route('site.mb.edit', $entry)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                    @endif
+                                    @if ($editable && $user->can('delete', $entry))
+                                        <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $entry->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $entry->mb_number]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                                    @endif
+                                </x-shell.row-menu>
                                 <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">
                                     <a data-detail-modal href="{{ route('site.mb.show', $entry) }}" wire:navigate class="hover:underline">{{ $entry->mb_number }}</a>
                                 </x-ui.table-cell>
-                                <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">{{ $entry->project->project_number }}</x-ui.table-cell>
+                                <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">
+                                    <a data-detail-modal href="{{ route('projects.projects.show', ['project' => $entry->project, 'tab' => 'site']) }}" wire:navigate class="hover:underline">{{ $entry->project->project_number }}</a>
+                                </x-ui.table-cell>
                                 <x-ui.table-cell class="text-sm">{{ collect([$entry->mb_book_no, $entry->mb_page_no])->filter()->implode(' / ') ?: '—' }}</x-ui.table-cell>
                                 <x-ui.table-cell class="tabular-nums whitespace-nowrap">{{ $date($entry->measured_on) }}</x-ui.table-cell>
                                 <x-ui.table-cell>
-                                    {{ \Illuminate\Support\Str::limit($entry->description, 60) }}
+                                    <a data-detail-modal href="{{ route('site.mb.show', $entry) }}" wire:navigate class="hover:underline">{{ \Illuminate\Support\Str::limit($entry->description, 60) }}</a>
                                     @if ($entry->estimateLine)<span class="block font-mono text-sm text-muted-foreground">{{ __('BOQ') }} {{ $entry->estimateLine->line_no }}</span>@endif
                                 </x-ui.table-cell>
                                 <x-ui.table-cell class="text-sm">{{ $entry->location ?? '—' }}</x-ui.table-cell>
@@ -120,13 +133,20 @@
                             </x-ui.table-row>
                         @empty
                             <x-ui.table-row>
-                                <x-ui.table-cell colspan="12" class="py-10 text-center text-muted-foreground">{{ __('No measurements found.') }}</x-ui.table-cell>
+                                <x-ui.table-cell colspan="13" class="py-10 text-center text-muted-foreground">{{ __('No measurements found.') }}</x-ui.table-cell>
                             </x-ui.table-row>
                         @endforelse
                     </x-ui.table-body>
                 </x-ui.table>
             </div>
-            <div class="mt-4">{{ $rows->links() }}</div>
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+                <x-ui.select native wire:model.live="perPage" class="w-36" :aria-label="__('Rows per page')">
+                    @foreach (static::PER_PAGE_OPTIONS as $option)
+                        <option value="{{ $option }}">{{ __(':count per page', ['count' => $option]) }}</option>
+                    @endforeach
+                </x-ui.select>
+                {{ $rows->links() }}
+            </div>
         </x-slot:desktop>
 
         <x-slot:mobile>
