@@ -57,10 +57,14 @@
         </x-slot:filters>
 
         <x-slot:desktop>
+            <x-shell.bulk-bar :exportable="true" :deletable="$user->can('site.inspections.delete')" />
+
             <div class="overflow-x-auto">
                 <x-ui.table variant="bordered">
                     <x-ui.table-header>
                         <x-ui.table-row>
+                            <x-shell.select-all :ids="$rows->pluck('id')" />
+                            <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                             <x-ui.table-head><x-shell.sort-header key="number" :label="__('Inspection #')" :$sort :$direction /></x-ui.table-head>
                             <x-ui.table-head><x-shell.sort-header key="date" :label="__('Date')" :$sort :$direction /></x-ui.table-head>
                             <x-ui.table-head>{{ __('Project') }}</x-ui.table-head>
@@ -74,12 +78,25 @@
                     </x-ui.table-header>
                     <x-ui.table-body>
                         @forelse ($rows as $inspection)
+                            @php($code = $inspection->status->code)
                             <x-ui.table-row wire:key="inspection-{{ $inspection->id }}">
+                                <x-shell.select-row :id="$inspection->id" :label="$inspection->inspection_number" />
+                                <x-shell.row-menu>
+                                    <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('site.inspections.show', $inspection)">{{ __('View') }}</x-shell.row-menu-item>
+                                    @if ($code !== 'CLOSED' && $user->can('update', $inspection))
+                                        <x-shell.row-menu-item icon="pencil" data-detail-modal :href="route('site.inspections.edit', $inspection)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                    @endif
+                                    @if ($code === 'DRAFT' && $user->can('delete', $inspection))
+                                        <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $inspection->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $inspection->inspection_number]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                                    @endif
+                                </x-shell.row-menu>
                                 <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">
-                                    <a href="{{ route('site.inspections.show', $inspection) }}" wire:navigate class="hover:underline">{{ $inspection->inspection_number }}</a>
+                                    <a data-detail-modal href="{{ route('site.inspections.show', $inspection) }}" wire:navigate class="hover:underline">{{ $inspection->inspection_number }}</a>
                                 </x-ui.table-cell>
                                 <x-ui.table-cell class="tabular-nums whitespace-nowrap">{{ $date($inspection->inspection_date) }}</x-ui.table-cell>
-                                <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">{{ $inspection->project->project_number }}</x-ui.table-cell>
+                                <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">
+                                    <a data-detail-modal href="{{ route('projects.projects.show', ['project' => $inspection->project, 'tab' => 'site']) }}" wire:navigate class="hover:underline">{{ $inspection->project->project_number }}</a>
+                                </x-ui.table-cell>
                                 <x-ui.table-cell>{{ $inspection->engineerName() ?? '—' }}</x-ui.table-cell>
                                 <x-ui.table-cell>{{ $inspection->contractor_name ?? '—' }}</x-ui.table-cell>
                                 <x-ui.table-cell>{{ $inspection->permittee_name ?? '—' }}</x-ui.table-cell>
@@ -91,13 +108,20 @@
                             </x-ui.table-row>
                         @empty
                             <x-ui.table-row>
-                                <x-ui.table-cell colspan="9" class="py-10 text-center text-muted-foreground">{{ __('No inspections found.') }}</x-ui.table-cell>
+                                <x-ui.table-cell colspan="11" class="py-10 text-center text-muted-foreground">{{ __('No inspections found.') }}</x-ui.table-cell>
                             </x-ui.table-row>
                         @endforelse
                     </x-ui.table-body>
                 </x-ui.table>
             </div>
-            <div class="mt-4">{{ $rows->links() }}</div>
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+                <x-ui.select native wire:model.live="perPage" class="w-36" :aria-label="__('Rows per page')">
+                    @foreach (static::PER_PAGE_OPTIONS as $option)
+                        <option value="{{ $option }}">{{ __(':count per page', ['count' => $option]) }}</option>
+                    @endforeach
+                </x-ui.select>
+                {{ $rows->links() }}
+            </div>
         </x-slot:desktop>
 
         <x-slot:mobile>
