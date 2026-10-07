@@ -122,7 +122,7 @@ class SaveEstimate
             $sections[] = [
                 ...($withIds ? ['id' => $section?->id] : []),
                 'name' => $section?->name,
-                'lines' => $groups[$sectionId]->map($line)->values()->all(),
+                'lines' => array_values($groups[$sectionId]->map($line)->all()),
             ];
         }
 
@@ -132,12 +132,12 @@ class SaveEstimate
 
         return [
             'sections' => $sections,
-            'material_lines' => $source->materialLines->map(fn ($material): array => [
+            'material_lines' => array_values($source->materialLines->map(fn ($material): array => [
                 ...($withIds ? ['id' => $material->id] : []),
                 'material_id' => $material->material_id, 'material_name' => $material->material_name, 'unit_id' => $material->unit_id,
                 'estimated_qty' => $material->estimated_qty, 'wastage_pct' => $material->wastage_pct, 'rate' => $material->rate,
                 'purpose' => $material->purpose,
-            ])->values()->all(),
+            ])->all()),
         ];
     }
 
