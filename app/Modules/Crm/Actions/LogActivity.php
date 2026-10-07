@@ -8,6 +8,7 @@ use App\Modules\Crm\Models\CrmActivity;
 use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Services\LeadFollowUps;
+use App\Modules\Projects\Models\Project;
 use App\Support\Facades\Settings;
 use App\Support\Lookups\ActiveLookup;
 use Closure;
@@ -32,7 +33,7 @@ class LogActivity
      *
      * @throws ValidationException
      */
-    public function handle(User $actor, Lead|Customer $subject, array $input): CrmActivity
+    public function handle(User $actor, Lead|Customer|Project $subject, array $input): CrmActivity
     {
         Gate::forUser($actor)->authorize('crm.activities.create');
         Gate::forUser($actor)->authorize('view', $subject);
@@ -100,7 +101,7 @@ class LogActivity
      *
      * @param  array{activity_type_id: int|string, scheduled_at: string}  $next
      */
-    public function scheduleNext(Lead|Customer $subject, int $ownerId, array $next): CrmActivity
+    public function scheduleNext(Lead|Customer|Project $subject, int $ownerId, array $next): CrmActivity
     {
         $scheduledAt = Carbon::parse($next['scheduled_at']);
         $minutes = (int) Settings::get('crm.reminder_lead_minutes', 30);
@@ -117,7 +118,7 @@ class LogActivity
     /**
      * @param  array<string, mixed>  $attributes
      */
-    private function create(Lead|Customer $subject, array $attributes): CrmActivity
+    private function create(Lead|Customer|Project $subject, array $attributes): CrmActivity
     {
         $activity = new CrmActivity($attributes);
         $activity->subject()->associate($subject);
