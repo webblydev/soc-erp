@@ -74,7 +74,7 @@ class SaveInspection
                     $attributes = [...$row, 'sort_order' => $index + 1];
                     unset($attributes['id']);
 
-                    $finding = $row['id'] !== null ? $inspection->findings()->findOrFail($row['id']) : $inspection->findings()->make();
+                    $finding = $row['id'] !== null ? $inspection->findings()->findOrFail((int) $row['id']) : $inspection->findings()->make();
                     $finding->fill($attributes);
 
                     if (! $finding->exists) {
