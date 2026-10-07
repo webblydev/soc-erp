@@ -14,6 +14,7 @@ use App\Modules\Hrm\Models\EmployeeType;
 use App\Modules\Projects\Models\ProjectType;
 use App\Support\Facades\Settings;
 use Database\Seeders\Crm\CrmSeeder;
+use Database\Seeders\Estimation\EstimationSeeder;
 use Database\Seeders\Foundation\NumberSequenceFormatSeeder;
 use Database\Seeders\Foundation\PermissionSeeder;
 use Database\Seeders\Foundation\RolePermissionSeeder;
@@ -161,6 +162,15 @@ function seedHrm(): void
 function seedProjects(): void
 {
     test()->seed([SettingSeeder::class, NumberSequenceFormatSeeder::class, CrmSeeder::class, HrmSeeder::class, ProjectsSeeder::class]);
+}
+
+/**
+ * Seed the Estimation lookups and settings with the Projects data they build on.
+ */
+function seedEstimation(): void
+{
+    seedProjects();
+    test()->seed(EstimationSeeder::class);
 }
 
 /**
