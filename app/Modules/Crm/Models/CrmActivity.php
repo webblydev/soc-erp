@@ -3,6 +3,7 @@
 namespace App\Modules\Crm\Models;
 
 use App\Models\User;
+use App\Modules\Projects\Models\Project;
 use App\Support\AuditTrail\Auditable;
 use App\Support\AuditTrail\TracksAuthors;
 use App\Support\DataScope\HasDataScope;
@@ -35,7 +36,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $reminder_at
  * @property Carbon|null $reminder_sent_at
  * @property string|null $location_text
- * @property-read Lead|Customer|null $subject
+ * @property-read Lead|Customer|Project|null $subject
  * @property-read ActivityType $type
  * @property-read ActivityOutcome|null $outcome
  * @property-read User $owner
