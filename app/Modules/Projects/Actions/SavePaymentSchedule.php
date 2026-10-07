@@ -44,7 +44,7 @@ class SavePaymentSchedule
 
         $deed = BigDecimal::of($contract !== null ? $contract->deed_amount : $project->contract_value)->toScale(2);
         $locked = $project->schedules()->whereHas('status', fn ($query) => $query->whereIn('code', [ScheduleStatus::INVOICED, ScheduleStatus::PAID]))->get();
-        $lines = $this->validate($project, $deed, is_array($input) ? array_values($input) : [], $locked->pluck('id')->all());
+        $lines = $this->validate($project, $deed, is_array($input) ? array_values($input) : [], array_values($locked->map(fn (PaymentSchedule $line): int => $line->id)->all()));
 
         $total = $locked->reduce(fn (BigDecimal $sum, PaymentSchedule $line): BigDecimal => $sum->plus($line->amount), BigDecimal::zero());
 
