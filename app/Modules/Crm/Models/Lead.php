@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Catalog\Models\BusinessLine;
 use App\Modules\Foundation\Models\Location;
 use App\Modules\Hrm\Models\Employee;
+use App\Modules\Projects\Models\Project;
 use App\Support\AuditTrail\Auditable;
 use App\Support\AuditTrail\TracksAuthors;
 use App\Support\Collaboration\Collaborative;
@@ -74,6 +75,7 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $assignee
  * @property-read SalesTeam|null $team
  * @property-read Customer|null $convertedCustomer
+ * @property-read Project|null $convertedProject
  */
 #[Fillable([
     'lead_date', 'name', 'company_name', 'phone', 'office_phone', 'whatsapp', 'email', 'address', 'location_id',
@@ -260,6 +262,16 @@ class Lead extends Model implements Collaborative
     public function convertedCustomer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'converted_customer_id');
+    }
+
+    /**
+     * The project made at conversion (Projects spec P21).
+     *
+     * @return BelongsTo<Project, $this>
+     */
+    public function convertedProject(): BelongsTo
+    {
+        return $this->belongsTo(Project::class, 'converted_project_id');
     }
 
     /**
