@@ -3,7 +3,14 @@
     $activities: open first (by scheduled_at), then done (latest first), with type, outcome and owner loaded.
     $showSubject: link each row to its lead or customer. Delete calls confirmDeleteActivity() on the host.
 --}}
-@php($actor = auth()->user())
+@php
+    $actor = auth()->user();
+    $subjectUrl = fn ($subject) => match (true) {
+        $subject instanceof \App\Modules\Crm\Models\Lead => route('crm.leads.show', $subject),
+        $subject instanceof \App\Modules\Projects\Models\Project => route('projects.projects.show', $subject),
+        default => route('crm.customers.show', $subject),
+    };
+@endphp
 
 <x-ui.item-group class="gap-2">
     @forelse ($activities as $activity)
@@ -30,14 +37,7 @@
                         <x-ui.badge tone="neutral" class="text-sm">{{ $activity->outcome->name }}</x-ui.badge>
                     @endif
                     @if ($showSubject && $activity->subject)
-                        @php($subjectUrl = $activity->subject instanceof \App\Modules\Crm\Models\Lead
-                            ? route('crm.leads.show', $activity->subject)
-                            : (Route::has('crm.customers.show') ? route('crm.customers.show', $activity->subject) : null))
-                        @if ($subjectUrl)
-                            <a data-detail-modal href="{{ $subjectUrl }}" wire:navigate class="font-medium text-foreground hover:underline">{{ $activity->subject->name }}</a>
-                        @else
-                            <span class="font-medium text-foreground">{{ $activity->subject->name }}</span>
-                        @endif
+                        <a data-detail-modal href="{{ $subjectUrl($activity->subject) }}" wire:navigate class="font-medium text-foreground hover:underline">{{ $activity->subject->name }}</a>
                     @endif
                 </x-ui.item-description>
             </x-ui.item-content>
