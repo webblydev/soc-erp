@@ -1,6 +1,7 @@
 @php
     $user = auth()->user();
-    $tabs = ['overview' => __('Overview'), 'activities' => __('Activities'), 'leads' => __('Leads'), 'documents' => __('Documents'), 'notes' => __('Notes'), 'history' => __('History')];
+    $tabs = array_filter(['overview' => __('Overview'), 'projects' => $user->can('projects.projects.view') ? __('Projects') : null, 'activities' => __('Activities'), 'leads' => __('Leads'), 'documents' => __('Documents'), 'notes' => __('Notes'), 'history' => __('History')]);
+    $canAddProject = $user->can('create', \App\Modules\Projects\Models\Project::class) && ! $customer->isBlocked();
     $logEvent = "\$dispatch('crm-log-activity', { subjectType: 'customer', subjectId: {$customer->id}, mode: 'log' })";
 @endphp
 
@@ -27,6 +28,9 @@
             @can('crm.activities.create')
                 <x-ui.button size="sm" x-on:click="{{ $logEvent }}"><x-lucide-notebook-pen /> {{ __('Log activity') }}</x-ui.button>
             @endcan
+            @if ($canAddProject)
+                <x-ui.button size="sm" variant="outline" :href="route('projects.projects.create', ['customer' => $customer->customer_number])" wire:navigate><x-lucide-folder-plus /> {{ __('New project') }}</x-ui.button>
+            @endif
             @if (Route::has('crm.customers.merge') && $user->can('merge', $customer))
                 <x-ui.button size="sm" variant="outline" :href="route('crm.customers.merge', $customer)" wire:navigate><x-lucide-merge /> {{ __('Merge') }}</x-ui.button>
             @endif
@@ -127,6 +131,21 @@
                         <p class="whitespace-pre-line text-sm">{{ $customer->notes }}</p>
                     @endif
                 </x-ui.card>
+            @elseif ($tab === 'projects')
+                <x-ui.item-group class="gap-2">
+                    @forelse ($projects as $project)
+                        <x-ui.item variant="outline" class="min-h-16 active:bg-accent" :href="route('projects.projects.show', $project)" wire:navigate wire:key="project-{{ $project->id }}">
+                            <x-ui.item-content class="min-w-0">
+                                <x-ui.item-title class="text-base md:text-sm"><span class="truncate">{{ $project->name }}</span></x-ui.item-title>
+                                <x-ui.item-description class="text-sm"><span class="font-mono">{{ $project->project_number }}</span> · <span class="tabular-nums">{{ \App\Support\Money::format($project->contract_value) }}</span></x-ui.item-description>
+                            </x-ui.item-content>
+                            <x-ui.badge :tone="$project->status->color ?? 'neutral'" class="shrink-0 text-sm">{{ $project->status->name }}</x-ui.badge>
+                            <x-lucide-chevron-right class="size-4 shrink-0 text-muted-foreground" />
+                        </x-ui.item>
+                    @empty
+                        <p class="py-8 text-center text-sm text-muted-foreground">{{ __('No projects yet.') }}</p>
+                    @endforelse
+                </x-ui.item-group>
             @elseif ($tab === 'activities')
                 @can('crm.activities.create')
                     <x-ui.button class="h-11 self-start md:h-9" x-on:click="{{ $logEvent }}"><x-lucide-plus /> {{ __('Log activity') }}</x-ui.button>
@@ -170,6 +189,9 @@
             @can('crm.activities.create')
                 <x-ui.button class="h-11 justify-start" variant="outline" x-on:click="$dispatch('close-sheet-customer-actions'); {{ $logEvent }}"><x-lucide-notebook-pen /> {{ __('Log activity') }}</x-ui.button>
             @endcan
+            @if ($canAddProject)
+                <x-ui.button class="h-11 justify-start" variant="outline" :href="route('projects.projects.create', ['customer' => $customer->customer_number])" wire:navigate><x-lucide-folder-plus /> {{ __('New project') }}</x-ui.button>
+            @endif
             @if (Route::has('crm.customers.merge') && $user->can('merge', $customer))
                 <x-ui.button class="h-11 justify-start" variant="outline" :href="route('crm.customers.merge', $customer)" wire:navigate><x-lucide-merge /> {{ __('Merge') }}</x-ui.button>
             @endif
