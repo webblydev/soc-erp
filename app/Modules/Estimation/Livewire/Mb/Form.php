@@ -211,7 +211,7 @@ class Form extends Component
     {
         $project = Project::query()->find($this->project_id);
         $line = is_numeric($this->estimate_line_id) ? EstimateLine::query()->find((int) $this->estimate_line_id) : null;
-        $defaultRate = $line?->rate ?? WorkItem::query()->whereKey($this->work_item_id)->value('standard_rate');
+        $defaultRate = $line->rate ?? WorkItem::query()->whereKey($this->work_item_id)->value('standard_rate');
 
         return view('livewire.estimation.mb.form', [
             'projects' => $this->entry === null ? $this->projects() : collect(),
