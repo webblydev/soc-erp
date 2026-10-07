@@ -28,6 +28,9 @@ class LegacyContext
     /** @var array<int, array{lead: int, customer: int|null, owner: int, open: bool}> legacy client id → lead */
     public array $leads = [];
 
+    /** @var array<int, int> legacy project id → project id */
+    public array $projects = [];
+
     /** @var array<string, int> */
     private array $lookupIds = [];
 
