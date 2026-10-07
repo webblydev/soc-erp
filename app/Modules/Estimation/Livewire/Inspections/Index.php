@@ -3,26 +3,30 @@
 namespace App\Modules\Estimation\Livewire\Inspections;
 
 use App\Models\User;
+use App\Modules\Estimation\Actions\DeleteInspection;
 use App\Modules\Estimation\Models\InspectionStatus;
 use App\Modules\Estimation\Models\InspectionType;
 use App\Modules\Estimation\Models\SiteInspection;
 use App\Modules\Estimation\Models\SiteInspectionFinding;
 use App\Modules\Projects\Models\Project;
 use App\Support\Exports\ListingExport;
+use App\Support\Listing\WithBulkActions;
 use App\Support\Listing\WithListing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Site inspections list (docs/05 §5.7, spec §5.9) with the v1 Project Visit columns.
+ * Site inspections list (docs/05 §5.7, spec §5.9) with the v1 Project Visit columns, selection,
+ * row actions and export.
  */
 #[Title('Site inspections')]
 class Index extends Component
 {
-    use WithListing;
+    use WithBulkActions, WithListing;
 
     private const PROJECT_NUMBER = '(select project_number from projects where projects.id = site_inspections.project_id)';
 
@@ -42,7 +46,7 @@ class Index extends Component
     {
         return SiteInspection::query()
             ->visibleTo($this->actor())
-            ->with(['project:id,project_number,name', 'type:id,name', 'status:id,name,color', 'engineer:id,full_name'])
+            ->with(['project:id,project_number,name', 'type:id,name', 'status:id,name,color,code', 'engineer:id,full_name'])
             ->withCount(['findings', 'findings as open_findings_count' => fn ($query) => $query->open()])
             ->latest('site_inspections.inspection_date')
             ->orderByDesc('site_inspections.id');
@@ -90,12 +94,23 @@ class Index extends Component
     {
         $this->authorize('viewAny', SiteInspection::class);
 
-        return ListingExport::download('site-inspections', $this->filteredQuery(), [
+        return ListingExport::download('site-inspections', $this->exportQuery(), [
             'Inspection #' => 'inspection_number', 'Date' => 'inspection_date', 'Project' => 'project.project_number',
             'Project engineer' => fn (SiteInspection $inspection) => $inspection->engineerName(), 'Contractor' => 'contractor_name',
             'Permittee' => 'permittee_name', 'Type' => 'type.name', 'Open findings' => 'open_findings_count', 'Findings' => 'findings_count',
             'Status' => 'status.name',
         ]);
+    }
+
+    protected function authorizeBulkDelete(): void
+    {
+        $this->authorize('site.inspections.delete');
+    }
+
+    protected function deleteRow(Model $row): void
+    {
+        /** @var SiteInspection $row */
+        app(DeleteInspection::class)->handle($this->actor(), $row);
     }
 
     private function actor(): User
