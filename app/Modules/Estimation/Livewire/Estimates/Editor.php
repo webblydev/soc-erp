@@ -71,10 +71,10 @@ class Editor extends Component
 
     public string $notes = '';
 
-    /** @var list<array{id: int|null, name: string, lines: list<array<string, mixed>>}> */
+    /** @var array<int, array{id: int|null, name: string, lines: array<int, array<string, mixed>>}> */
     public array $sections = [];
 
-    /** @var list<array<string, mixed>> */
+    /** @var array<int, array<string, mixed>> */
     public array $materialLines = [];
 
     public string $tab = 'work';
@@ -376,7 +376,7 @@ class Editor extends Component
         }
 
         $this->sections = $sections ?: [$this->blankSection()];
-        $this->materialLines = array_values($materials);
+        $this->materialLines = $materials;
     }
 
     /**
