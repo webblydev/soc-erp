@@ -108,7 +108,7 @@
                 <x-ui.description-list>
                     <x-ui.description-item :term="__('Project')">
                         @if ($task->project)
-                            <a href="{{ route('projects.projects.show', $task->project) }}" wire:navigate class="hover:underline">{{ $task->project->project_number }} · {{ $task->project->name }}</a>
+                            <a data-detail-modal href="{{ route('projects.projects.show', $task->project) }}" wire:navigate class="hover:underline">{{ $task->project->project_number }} · {{ $task->project->name }}</a>
                         @else
                             {{ __('General task') }}
                         @endif
