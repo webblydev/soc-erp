@@ -5,6 +5,7 @@ namespace App\Modules\Crm\Notifications;
 use App\Models\User;
 use App\Modules\Crm\Models\CrmActivity;
 use App\Modules\Crm\Models\Lead;
+use App\Modules\Projects\Models\Project;
 use App\Support\Notifications\PreferenceNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Queue\SerializesModels;
@@ -53,6 +54,7 @@ class FollowUpReminder extends PreferenceNotification
 
         return match (true) {
             $subject instanceof Lead => "{$subject->name} ({$subject->lead_number})",
+            $subject instanceof Project => "{$subject->name} ({$subject->project_number})",
             $subject !== null => "{$subject->getAttribute('name')} ({$subject->getAttribute('customer_number')})",
             default => '',
         };
@@ -64,6 +66,7 @@ class FollowUpReminder extends PreferenceNotification
 
         return match (true) {
             $subject instanceof Lead => route('crm.leads.show', $subject),
+            $subject instanceof Project => route('projects.projects.show', $subject),
             $subject !== null => route('crm.customers.show', $subject),
             default => null,
         };
