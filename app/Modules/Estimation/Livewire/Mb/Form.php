@@ -32,8 +32,8 @@ class Form extends Component
 
     public ?MeasurementEntry $entry = null;
 
-    #[Url(as: 'project', except: '')]
-    public string $projectNumber = '';
+    #[Url(except: '')]
+    public string $project = '';
 
     public int|string|null $project_id = null;
 
@@ -75,7 +75,7 @@ class Form extends Component
     {
         if ($entry === null || ! $entry->exists) {
             $this->authorize('create', MeasurementEntry::class);
-            $this->project_id = $this->projectNumber !== '' ? $this->projects()->firstWhere('project_number', $this->projectNumber)?->id : null;
+            $this->project_id = $this->project !== '' ? $this->projects()->firstWhere('project_number', $this->project)?->id : null;
             $this->measured_on = today()->toDateString();
             $this->measured_by = $this->actor()->employee_id;
 
@@ -215,7 +215,6 @@ class Form extends Component
 
         return view('livewire.estimation.mb.form', [
             'projects' => $this->entry === null ? $this->projects() : collect(),
-            'project' => $project,
             'boqLines' => $this->boqLines(),
             'progress' => $this->progress(),
             'rateLocked' => $defaultRate !== null && ($project === null || ! $this->actor()->can('editMeasurementRate', $project)),
