@@ -70,7 +70,7 @@ class ContractTab extends Component
     {
         $this->authorize('manageContract', $this->project);
 
-        $this->scheduleLines = $this->project->schedules()->with('status')->get()->map(fn ($line): array => [
+        $this->scheduleLines = array_values($this->project->schedules()->with('status')->get()->map(fn ($line): array => [
             'id' => $line->id,
             'milestone_name' => $line->milestone_name,
             'schedule_trigger_id' => $line->schedule_trigger_id,
@@ -79,7 +79,7 @@ class ContractTab extends Component
             'percent' => $line->percent !== null ? rtrim(rtrim($line->percent, '0'), '.') : '',
             'amount' => (string) $line->amount,
             'status' => $line->status->name,
-        ])->values()->all();
+        ])->all());
 
         if ($this->scheduleLines === []) {
             $this->addScheduleLine();
@@ -91,13 +91,12 @@ class ContractTab extends Component
 
     public function addScheduleLine(): void
     {
-        $this->scheduleLines[] = ['id' => null, 'milestone_name' => '', 'schedule_trigger_id' => ScheduleTrigger::idFor(ScheduleTrigger::MANUAL), 'trigger_ref_id' => null, 'due_date' => '', 'percent' => '', 'amount' => ''];
+        $this->scheduleLines = [...$this->scheduleLines, ['id' => null, 'milestone_name' => '', 'schedule_trigger_id' => ScheduleTrigger::idFor(ScheduleTrigger::MANUAL), 'trigger_ref_id' => null, 'due_date' => '', 'percent' => '', 'amount' => '']];
     }
 
     public function removeScheduleLine(int $index): void
     {
-        unset($this->scheduleLines[$index]);
-        $this->scheduleLines = array_values($this->scheduleLines);
+        $this->scheduleLines = array_values(array_filter($this->scheduleLines, fn (int $key): bool => $key !== $index, ARRAY_FILTER_USE_KEY));
     }
 
     public function saveSchedule(SavePaymentSchedule $savePaymentSchedule): void
