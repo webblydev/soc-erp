@@ -21,7 +21,7 @@ class Show extends Component
 {
     public Project $project;
 
-    /** @var list<array<string, mixed>> */
+    /** @var array<int, array<string, mixed>> */
     public array $lines = [];
 
     public string $reason = '';
