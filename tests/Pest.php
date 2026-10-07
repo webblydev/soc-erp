@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Unit;
 use App\Modules\Crm\Models\LeadPriority;
 use App\Modules\Crm\Models\LeadSource;
 use App\Modules\Foundation\Models\Permission;
@@ -13,6 +14,7 @@ use App\Modules\Hrm\Models\EmployeeStatus;
 use App\Modules\Hrm\Models\EmployeeType;
 use App\Modules\Projects\Models\ProjectType;
 use App\Support\Facades\Settings;
+use Database\Seeders\Catalog\UnitSeeder;
 use Database\Seeders\Crm\CrmSeeder;
 use Database\Seeders\Estimation\EstimationSeeder;
 use Database\Seeders\Foundation\NumberSequenceFormatSeeder;
@@ -165,12 +167,20 @@ function seedProjects(): void
 }
 
 /**
- * Seed the Estimation lookups and settings with the Projects data they build on.
+ * Seed the Estimation lookups and settings with the Projects data and Catalog units they build on.
  */
 function seedEstimation(): void
 {
     seedProjects();
-    test()->seed(EstimationSeeder::class);
+    test()->seed([UnitSeeder::class, EstimationSeeder::class]);
+}
+
+/**
+ * A unit seeded by the Catalog UnitSeeder, by code (Estimation tests).
+ */
+function unitId(string $code): int
+{
+    return (int) Unit::query()->where('code', $code)->value('id');
 }
 
 /**
