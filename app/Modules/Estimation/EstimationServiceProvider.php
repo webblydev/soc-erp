@@ -27,6 +27,9 @@ use App\Modules\Estimation\Policies\ProjectEstimationPolicy;
 use App\Modules\Estimation\Policies\SiteInspectionFindingPolicy;
 use App\Modules\Estimation\Policies\SiteInspectionPolicy;
 use App\Modules\Estimation\Services\BudgetCostSources;
+use App\Modules\Estimation\Services\CompletionChecks\OpenFindingsCheck;
+use App\Modules\Estimation\Services\CompletionChecks\UnverifiedMeasurementsCheck;
+use App\Modules\Projects\Services\ProjectCompletionChecks;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -41,6 +44,11 @@ class EstimationServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(BudgetCostSources::class);
+
+        $this->app->resolving(ProjectCompletionChecks::class, function (ProjectCompletionChecks $checks): void {
+            $checks->register(OpenFindingsCheck::class);
+            $checks->register(UnverifiedMeasurementsCheck::class);
+        });
     }
 
     /**
