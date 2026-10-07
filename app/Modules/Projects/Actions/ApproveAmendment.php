@@ -41,17 +41,21 @@ class ApproveAmendment
             $before = BigDecimal::of($project->contract_value);
             $existing = $project->services()->pluck('id')->all();
 
-            $lines = $amendment->lines()->get()->map(fn ($line): array => [
-                'id' => in_array($line->project_service_id, $existing, true) ? $line->project_service_id : null,
-                'service_id' => $line->service_id,
-                'description' => $line->description,
-                'quantity' => $line->quantity,
-                'unit_id' => $line->unit_id,
-                'rate' => $line->rate,
-                'discount_amount' => $line->discount_amount,
-                'amount' => $line->amount,
-                'project_service_status_id' => $line->project_service_status_id,
-            ])->all();
+            $lines = [];
+
+            foreach ($amendment->lines()->get() as $line) {
+                $lines[] = [
+                    'id' => in_array($line->project_service_id, $existing, true) ? $line->project_service_id : null,
+                    'service_id' => $line->service_id,
+                    'description' => $line->description,
+                    'quantity' => $line->quantity,
+                    'unit_id' => $line->unit_id,
+                    'rate' => $line->rate,
+                    'discount_amount' => $line->discount_amount,
+                    'amount' => $line->amount,
+                    'project_service_status_id' => $line->project_service_status_id,
+                ];
+            }
 
             $this->serviceLines->apply($project, $lines);
             $project->refresh();
