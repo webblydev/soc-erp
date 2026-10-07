@@ -5,6 +5,8 @@ namespace App\Modules\Crm\Models;
 use App\Models\User;
 use App\Modules\Catalog\Models\BusinessLine;
 use App\Modules\Foundation\Models\Location;
+use App\Modules\Projects\Models\Project;
+use App\Modules\Projects\Models\ProjectEmployee;
 use App\Support\AuditTrail\Auditable;
 use App\Support\AuditTrail\TracksAuthors;
 use App\Support\Collaboration\Collaborative;
@@ -97,13 +99,42 @@ class Customer extends Model implements Collaborative
         return SalesTeam::managedMemberIds($user);
     }
 
+    /**
+     * "Own" customers also include customers of projects the user's employee works on
+     * (docs/03 §2, Projects spec P22).
+     *
+     * @param  Builder<static>  $query
+     */
+    protected function dataScopeOwnExtra(Builder $query, User $user): void
+    {
+        $employeeId = $user->employee_id;
+
+        if ($employeeId === null) {
+            return;
+        }
+
+        $query->orWhereIn($this->qualifyColumn('id'), Project::query()->select('customer_id')->whereNotNull('customer_id')
+            ->where(fn (Builder $query) => $query->where('project_manager_id', $employeeId)
+                ->orWhere('supervisor_id', $employeeId)
+                ->orWhere('support_officer_id', $employeeId)
+                ->orWhereIn('projects.id', ProjectEmployee::query()->select('project_id')->where('employee_id', $employeeId)->where('is_active', true))));
+    }
+
+    /**
+     * @return HasMany<Project, $this>
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
     public function isBlocked(): bool
     {
         return (bool) $this->status->is_blocked;
     }
 
     /**
-     * Activities on the customer and on its converted and referred leads (spec R17).
+     * Activities on the customer, its converted and referred leads (spec R17) and its projects.
      *
      * @return Builder<CrmActivity>
      */
@@ -115,7 +146,8 @@ class Customer extends Model implements Collaborative
 
         return CrmActivity::query()->where(fn (Builder $query) => $query
             ->where(fn (Builder $query) => $query->where('subject_type', $this->getMorphClass())->where('subject_id', $this->id))
-            ->orWhere(fn (Builder $query) => $query->where('subject_type', (new Lead)->getMorphClass())->whereIn('subject_id', $leadIds)));
+            ->orWhere(fn (Builder $query) => $query->where('subject_type', (new Lead)->getMorphClass())->whereIn('subject_id', $leadIds))
+            ->orWhere(fn (Builder $query) => $query->where('subject_type', (new Project)->getMorphClass())->whereIn('subject_id', Project::query()->select('id')->where('customer_id', $this->id))));
     }
 
     /**
