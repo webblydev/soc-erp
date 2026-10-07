@@ -32,8 +32,8 @@ test('default roles get the crm grants of the spec', function () {
         ->and($grants('sales_executive'))->toContain('crm.leads.view_own', 'crm.leads.convert', 'crm.customers.update')
         ->not->toContain('crm.leads.assign', 'crm.leads.export', 'crm.activities.delete')
         ->and($grants('accountant'))->toEqualCanonicalizing(['crm.customers.view_all', 'crm.customers.update_finance', 'crm.customers.export'])
-        ->and($grants('project_manager'))->toBe(['crm.customers.view_all'])
-        ->and($grants('engineer'))->toBe([]);
+        ->and($grants('project_manager'))->toEqualCanonicalizing(['crm.customers.view_all', 'crm.activities.view_own', 'crm.activities.create', 'crm.activities.update'])
+        ->and($grants('engineer'))->toEqualCanonicalizing(['crm.customers.view_own', 'crm.activities.view_own', 'crm.activities.create', 'crm.activities.update']);
 });
 
 test('the view gates accept any of own, team or all', function (string $permission, string $gate) {
