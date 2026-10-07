@@ -12,6 +12,7 @@ use App\Support\NumberSequenceService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use stdClass;
 
 /**
  * Shared parts of the v1 work and material estimate importers (legacy seed spec L17, L18): the
@@ -27,7 +28,7 @@ class LegacyEstimates
     /**
      * Create the header of an imported estimate; null when its v1 project was not imported.
      */
-    public function header(LegacyContext $context, object $row, string $kindCode, string $titlePrefix, string $legacyRef): ?Estimate
+    public function header(LegacyContext $context, stdClass $row, string $kindCode, string $titlePrefix, string $legacyRef): ?Estimate
     {
         $project = isset($context->projects[(int) $row->project_id]) ? Project::withTrashed()->find($context->projects[(int) $row->project_id]) : null;
 
