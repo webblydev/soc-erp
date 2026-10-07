@@ -6,6 +6,7 @@ use App\Modules\Estimation\Models\FindingSeverity;
 use App\Modules\Estimation\Models\InspectionType;
 use App\Modules\Estimation\Models\SiteInspection;
 use App\Modules\Estimation\Models\SiteInspectionFinding;
+use App\Modules\Hrm\Models\Employee;
 use App\Modules\Hrm\Rules\AssignableEmployee;
 use App\Modules\Projects\Models\Project;
 use App\Modules\Projects\Models\ProjectStatus;
@@ -102,8 +103,7 @@ trait ValidatesInspectionInput
      */
     protected function validateFindings(Project $project, array $findings, array $existingIds = [], string $key = 'findings'): array
     {
-        $rows = array_values(array_map(function (mixed $finding): array {
-            $finding = is_array($finding) ? $finding : [];
+        $rows = array_values(array_map(function (array $finding): array {
             $row = ['id' => is_numeric($finding['id'] ?? null) ? (int) $finding['id'] : null];
 
             foreach (self::FINDING_FIELDS as $field) {
@@ -140,8 +140,9 @@ trait ValidatesInspectionInput
                     $validator->errors()->add("{$at}.id", __('This finding does not belong to the inspection.'));
                 }
 
-                if ($row['responsible_type'] === SiteInspectionFinding::RESPONSIBLE_EMPLOYEE) {
-                    (new AssignableEmployee)->validate("{$at}.responsible_id", $row['responsible_id'], fn (string $message) => $validator->errors()->add("{$at}.responsible_id", $message));
+                if ($row['responsible_type'] === SiteInspectionFinding::RESPONSIBLE_EMPLOYEE
+                    && (! is_numeric($row['responsible_id']) || ! Employee::query()->assignable()->whereKey((int) $row['responsible_id'])->exists())) {
+                    $validator->errors()->add("{$at}.responsible_id", __('Choose an active employee.'));
                 }
 
                 if ($row['responsible_type'] === SiteInspectionFinding::RESPONSIBLE_CUSTOMER && $project->customer_id === null) {
