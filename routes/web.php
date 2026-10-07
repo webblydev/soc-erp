@@ -14,4 +14,5 @@ require __DIR__.'/modules/catalog.php';
 require __DIR__.'/modules/crm.php';
 require __DIR__.'/modules/hrm.php';
 require __DIR__.'/modules/projects.php';
+require __DIR__.'/modules/estimation.php';
 require __DIR__.'/settings.php';
