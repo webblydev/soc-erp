@@ -35,6 +35,7 @@ class ImportEstimateLines
         }, $path)[0] ?? [];
         $errors = [];
         $sections = [];
+        $current = null;
 
         foreach ($rows as $index => $row) {
             $row = array_map(fn (mixed $value): ?string => $value === null || trim((string) $value) === '' ? null : trim((string) $value), $row);
@@ -50,13 +51,13 @@ class ImportEstimateLines
             $formula = isset($row['formula']) ? MeasurementFormula::fromInput($row['formula']) : ($item->measurement_formula ?? MeasurementFormula::NosLWH);
             $category = isset($row['cost_category']) ? CostCategory::query()->where(fn ($query) => $query->where('code', Str::upper($row['cost_category']))->orWhere('name', $row['cost_category']))->first() : null;
 
-            $problems = array_filter([
-                isset($row['work_item_code']) && $item === null ? __('unknown work item ":code"', ['code' => $row['work_item_code']]) : null,
-                $unit === null ? __('unknown or missing unit') : null,
-                $formula === null ? __('unknown formula ":formula"', ['formula' => $row['formula']]) : null,
-                isset($row['cost_category']) && $category === null ? __('unknown cost category ":category"', ['category' => $row['cost_category']]) : null,
-                ($row['description'] ?? $item?->name) === null ? __('no description') : null,
-            ]);
+            $problems = array_values(array_filter([
+                isset($row['work_item_code']) && $item === null ? (string) __('unknown work item ":code"', ['code' => $row['work_item_code']]) : null,
+                $unit === null ? (string) __('unknown or missing unit') : null,
+                $formula === null ? (string) __('unknown formula ":formula"', ['formula' => $row['formula']]) : null,
+                isset($row['cost_category']) && $category === null ? (string) __('unknown cost category ":category"', ['category' => $row['cost_category']]) : null,
+                ($row['description'] ?? $item?->name) === null ? (string) __('no description') : null,
+            ]));
 
             if ($problems !== []) {
                 $errors[] = __('Row :row: :problems.', ['row' => $rowNumber, 'problems' => implode(', ', $problems)]);
@@ -66,11 +67,12 @@ class ImportEstimateLines
 
             $name = $row['section'] ?? null;
 
-            if ($sections === [] || end($sections)['name'] !== $name) {
+            if ($current === null || $sections[$current]['name'] !== $name) {
                 $sections[] = ['name' => $name, 'lines' => []];
+                $current = count($sections) - 1;
             }
 
-            $sections[array_key_last($sections)]['lines'][] = [
+            $sections[$current]['lines'][] = [
                 'line_no' => $row['line_no'] ?? null,
                 'work_item_id' => $item?->id,
                 'description' => $row['description'] ?? $item?->name,
