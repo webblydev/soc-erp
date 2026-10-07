@@ -7,6 +7,9 @@ use App\Modules\Projects\Events\ApprovalStatusChanged;
 use App\Modules\Projects\Events\ProjectPhaseChanged;
 use App\Modules\Projects\Events\TaskCompleted;
 use App\Modules\Projects\Listeners\EvaluateScheduleTriggers;
+use App\Modules\Projects\Livewire\Projects\ContractTab;
+use App\Modules\Projects\Livewire\Projects\TasksTab;
+use App\Modules\Projects\Livewire\Projects\TeamTab;
 use App\Modules\Projects\Models\ApprovalAuthority;
 use App\Modules\Projects\Models\ApprovalStatus;
 use App\Modules\Projects\Models\ApprovalType;
@@ -110,5 +113,8 @@ class ProjectsServiceProvider extends ServiceProvider
         Event::listen([ProjectPhaseChanged::class, ApprovalStatusChanged::class, TaskCompleted::class], EvaluateScheduleTriggers::class);
 
         Livewire::addLocation(classNamespace: 'App\\Modules\\Projects\\Livewire');
+        Livewire::component('projects.contract-tab', ContractTab::class);
+        Livewire::component('projects.team-tab', TeamTab::class);
+        Livewire::component('projects.tasks-tab', TasksTab::class);
     }
 }
