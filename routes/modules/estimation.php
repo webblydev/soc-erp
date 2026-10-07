@@ -3,7 +3,9 @@
 use App\Modules\Estimation\Exports\EstimateLinesExport;
 use App\Modules\Estimation\Livewire\Budget;
 use App\Modules\Estimation\Livewire\Estimates;
+use App\Modules\Estimation\Livewire\Mb;
 use App\Modules\Estimation\Models\Estimate;
+use App\Modules\Estimation\Models\MeasurementEntry;
 use App\Modules\Foundation\Models\CompanyProfile;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
@@ -36,6 +38,13 @@ Route::middleware('app')->group(function () {
 
         Route::get('{estimate:estimate_number}/export', fn (Estimate $estimate) => Excel::download(new EstimateLinesExport($estimate), $estimate->estimate_number.'.xlsx'))
             ->middleware('can:export,estimate')->name('estimates.export');
+    });
+
+    Route::name('site.')->prefix('site')->group(function () {
+        Route::livewire('mb', Mb\Index::class)->middleware('can:viewAny,'.MeasurementEntry::class)->name('mb.index');
+        Route::livewire('mb/create', Mb\Form::class)->middleware('can:create,'.MeasurementEntry::class)->name('mb.create');
+        Route::livewire('mb/{entry:mb_number}', Mb\Show::class)->middleware('can:view,entry')->name('mb.show');
+        Route::livewire('mb/{entry:mb_number}/edit', Mb\Form::class)->middleware('can:update,entry')->name('mb.edit');
     });
 
     Route::livewire('projects/{project:project_number}/budget', Budget\Show::class)->middleware('can:viewBudget,project')->name('estimation.budget.show');
