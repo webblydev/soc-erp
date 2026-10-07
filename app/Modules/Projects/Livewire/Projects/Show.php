@@ -134,6 +134,7 @@ class Show extends Component
             'team' => (string) __('Team'),
             'tasks' => $actor->can('projects.tasks.view') ? (string) __('Tasks') : null,
             'approvals' => $actor->can('viewApprovals', $this->project) ? (string) __('Approvals') : null,
+            'estimates' => $actor->can('viewEstimates', $this->project) ? (string) __('Estimates & Budget') : null,
             'activities' => $actor->can('crm.activities.view') ? (string) __('Activities') : null,
             'documents' => (string) __('Documents'),
             'notes' => (string) __('Notes'),

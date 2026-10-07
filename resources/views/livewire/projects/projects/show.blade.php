@@ -90,6 +90,12 @@
             <span class="text-sm text-muted-foreground">{{ __('Approvals pending') }}</span>
             <span class="text-lg font-semibold tabular-nums">{{ $figures['approvals_pending'] }}</span>
         </x-ui.card>
+        @can('viewBudget', $project)
+            <x-ui.card class="gap-1 p-4">
+                <span class="text-sm text-muted-foreground">{{ __('Budget') }}</span>
+                <span class="text-lg font-semibold tabular-nums">{{ $money($project->budget_cost) }}</span>
+            </x-ui.card>
+        @endcan
         <x-ui.card class="col-span-2 gap-1 p-4 md:col-span-1">
             <span class="text-sm text-muted-foreground">{{ __('Next milestone') }}</span>
             @if ($figures['next_milestone'])
@@ -247,6 +253,8 @@
                     <p class="col-span-full py-8 text-center text-sm text-muted-foreground">{{ __('No approvals tracked yet.') }}</p>
                 @endforelse
             </div>
+        @elseif ($tab === 'estimates')
+            <livewire:estimation.project-estimates-tab :project="$project" :key="'estimates-'.$project->id" />
         @elseif ($tab === 'activities')
             @if ($canLog)
                 <x-ui.button class="h-11 self-start md:h-9" x-on:click="$dispatch('crm-log-activity', { subjectType: 'project', subjectId: {{ $project->id }}, mode: 'log' })"><x-lucide-plus /> {{ __('Log activity') }}</x-ui.button>
