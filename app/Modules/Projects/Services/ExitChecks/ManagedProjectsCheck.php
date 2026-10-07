@@ -14,10 +14,15 @@ class ManagedProjectsCheck implements EmployeeExitCheck
 {
     public function check(Employee $employee): array
     {
-        return Project::query()->open()->where('project_manager_id', $employee->id)->orderBy('project_number')->get(['id', 'project_number', 'name'])
-            ->map(fn (Project $project): ExitCheckItem => new ExitCheckItem(
+        $items = [];
+
+        foreach (Project::query()->open()->where('project_manager_id', $employee->id)->orderBy('project_number')->get(['id', 'project_number', 'name']) as $project) {
+            $items[] = new ExitCheckItem(
                 __('PM of :number :name: choose a new project manager', ['number' => $project->project_number, 'name' => $project->name]),
                 route('projects.projects.edit', $project),
-            ))->all();
+            );
+        }
+
+        return $items;
     }
 }
