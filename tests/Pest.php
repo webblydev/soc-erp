@@ -152,6 +152,18 @@ function seedProjects(): void
 }
 
 /**
+ * A user with the given roles and a linked employee in active employment (Projects tests).
+ */
+function staffUser(string ...$roles): User
+{
+    $user = User::factory()->create();
+    $user->syncRoles(array_values($roles));
+    Employee::factory()->linkedTo($user)->create();
+
+    return $user->refresh();
+}
+
+/**
  * Valid CreateEmployee input for HRM tests (needs seedHrm()).
  *
  * @param  array<string, mixed>  $overrides
