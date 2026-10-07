@@ -28,7 +28,7 @@ class SaveProjectServices
             throw ValidationException::withMessages(['services' => __('The contract is signed. Change services through an amendment.')]);
         }
 
-        $validated = $this->serviceLines->validate($lines, $project, $project->services()->pluck('service_id')->all());
+        $validated = $this->serviceLines->validate($lines, $project, array_values($project->services()->pluck('service_id')->map(fn (mixed $id): int => (int) $id)->all()));
 
         DB::transaction(fn () => $this->serviceLines->apply($project, $validated));
     }
