@@ -134,7 +134,7 @@
             @elseif ($tab === 'projects')
                 <x-ui.item-group class="gap-2">
                     @forelse ($projects as $project)
-                        <x-ui.item variant="outline" class="min-h-16 active:bg-accent" :href="route('projects.projects.show', $project)" wire:navigate wire:key="project-{{ $project->id }}">
+                        <x-ui.item variant="outline" class="min-h-16 active:bg-accent" data-detail-modal :href="route('projects.projects.show', $project)" wire:navigate wire:key="project-{{ $project->id }}">
                             <x-ui.item-content class="min-w-0">
                                 <x-ui.item-title class="text-base md:text-sm"><span class="truncate">{{ $project->name }}</span></x-ui.item-title>
                                 <x-ui.item-description class="text-sm"><span class="font-mono">{{ $project->project_number }}</span> · <span class="tabular-nums">{{ \App\Support\Money::format($project->contract_value) }}</span></x-ui.item-description>
