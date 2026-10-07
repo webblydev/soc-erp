@@ -8,6 +8,7 @@ use App\Modules\Crm\Models\Customer;
 use App\Modules\Crm\Models\Lead;
 use App\Modules\Crm\Models\SalesTeam;
 use App\Modules\Crm\Notifications\DailyDigest;
+use App\Modules\Projects\Models\Project;
 use App\Support\Facades\Settings;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -37,7 +38,7 @@ class SendDailyDigest implements ShouldQueue
 
             $open = CrmActivity::query()->where('owner_user_id', $user->id)->whereNull('completed_at')
                 ->whereNotNull('scheduled_at')->where('scheduled_at', '<=', today()->endOfDay())
-                ->whereHasMorph('subject', [Lead::class, Customer::class])
+                ->whereHasMorph('subject', [Lead::class, Customer::class, Project::class])
                 ->with(['subject', 'type'])->orderBy('scheduled_at')->get();
 
             [$overdue, $today] = $open->partition(fn (CrmActivity $activity): bool => (bool) $activity->scheduled_at?->isPast());
@@ -66,7 +67,7 @@ class SendDailyDigest implements ShouldQueue
         }
 
         $counts = CrmActivity::query()->whereIn('owner_user_id', $memberIds)->overdue()
-            ->whereHasMorph('subject', [Lead::class, Customer::class])
+            ->whereHasMorph('subject', [Lead::class, Customer::class, Project::class])
             ->selectRaw('owner_user_id, COUNT(*) as total')->groupBy('owner_user_id')->pluck('total', 'owner_user_id');
 
         return User::query()->whereKey($counts->keys())->where('is_active', true)->orderBy('name')->get(['id', 'name'])
