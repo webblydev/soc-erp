@@ -61,10 +61,14 @@
         </x-slot:filters>
 
         <x-slot:desktop>
+            <x-shell.bulk-bar :exportable="$user->can('estimation.estimates.export')" :deletable="$user->can('estimation.estimates.delete')" />
+
             <div class="overflow-x-auto">
                 <x-ui.table variant="bordered">
                     <x-ui.table-header>
                         <x-ui.table-row>
+                            <x-shell.select-all :ids="$rows->pluck('id')" />
+                            <x-ui.table-head class="w-14 text-center">{{ __('Action') }}</x-ui.table-head>
                             <x-ui.table-head><x-shell.sort-header key="number" :label="__('Estimate #')" :$sort :$direction /></x-ui.table-head>
                             <x-ui.table-head>{{ __('Kind') }}</x-ui.table-head>
                             <x-ui.table-head>{{ __('Project') }}</x-ui.table-head>
@@ -78,13 +82,28 @@
                     </x-ui.table-header>
                     <x-ui.table-body>
                         @forelse ($rows as $estimate)
+                            @php($editable = in_array($estimate->status->code, ['DRAFT', 'REJECTED'], true))
                             <x-ui.table-row wire:key="estimate-{{ $estimate->id }}">
+                                <x-shell.select-row :id="$estimate->id" :label="$estimate->estimate_number" />
+                                <x-shell.row-menu>
+                                    <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('estimation.estimates.show', $estimate)">{{ __('View') }}</x-shell.row-menu-item>
+                                    @if ($editable && $user->can('update', $estimate))
+                                        <x-shell.row-menu-item icon="pencil" data-detail-modal :href="route('estimation.estimates.edit', $estimate)">{{ __('Edit') }}</x-shell.row-menu-item>
+                                    @endif
+                                    @if ($editable && $user->can('delete', $estimate))
+                                        <x-shell.row-menu-item icon="trash-2" destructive wire:click="deleteRecord({{ $estimate->id }})" wire:confirm="{{ __('Delete :name?', ['name' => $estimate->estimate_number]) }}">{{ __('Delete') }}</x-shell.row-menu-item>
+                                    @endif
+                                </x-shell.row-menu>
                                 <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">
-                                    <a href="{{ route('estimation.estimates.show', $estimate) }}" wire:navigate class="hover:underline">{{ $estimate->estimate_number }}</a>
+                                    <a data-detail-modal href="{{ route('estimation.estimates.show', $estimate) }}" wire:navigate class="hover:underline">{{ $estimate->estimate_number }}</a>
                                 </x-ui.table-cell>
                                 <x-ui.table-cell>{{ $estimate->kind->name }}</x-ui.table-cell>
-                                <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">{{ $estimate->project->project_number }}</x-ui.table-cell>
-                                <x-ui.table-cell class="font-medium">{{ $estimate->title }}</x-ui.table-cell>
+                                <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">
+                                    <a data-detail-modal href="{{ route('projects.projects.show', ['project' => $estimate->project, 'tab' => 'estimates']) }}" wire:navigate class="hover:underline">{{ $estimate->project->project_number }}</a>
+                                </x-ui.table-cell>
+                                <x-ui.table-cell class="font-medium">
+                                    <a data-detail-modal href="{{ route('estimation.estimates.show', $estimate) }}" wire:navigate class="hover:underline">{{ $estimate->title }}</a>
+                                </x-ui.table-cell>
                                 <x-ui.table-cell class="tabular-nums whitespace-nowrap">{{ $date($estimate->estimate_date) }}</x-ui.table-cell>
                                 <x-ui.table-cell class="text-end tabular-nums">{{ $estimate->revision_no }}</x-ui.table-cell>
                                 <x-ui.table-cell><x-ui.badge :tone="$estimate->status->color ?? 'neutral'">{{ $estimate->status->name }}</x-ui.badge></x-ui.table-cell>
@@ -93,13 +112,20 @@
                             </x-ui.table-row>
                         @empty
                             <x-ui.table-row>
-                                <x-ui.table-cell colspan="9" class="py-10 text-center text-muted-foreground">{{ __('No estimates found.') }}</x-ui.table-cell>
+                                <x-ui.table-cell colspan="11" class="py-10 text-center text-muted-foreground">{{ __('No estimates found.') }}</x-ui.table-cell>
                             </x-ui.table-row>
                         @endforelse
                     </x-ui.table-body>
                 </x-ui.table>
             </div>
-            <div class="mt-4">{{ $rows->links() }}</div>
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+                <x-ui.select native wire:model.live="perPage" class="w-36" :aria-label="__('Rows per page')">
+                    @foreach (static::PER_PAGE_OPTIONS as $option)
+                        <option value="{{ $option }}">{{ __(':count per page', ['count' => $option]) }}</option>
+                    @endforeach
+                </x-ui.select>
+                {{ $rows->links() }}
+            </div>
         </x-slot:desktop>
 
         <x-slot:mobile>
