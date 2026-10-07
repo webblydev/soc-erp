@@ -57,6 +57,9 @@ final class QuantityCalculator
         return (string) BigDecimal::of($estimated)->multipliedBy($factor)->toScale(4, RoundingMode::HalfUp);
     }
 
+    /**
+     * @param  int<0, max>  $scale
+     */
     private static function scale(string $value, int $scale): string
     {
         return (string) BigDecimal::of($value)->toScale($scale, RoundingMode::HalfUp);
