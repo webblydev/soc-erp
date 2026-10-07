@@ -129,15 +129,15 @@ class Show extends Component
         $actor = $this->actor();
 
         return array_filter([
-            'overview' => __('Overview'),
-            'contract' => $actor->can('viewContract', $this->project) ? __('Contract & schedule') : null,
-            'team' => __('Team'),
-            'tasks' => $actor->can('projects.tasks.view') ? __('Tasks') : null,
-            'approvals' => $actor->can('viewApprovals', $this->project) ? __('Approvals') : null,
-            'activities' => $actor->can('crm.activities.view') ? __('Activities') : null,
-            'documents' => __('Documents'),
-            'notes' => __('Notes'),
-            'history' => __('History'),
+            'overview' => (string) __('Overview'),
+            'contract' => $actor->can('viewContract', $this->project) ? (string) __('Contract & schedule') : null,
+            'team' => (string) __('Team'),
+            'tasks' => $actor->can('projects.tasks.view') ? (string) __('Tasks') : null,
+            'approvals' => $actor->can('viewApprovals', $this->project) ? (string) __('Approvals') : null,
+            'activities' => $actor->can('crm.activities.view') ? (string) __('Activities') : null,
+            'documents' => (string) __('Documents'),
+            'notes' => (string) __('Notes'),
+            'history' => (string) __('History'),
         ]);
     }
 
