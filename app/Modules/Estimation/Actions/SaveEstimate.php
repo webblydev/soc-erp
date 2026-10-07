@@ -94,15 +94,17 @@ class SaveEstimate
     }
 
     /**
-     * Sections and their work lines in an input shape SaveEstimate accepts, for "copy lines from"
-     * (spec E8). Ids and origins are left out so the copies are new lines.
+     * Sections and their work lines in an input shape SaveEstimate accepts, in the saved order: for
+     * the editor (with ids) and for "copy lines from" (without ids or origins, so the copies are new
+     * lines, spec E8).
      *
      * @return array{sections: list<array<string, mixed>>, material_lines: list<array<string, mixed>>}
      */
-    public static function linesOf(Estimate $source): array
+    public static function linesOf(Estimate $source, bool $withIds = false): array
     {
         $source->loadMissing(['sections', 'lines', 'materialLines']);
         $line = fn ($line): array => [
+            ...($withIds ? ['id' => $line->id] : []),
             'line_no' => $line->line_no, 'work_item_id' => $line->work_item_id, 'description' => $line->description,
             'level' => $line->level, 'location' => $line->location, 'measurement_formula' => $line->measurement_formula->value,
             'nos' => $line->nos, 'length' => $line->length, 'width' => $line->width, 'height' => $line->height,
@@ -110,20 +112,28 @@ class SaveEstimate
             'rate' => $line->rate, 'cost_category_id' => $line->cost_category_id, 'remarks' => $line->remarks,
         ];
 
+        $groups = $source->lines->groupBy(fn ($line): string => (string) $line->estimate_section_id);
+        $order = $groups->map(fn ($lines): int => (int) $lines->min('sort_order'))->sort();
+        $sectionsById = $source->sections->keyBy('id');
         $sections = [];
-        $unsectioned = $source->lines->whereNull('estimate_section_id');
 
-        if ($unsectioned->isNotEmpty()) {
-            $sections[] = ['name' => null, 'lines' => $unsectioned->map($line)->values()->all()];
+        foreach ($order->keys() as $sectionId) {
+            $section = $sectionsById->get((int) $sectionId);
+            $sections[] = [
+                ...($withIds ? ['id' => $section?->id] : []),
+                'name' => $section?->name,
+                'lines' => $groups[$sectionId]->map($line)->values()->all(),
+            ];
         }
 
-        foreach ($source->sections as $section) {
-            $sections[] = ['name' => $section->name, 'lines' => $source->lines->where('estimate_section_id', $section->id)->map($line)->values()->all()];
+        foreach ($source->sections->whereNotIn('id', $groups->keys()->map(fn ($id): int => (int) $id)) as $empty) {
+            $sections[] = [...($withIds ? ['id' => $empty->id] : []), 'name' => $empty->name, 'lines' => []];
         }
 
         return [
             'sections' => $sections,
             'material_lines' => $source->materialLines->map(fn ($material): array => [
+                ...($withIds ? ['id' => $material->id] : []),
                 'material_id' => $material->material_id, 'material_name' => $material->material_name, 'unit_id' => $material->unit_id,
                 'estimated_qty' => $material->estimated_qty, 'wastage_pct' => $material->wastage_pct, 'rate' => $material->rate,
                 'purpose' => $material->purpose,
