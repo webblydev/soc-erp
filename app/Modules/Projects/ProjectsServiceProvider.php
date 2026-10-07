@@ -32,6 +32,9 @@ use App\Modules\Projects\Models\TaskType;
 use App\Modules\Projects\Policies\ProjectApprovalPolicy;
 use App\Modules\Projects\Policies\ProjectPolicy;
 use App\Modules\Projects\Policies\TaskPolicy;
+use App\Modules\Projects\Services\CompletionChecks\OpenApprovalsCheck;
+use App\Modules\Projects\Services\CompletionChecks\OpenTasksCheck;
+use App\Modules\Projects\Services\ProjectCompletionChecks;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -39,6 +42,20 @@ use Livewire\Livewire;
 
 class ProjectsServiceProvider extends ServiceProvider
 {
+    /**
+     * Register Projects services. Other modules add their completion checks (spec P2).
+     */
+    public function register(): void
+    {
+        $this->app->singleton(ProjectCompletionChecks::class, function (): ProjectCompletionChecks {
+            $checks = new ProjectCompletionChecks;
+            $checks->register(OpenTasksCheck::class);
+            $checks->register(OpenApprovalsCheck::class);
+
+            return $checks;
+        });
+    }
+
     /**
      * Bootstrap Projects services.
      */
