@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 final class ProjectAccess
 {
     /**
-     * @param  Builder<Project>  $query
+     * @param  Builder<covariant Project>  $query
      */
     public function scopeProjects(Builder $query, User $user): void
     {
@@ -47,7 +47,7 @@ final class ProjectAccess
     }
 
     /**
-     * @param  Builder<Task>  $query
+     * @param  Builder<covariant Task>  $query
      */
     public function scopeTasks(Builder $query, User $user): void
     {
@@ -75,7 +75,7 @@ final class ProjectAccess
     /**
      * The user's own tasks: assignee, support officer or reviewer, assigner or watcher.
      *
-     * @param  Builder<Task>  $query
+     * @param  Builder<covariant Task>  $query
      */
     public function ownTasks(Builder $query, User $user): void
     {
