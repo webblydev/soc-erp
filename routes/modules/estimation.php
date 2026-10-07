@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Estimation\Exports\EstimateLinesExport;
+use App\Modules\Estimation\Livewire\Budget;
 use App\Modules\Estimation\Livewire\Estimates;
 use App\Modules\Estimation\Models\Estimate;
 use App\Modules\Foundation\Models\CompanyProfile;
@@ -36,4 +37,6 @@ Route::middleware('app')->group(function () {
         Route::get('{estimate:estimate_number}/export', fn (Estimate $estimate) => Excel::download(new EstimateLinesExport($estimate), $estimate->estimate_number.'.xlsx'))
             ->middleware('can:export,estimate')->name('estimates.export');
     });
+
+    Route::livewire('projects/{project:project_number}/budget', Budget\Show::class)->middleware('can:viewBudget,project')->name('estimation.budget.show');
 });
