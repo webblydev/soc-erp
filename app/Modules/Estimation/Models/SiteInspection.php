@@ -94,7 +94,7 @@ class SiteInspection extends Model implements Collaborative
      */
     public function engineerName(): ?string
     {
-        return $this->engineer?->full_name ?? $this->project_engineer_name;
+        return $this->engineer->full_name ?? $this->project_engineer_name;
     }
 
     /**
