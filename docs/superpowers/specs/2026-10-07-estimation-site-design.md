@@ -214,6 +214,7 @@ Where the build differs from the sections above, the build is authoritative.
 - E17: the notification classes are `EstimateAwaitingApproval`, `EstimateDecided` (approved / rejected), `MeasurementsAwaitingVerification`, `FindingAssignedToYou` and `FindingOverdue`.
 - E20: the Excel line import reads work lines only; material lines are typed in the editor.
 - E21: the project tabs are `estimates` (Estimates & Budget) and `site`; the key figure cards Budget and Open findings show with `viewBudget` and `site.inspections.view`.
+- §5: every desktop list table (estimates, MB, inspections) has the mark (selection) column, an Action column with View, Edit and Delete, and opens records, create and edit forms in the detail modal; the forms reload the page under the modal on save. The form query parameter is `project` (the property name) so the detail modal can pass it.
 - §5.6: the MB list has a mobile selection mode (top-bar button) with a sticky Verify / Reject bar.
 - §9 (L19, L20): v1 text "N/A", "NA" and "Not found" counts as empty. Legacy tests are `tests/Feature/Legacy/ImportEstimatesTest.php` and `ImportProjectVisitsTest.php`.
 
