@@ -16,6 +16,7 @@ use App\Modules\Estimation\Models\EstimateKind;
 use App\Modules\Estimation\Models\EstimateStatus;
 use App\Modules\Estimation\Services\EstimateTotals;
 use App\Modules\Estimation\Services\QuantityCalculator;
+use App\Modules\Foundation\Concerns\SavesFromDetailModal;
 use App\Modules\Projects\Models\Project;
 use Brick\Math\BigDecimal;
 use Illuminate\Contracts\View\View;
@@ -33,7 +34,7 @@ use Livewire\WithFileUploads;
  */
 class Editor extends Component
 {
-    use WithFileUploads;
+    use SavesFromDetailModal, WithFileUploads;
 
     private const HEADER_FIELDS = ['title', 'site_address', 'estimate_date', 'prepared_by', 'checked_by', 'overhead_pct', 'profit_pct', 'vat_pct', 'notes'];
 
@@ -43,8 +44,8 @@ class Editor extends Component
 
     public ?Estimate $estimate = null;
 
-    #[Url(as: 'project', except: '')]
-    public string $projectNumber = '';
+    #[Url(except: '')]
+    public string $project = '';
 
     #[Url(as: 'kind', except: '')]
     public string $kindCode = '';
@@ -92,7 +93,7 @@ class Editor extends Component
         if ($estimate === null || ! $estimate->exists) {
             $this->authorize('create', Estimate::class);
 
-            $project = $this->projectNumber !== '' ? $this->projects()->firstWhere('project_number', $this->projectNumber) : null;
+            $project = $this->project !== '' ? $this->projects()->firstWhere('project_number', $this->project) : null;
             $this->project_id = $project?->id;
             $this->site_address = (string) $project?->site_address;
             $this->estimate_kind_id = EstimateKind::query()->where('code', $this->kindCode !== '' ? $this->kindCode : EstimateKind::BOQ)->value('id');
@@ -281,8 +282,7 @@ class Editor extends Component
         $estimate = $this->persist($saveEstimate);
 
         if ($estimate !== null) {
-            session()->flash('success', __('Estimate :number saved.', ['number' => $estimate->estimate_number]));
-            $this->redirectRoute('estimation.estimates.show', $estimate, navigate: true);
+            $this->redirectAfterSave(__('Estimate :number saved.', ['number' => $estimate->estimate_number]), 'estimation.estimates.show', $estimate);
         }
     }
 
@@ -303,8 +303,7 @@ class Editor extends Component
             return;
         }
 
-        session()->flash('success', __('Estimate :number submitted for approval.', ['number' => $estimate->estimate_number]));
-        $this->redirectRoute('estimation.estimates.show', $estimate, navigate: true);
+        $this->redirectAfterSave(__('Estimate :number submitted for approval.', ['number' => $estimate->estimate_number]), 'estimation.estimates.show', $estimate);
     }
 
     private function persist(SaveEstimate $saveEstimate): ?Estimate
