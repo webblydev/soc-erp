@@ -139,7 +139,7 @@
                             <x-ui.table-row wire:key="project-{{ $project->id }}">
                                 <x-shell.select-row :id="$project->id" :label="$project->name" />
                                 <x-shell.row-menu>
-                                    <x-shell.row-menu-item icon="eye" :href="route('projects.projects.show', $project)">{{ __('View') }}</x-shell.row-menu-item>
+                                    <x-shell.row-menu-item icon="eye" data-detail-modal :href="route('projects.projects.show', $project)">{{ __('View') }}</x-shell.row-menu-item>
                                     @can('update', $project)
                                         <x-shell.row-menu-item icon="pencil" data-detail-modal :href="route('projects.projects.edit', $project)">{{ __('Edit') }}</x-shell.row-menu-item>
                                     @endcan
@@ -148,9 +148,11 @@
                                     @endcan
                                 </x-shell.row-menu>
                                 <x-ui.table-cell class="font-mono text-sm whitespace-nowrap">
-                                    <a href="{{ route('projects.projects.show', $project) }}" wire:navigate class="hover:underline">{{ $project->project_number }}</a>
+                                    <a data-detail-modal href="{{ route('projects.projects.show', $project) }}" wire:navigate class="hover:underline">{{ $project->project_number }}</a>
                                 </x-ui.table-cell>
-                                <x-ui.table-cell class="max-w-64 truncate font-medium">{{ $project->name }}</x-ui.table-cell>
+                                <x-ui.table-cell class="max-w-64 truncate font-medium">
+                                    <a data-detail-modal href="{{ route('projects.projects.show', $project) }}" wire:navigate class="hover:underline">{{ $project->name }}</a>
+                                </x-ui.table-cell>
                                 <x-ui.table-cell class="max-w-48 truncate">{{ $project->customer?->name ?? __('Internal') }}</x-ui.table-cell>
                                 <x-ui.table-cell>{{ $project->businessLine->name }}</x-ui.table-cell>
                                 <x-ui.table-cell>{{ $project->type->name }}</x-ui.table-cell>
