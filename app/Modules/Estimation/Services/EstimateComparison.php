@@ -3,8 +3,9 @@
 namespace App\Modules\Estimation\Services;
 
 use App\Modules\Estimation\Models\Estimate;
+use App\Modules\Estimation\Models\EstimateLine;
+use App\Modules\Estimation\Models\EstimateMaterialLine;
 use Brick\Math\BigDecimal;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 /**
@@ -37,8 +38,8 @@ final class EstimateComparison
         return [
             'from' => $from,
             'to' => $to,
-            'lines' => $this->pair($from->lines, $to->lines, fn ($line): string => $line->description, 'quantity'),
-            'materials' => $this->pair($from->materialLines, $to->materialLines, fn ($line): string => $line->displayName(), 'total_qty'),
+            'lines' => $this->pair($from->lines, $to->lines, fn (EstimateLine|EstimateMaterialLine $line): string => $line instanceof EstimateLine ? $line->description : $line->displayName(), 'quantity'),
+            'materials' => $this->pair($from->materialLines, $to->materialLines, fn (EstimateLine|EstimateMaterialLine $line): string => $line instanceof EstimateLine ? $line->description : $line->displayName(), 'total_qty'),
             'totals' => [
                 'subtotal' => (string) BigDecimal::of($to->subtotal)->minus($from->subtotal),
                 'total' => (string) BigDecimal::of($to->total_amount)->minus($from->total_amount),
@@ -47,20 +48,20 @@ final class EstimateComparison
     }
 
     /**
-     * @param  Collection<int, covariant Model>  $old
-     * @param  Collection<int, covariant Model>  $new
-     * @param  callable(Model): string  $label
+     * @param  Collection<int, EstimateLine>|Collection<int, EstimateMaterialLine>  $old
+     * @param  Collection<int, EstimateLine>|Collection<int, EstimateMaterialLine>  $new
+     * @param  callable(EstimateLine|EstimateMaterialLine): string  $label
      * @return list<Row>
      */
     private function pair(Collection $old, Collection $new, callable $label, string $quantityField): array
     {
-        $oldByKey = $old->keyBy(fn (Model $line): string => 'o'.$line->originId());
+        $oldByKey = $old->keyBy(fn (EstimateLine|EstimateMaterialLine $line): string => 'o'.$line->originId());
         $rows = [];
         $seen = [];
 
         foreach ($new as $line) {
             $match = $line->getAttribute('origin_line_id') !== null ? $oldByKey->get('o'.$line->getAttribute('origin_line_id')) : null;
-            $match ??= $line->getAttribute('line_no') !== null ? $old->first(fn (Model $candidate): bool => $candidate->getAttribute('line_no') === $line->getAttribute('line_no') && ! in_array($candidate->getKey(), $seen, true)) : null;
+            $match ??= $line->getAttribute('line_no') !== null ? $old->first(fn (EstimateLine|EstimateMaterialLine $candidate): bool => $candidate->getAttribute('line_no') === $line->getAttribute('line_no') && ! in_array($candidate->getKey(), $seen, true)) : null;
 
             if ($match !== null) {
                 $seen[] = $match->getKey();
@@ -69,7 +70,7 @@ final class EstimateComparison
             $rows[] = $this->row($match, $line, $label, $quantityField);
         }
 
-        foreach ($old->reject(fn (Model $line): bool => in_array($line->getKey(), $seen, true)) as $line) {
+        foreach ($old->reject(fn (EstimateLine|EstimateMaterialLine $line): bool => in_array($line->getKey(), $seen, true)) as $line) {
             $rows[] = $this->row($line, null, $label, $quantityField);
         }
 
@@ -77,12 +78,12 @@ final class EstimateComparison
     }
 
     /**
-     * @param  callable(Model): string  $label
+     * @param  callable(EstimateLine|EstimateMaterialLine): string  $label
      * @return Row
      */
-    private function row(?Model $from, ?Model $to, callable $label, string $quantityField): array
+    private function row(EstimateLine|EstimateMaterialLine|null $from, EstimateLine|EstimateMaterialLine|null $to, callable $label, string $quantityField): array
     {
-        $figures = fn (?Model $line): ?array => $line === null ? null : [
+        $figures = fn (EstimateLine|EstimateMaterialLine|null $line): ?array => $line === null ? null : [
             'quantity' => (string) $line->getAttribute($quantityField),
             'rate' => $line->getAttribute('rate') !== null ? (string) $line->getAttribute('rate') : null,
             'amount' => (string) $line->getAttribute('amount'),
